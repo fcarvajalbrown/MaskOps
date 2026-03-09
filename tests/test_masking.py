@@ -153,3 +153,84 @@ class TestMaskPhone:
         df = pl.DataFrame({"col": [original]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result == original
+
+# ---------------------------------------------------------------------------
+# IP Address
+# ---------------------------------------------------------------------------
+
+class TestMaskIP:
+    def test_ipv4_host_masked(self):
+        df = pl.DataFrame({"col": ["192.168.1.100"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.startswith("192.168")
+        assert "1.100" not in result
+        assert "*" in result
+
+    def test_ipv4_in_sentence(self):
+        df = pl.DataFrame({"col": ["Server at 10.0.0.1 is down"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "10.0" in result
+        assert "0.1" not in result
+        assert "Server at" in result
+        assert "is down" in result
+
+    def test_ipv6_masked(self):
+        df = pl.DataFrame({"col": ["2001:db8:0:0:1:2:3:4"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "2001:db8" in result
+        assert "1:2:3:4" not in result
+        assert "*" in result
+
+    def test_non_ip_untouched(self):
+        original = "version 1.2.3"
+        df = pl.DataFrame({"col": ["version 1.2.3"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_contains_pii_detects_ip(self):
+        df = pl.DataFrame({"col": ["192.168.1.1", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+# ---------------------------------------------------------------------------
+# RUT (Chile)
+# ---------------------------------------------------------------------------
+
+class TestMaskRUT:
+    def test_rut_body_masked(self):
+        df = pl.DataFrame({"col": ["76.354.771-K"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.endswith("-K")
+        assert "76.354.771" not in result
+        assert "*" in result
+
+    def test_rut_check_digit_numeric(self):
+        df = pl.DataFrame({"col": ["12.531.909-2"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.endswith("-2")
+        assert "12.531.909" not in result
+        assert "*" in result
+
+    def test_rut_without_dots(self):
+        df = pl.DataFrame({"col": ["76354771-K"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.endswith("-K")
+        assert "76354771" not in result
+
+    def test_rut_in_sentence(self):
+        df = pl.DataFrame({"col": ["Cliente RUT 76.354.771-K registrado"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "76.354.771" not in result
+        assert "Cliente RUT" in result
+        assert "registrado" in result
+
+    def test_invalid_rut_untouched(self):
+        original = "RUT 12.345.678-0"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_contains_pii_detects_rut(self):
+        df = pl.DataFrame({"col": ["76.354.771-K", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
