@@ -1,0 +1,28 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "maskops"
+version = "0.1.0"
+description = "High-speed PII masking as a Polars plugin — powered by Rust"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+keywords = ["polars", "pii", "masking", "gdpr", "rust"]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = ["polars>=0.46"]
+
+[project.urls]
+Repository = "https://github.com/yourusername/maskops"
+
+[tool.maturin]
+# The Python package folder
+python-source = "."
+module-name = "maskops._maskops"
+features = ["pyo3/extension-module"]

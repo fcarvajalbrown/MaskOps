@@ -1,0 +1,44 @@
+//! maskops — High-speed PII masking as a native Polars plugin.
+//!
+//! Exposes two Polars expressions:
+//! - `mask_pii(col)`: replaces all detected PII with `*` characters
+//! - `contains_pii(col)`: returns a boolean column, true if PII was found
+//!
+//! Built with `pyo3-polars` — zero-copy Arrow buffers, no intermediate Python objects.
+
+mod patterns;
+
+use pyo3_polars::derive::polars_expr;
+use polars::prelude::*;
+use patterns::{mask_all, contains_any_pii};
+
+// ---------------------------------------------------------------------------
+// Expression: mask_pii
+// ---------------------------------------------------------------------------
+
+/// Polars expression: replaces all PII in a Utf8 column with masked equivalents.
+///
+/// Usage (Python side): `pl.col("field").map_batches(maskops.mask_pii)`
+/// or via the registered plugin expression.
+#[polars_expr(output_type=String)]
+fn mask_pii(inputs: &[Series]) -> PolarsResult<Series> {
+    let ca = inputs[0].str()?;
+    let out: StringChunked = ca.apply(|opt_val| {
+        opt_val.map(|s| std::borrow::Cow::Owned(mask_all(s)))
+    });
+    Ok(out.into_series())
+}
+
+// ---------------------------------------------------------------------------
+// Expression: contains_pii
+// ---------------------------------------------------------------------------
+
+/// Polars expression: returns a boolean Series — true where PII was detected.
+#[polars_expr(output_type=Boolean)]
+fn contains_pii(inputs: &[Series]) -> PolarsResult<Series> {
+    let ca = inputs[0].str()?;
+    let out: BooleanChunked = ca.apply_nonnull_values_generic(DataType::Boolean, |s| {
+        contains_any_pii(s)
+    });
+    Ok(out.into_series())
+}

@@ -1,0 +1,81 @@
+"""
+Tests for maskops PII masking expressions.
+
+Run after `maturin develop`:
+    pytest tests/ -v
+"""
+
+import polars as pl
+import pytest
+import maskops
+
+
+# ---------------------------------------------------------------------------
+# IBAN
+# ---------------------------------------------------------------------------
+
+class TestMaskIBAN:
+    def test_german_iban_masked(self):
+        df = pl.DataFrame({"col": ["DE89370400440532013000"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.startswith("DE89")
+        assert "*" in result
+        assert "370400440532013000" not in result
+
+    def test_iban_embedded_in_text(self):
+        df = pl.DataFrame({"col": ["Payment ref DE89370400440532013000 confirmed"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "DE89" in result
+        assert "370400440532013000" not in result
+        assert "Payment ref" in result
+        assert "confirmed" in result
+
+    def test_no_iban_untouched(self):
+        original = "No sensitive data here"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_null_passthrough(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result is None
+
+
+# ---------------------------------------------------------------------------
+# VAT
+# ---------------------------------------------------------------------------
+
+class TestMaskVAT:
+    def test_german_vat_masked(self):
+        df = pl.DataFrame({"col": ["DE123456789"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.startswith("DE")
+        assert "123456789" not in result
+
+    def test_french_vat_masked(self):
+        df = pl.DataFrame({"col": ["FR12345678901"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.startswith("FR")
+        assert "12345678901" not in result
+
+
+# ---------------------------------------------------------------------------
+# contains_pii
+# ---------------------------------------------------------------------------
+
+class TestContainsPII:
+    def test_detects_iban(self):
+        df = pl.DataFrame({"col": ["DE89370400440532013000", "clean text"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_detects_vat(self):
+        df = pl.DataFrame({"col": ["VAT: DE123456789", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_null_is_false(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        result = df.with_columns(maskops.contains_pii("col"))["col"][0]
+        assert result is None or result is False
