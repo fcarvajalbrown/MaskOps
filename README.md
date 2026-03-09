@@ -5,7 +5,23 @@
 **maskops** extends Polars with zero-overhead PII detection and masking expressions.
 No NLP models. No intermediate files. Just regex + Rust running directly on Arrow buffers.
 
-## Why
+## How It Works
+
+```mermaid
+flowchart LR
+    A[🐍 Python\nPolars DataFrame] -->|mask_pii / contains_pii| B[Polars\nExpression Engine]
+    B -->|Arrow buffer\nzero-copy| C[🦀 Rust Core\nmaskops]
+    C -->|IBAN regex| D[Masked\nSeries]
+    C -->|VAT regex| D
+    D -->|back to Python| A
+
+    style A fill:#306998,color:#fff
+    style C fill:#CE422B,color:#fff
+    style B fill:#2E2E2E,color:#fff
+    style D fill:#2E7D32,color:#fff
+```
+
+No Python objects created per row. No NLP model loaded. No intermediate files.
 
 - **Presidio** is heavy — it spins up NLP models for structured CSV data that doesn't need them.
 - **Pure Python regex** on large DataFrames is slow.
