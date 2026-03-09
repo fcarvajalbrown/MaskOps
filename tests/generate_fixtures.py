@@ -1,8 +1,12 @@
 """
 tests/generate_fixtures.py
 
-Generates fake but structurally valid PII test data for multiple EU locales.
-Run once to produce tests/fixtures/eu_pii_sample.csv
+Generates fake but structurally valid PII test data for multiple locales.
+Covers: IBAN, EU VAT, email, and phone numbers for every country in country_codes.rs.
+
+Run once to produce:
+  tests/fixtures/eu_pii_sample.csv
+  tests/fixtures/phone_sample.csv
 
 Usage:
     pip install faker
@@ -14,49 +18,126 @@ import polars as pl
 from pathlib import Path
 import random
 
-# EU locales with good Faker PII support
-LOCALES = ["de_DE", "fr_FR", "es_ES", "it_IT", "nl_NL", "pl_PL", "pt_PT", "sv_SE"]
+# ---------------------------------------------------------------------------
+# Locales
+# ---------------------------------------------------------------------------
 
-fakes = {locale: Faker(locale) for locale in LOCALES}
+EU_LOCALES = ["de_DE", "fr_FR", "es_ES", "it_IT", "nl_NL", "pl_PL", "pt_PT", "sv_SE"]
+
+# Faker locale mapped to each country code in country_codes.rs
+PHONE_LOCALES = {
+    "+354": "is_IS",  # Iceland — fallback to en_US if unavailable
+    "+353": "en_IE",
+    "+352": "fr_LU",
+    "+351": "pt_PT",
+    "+358": "fi_FI",
+    "+370": "lt_LT",
+    "+371": "lv_LV",
+    "+372": "et_EE",
+    "+385": "hr_HR",
+    "+386": "sl_SI",
+    "+420": "cs_CZ",
+    "+421": "sk_SK",
+    "+56":  "es_CL",
+    "+55":  "pt_BR",
+    "+54":  "es_AR",
+    "+51":  "es_PE",
+    "+57":  "es_CO",
+    "+52":  "es_MX",
+    "+44":  "en_GB",
+    "+49":  "de_DE",
+    "+33":  "fr_FR",
+    "+34":  "es_ES",
+    "+39":  "it_IT",
+    "+31":  "nl_NL",
+    "+32":  "nl_BE",
+    "+48":  "pl_PL",
+    "+46":  "sv_SE",
+    "+47":  "no_NO",
+    "+41":  "de_CH",
+    "+43":  "de_AT",
+    "+1":   "en_US",
+}
+
+fakes_eu = {locale: Faker(locale) for locale in EU_LOCALES}
 Faker.seed(42)
 random.seed(42)
 
-def generate_row(fake: Faker) -> dict:
-    """Generate one realistic row mixing PII into natural-language strings."""
+# ---------------------------------------------------------------------------
+# EU PII fixture (IBAN + VAT + email embedded in text)
+# ---------------------------------------------------------------------------
+
+def generate_eu_row(fake: Faker) -> dict:
+    """Generate one realistic row mixing EU PII into natural-language strings."""
     iban = fake.iban()
     name = fake.name()
     company = fake.company()
+    email = fake.email()
+    phone = fake.phone_number()
 
     return {
         "locale": fake.locale(),
-        # Clean fields — single PII value
         "iban_clean": iban,
-        # Embedded — PII inside a sentence (harder for regex)
+        "email_clean": email,
+        "phone_clean": phone,
         "notes": random.choice([
             f"Transfer to {name}: {iban}",
             f"Invoice from {company}, bank ref {iban}",
-            f"Payment confirmed for account {iban}",
+            f"Contact {email} for payment details",
+            f"Call {phone} to confirm transfer {iban}",
             f"No financial data here, just a note from {name}",
-            f"Contact {fake.email()} for details",
         ]),
-        # Mixed — may or may not contain PII
         "free_text": random.choice([
             fake.sentence(),
             f"Account {iban} was flagged",
+            f"Reach out to {email}",
+            f"Phone: {phone}",
             fake.paragraph(),
         ]),
     }
 
-rows = []
-for locale, fake in fakes.items():
-    for _ in range(200):  # 200 rows per country = 1600 total
-        rows.append(generate_row(fake))
+eu_rows = []
+for locale, fake in fakes_eu.items():
+    for _ in range(200):
+        eu_rows.append(generate_eu_row(fake))
 
-df = pl.DataFrame(rows)
+df_eu = pl.DataFrame(eu_rows)
+
+# ---------------------------------------------------------------------------
+# Phone fixture — one row per country code, E.164 format
+# ---------------------------------------------------------------------------
+
+phone_rows = []
+for prefix, locale in PHONE_LOCALES.items():
+    try:
+        fake = Faker(locale)
+    except Exception:
+        fake = Faker("en_US")
+    for _ in range(50):  # 50 rows per country
+        raw = fake.phone_number()
+        # Normalize to E.164-ish by prepending prefix if not present
+        normalized = raw if raw.startswith("+") else f"{prefix}{raw.lstrip('0')}"
+        phone_rows.append({
+            "prefix": prefix,
+            "locale": locale,
+            "phone_raw": raw,
+            "phone_e164": normalized,
+            "sentence": f"Call us at {normalized} for support",
+        })
+
+df_phone = pl.DataFrame(phone_rows)
+
+# ---------------------------------------------------------------------------
+# Write fixtures
+# ---------------------------------------------------------------------------
 
 out = Path(__file__).parent / "fixtures"
 out.mkdir(exist_ok=True)
-df.write_csv(out / "eu_pii_sample.csv")
 
-print(f"Generated {len(df)} rows -> tests/fixtures/eu_pii_sample.csv")
-print(df.head(5))
+df_eu.write_csv(out / "eu_pii_sample.csv")
+df_phone.write_csv(out / "phone_sample.csv")
+
+print(f"Generated {len(df_eu)} EU rows -> tests/fixtures/eu_pii_sample.csv")
+print(f"Generated {len(df_phone)} phone rows -> tests/fixtures/phone_sample.csv")
+print(df_eu.head(3))
+print(df_phone.head(3))
