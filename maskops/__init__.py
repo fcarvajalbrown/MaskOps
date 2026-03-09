@@ -22,7 +22,9 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 from polars.plugins import register_plugin_function
-from polars.type_aliases import IntoExpr
+from typing import Union
+import polars as pl
+IntoExpr = Union[pl.Expr, str]
 
 if TYPE_CHECKING:
     pass
