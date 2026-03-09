@@ -38,12 +38,10 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           python -m venv .venv
-          export VIRTUAL_ENV="$PWD/.venv"
-          export PATH="$VIRTUAL_ENV/bin:$PATH"
-          pip install maturin faker polars pytest
-          maturin develop --release
-          python tests/generate_fixtures.py
-          pytest tests/ -v
+          .venv/bin/pip install maturin faker polars pytest
+          .venv/bin/maturin develop --release
+          .venv/bin/python tests/generate_fixtures.py
+          .venv/bin/pytest tests/ -v
 
       - name: Install dependencies and build (Windows)
         if: runner.os == 'Windows'

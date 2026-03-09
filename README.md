@@ -141,26 +141,26 @@ MIT
 
 Tested on 1,000,000 rows, Intel i-series CPU, Python 3.14, Windows.
 
-### maskops throughput
+### maskops throughput (v0.1.1 — IBAN, VAT, Email, Phone)
 
 | Profile | Expression | Time | Rows/s | MB/s |
 |---------|-----------|------|--------|------|
-| clean (no PII) | `mask_pii` | 0.404s | 2,477,599 | 54.5 |
-| clean (no PII) | `contains_pii` | 0.169s | 5,915,970 | 130.2 |
-| dense (all PII) | `mask_pii` | 1.385s | 722,104 | 15.9 |
-| dense (all PII) | `contains_pii` | 0.059s | 16,987,879 | 373.7 |
-| mixed (50/50) | `mask_pii` | 0.760s | 1,315,407 | 28.9 |
-| mixed (50/50) | `contains_pii` | 0.133s | 7,498,315 | 165.0 |
+| clean (no PII) | `mask_pii` | 0.625s | 1,600,939 | 35.2 |
+| clean (no PII) | `contains_pii` | 0.203s | 4,938,072 | 108.6 |
+| dense (all PII) | `mask_pii` | 1.871s | 534,502 | 11.8 |
+| dense (all PII) | `contains_pii` | 0.059s | 16,831,928 | 370.3 |
+| mixed (50/50) | `mask_pii` | 1.000s | 1,000,235 | 22.0 |
+| mixed (50/50) | `contains_pii` | 0.137s | 7,276,172 | 160.1 |
 
 ### vs pure Python regex (same machine)
 
 | Profile | maskops `mask_pii` | Python `re` | Speedup |
 |---------|-------------------|-------------|---------|
-| clean | 0.404s | 0.925s | **2.3×** |
-| dense | 1.385s | 1.653s | **1.2×** |
-| mixed | 0.760s | 1.337s | **1.8×** |
+| clean | 0.625s | 0.918s | **1.5×** |
+| dense | 1.871s | 1.543s | **0.8×** |
+| mixed | 1.000s | 1.268s | **1.3×** |
 
-> On clean and mixed data maskops is consistently faster. On dense data (every row is a full IBAN) both are regex-bound — the bottleneck is the pattern itself, not Python overhead.
+> v0.1.1 adds email and phone patterns, so `mask_pii` now runs 4 pattern checks per row instead of 2. Clean and mixed data remain faster than pure Python. On dense data (every row contains PII matched by multiple patterns) the extra pattern overhead puts maskops slightly behind — this is expected and will improve with short-circuit optimisation in a future release. `contains_pii` is unaffected as it exits on first match.
 
 ### vs Microsoft Presidio (estimated)
 
@@ -168,7 +168,7 @@ Presidio processes structured DataFrames via `presidio-structured`, which runs a
 
 | Tool | Throughput (structured data) | Requires NLP model |
 |------|------------------------------|-------------------|
-| maskops | ~700K–17M rows/s | No |
+| maskops | ~500K–17M rows/s | No |
 | Presidio (regex-only recognizers) | ~10–50K rows/s* | No |
 | Presidio (spaCy NER) | ~1–5K rows/s* | Yes (250MB+) |
 
