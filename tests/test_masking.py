@@ -234,3 +234,68 @@ class TestMaskRUT:
         df = pl.DataFrame({"col": ["76.354.771-K", "nothing"]})
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
+
+# ---------------------------------------------------------------------------
+# CPF (Brazil)
+# ---------------------------------------------------------------------------
+
+class TestMaskCPF:
+    def test_cpf_body_masked(self):
+        df = pl.DataFrame({"col": ["529.982.247-25"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.endswith("-25")
+        assert "529.982.247" not in result
+        assert "*" in result
+
+    def test_cpf_without_dots(self):
+        df = pl.DataFrame({"col": ["52998224725"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "52998224725" not in result
+        assert "*" in result
+
+    def test_cpf_in_sentence(self):
+        df = pl.DataFrame({"col": ["CPF do cliente: 529.982.247-25 confirmado"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "529.982.247" not in result
+        assert "CPF do cliente:" in result
+        assert "confirmado" in result
+
+    def test_invalid_cpf_untouched(self):
+        original = "CPF 111.111.111-11"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_contains_pii_detects_cpf(self):
+        df = pl.DataFrame({"col": ["529.982.247-25", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+
+# ---------------------------------------------------------------------------
+# CURP (Mexico)
+# ---------------------------------------------------------------------------
+
+class TestMaskCURP:
+    def test_curp_fully_masked(self):
+        df = pl.DataFrame({"col": ["BADD110313HCMLNS09"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == "******************"
+
+    def test_curp_in_sentence(self):
+        df = pl.DataFrame({"col": ["CURP: BADD110313HCMLNS09 registrado"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "BADD110313HCMLNS09" not in result
+        assert "CURP:" in result
+        assert "registrado" in result
+
+    def test_invalid_curp_untouched(self):
+        original = "ref ABC123"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_contains_pii_detects_curp(self):
+        df = pl.DataFrame({"col": ["BADD110313HCMLNS09", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]

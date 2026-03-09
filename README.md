@@ -76,7 +76,7 @@ df.with_columns(maskops.mask_pii("notes"))
 df.filter(maskops.contains_pii("free_text"))
 ```
 
-## Supported patterns (v0.1.1)
+## Supported patterns (v0.1.3)
 
 | Pattern | Example input | Masked output |
 |---------|--------------|---------------|
@@ -84,19 +84,24 @@ df.filter(maskops.contains_pii("free_text"))
 | EU VAT  | `DE123456789` | `DE*********` |
 | Email   | `john.doe@example.com` | `********@example.com` |
 | Phone   | `+14155552671` | `+1**********` |
+| IP Address | `192.168.1.100` | `192.168.*.*` |
+| RUT (Chile) | `76.354.771-K` | `**********-K` |
+| CPF (Brazil) | `529.982.247-25` | `*********-25` |
+| CURP (Mexico) | `BADD110313HCMLNS09` | `******************` |
 
 Tested against 8 EU locales: DE, FR, ES, IT, NL, PL, PT, SE.
 Email and phone follow RFC 5322 and E.164 respectively.
+RUT and CPF include Módulo 11 check digit validation.
 
 ## Roadmap
 
 - [x] Email, phone patterns
-- [ ] IP address patterns
+- [x] IP address patterns
+- [x] Latin American IDs (RUT, CPF, CURP)
+- [x] PyPI publish via GitHub Actions
 - [ ] Format-Preserving Encryption (FPE/FF3-1) for reversible masking
-- [ ] Latin American IDs (RUT, CPF, CURP)
 - [ ] Benchmark vs Presidio
 - [ ] Parquet streaming support
-- [ ] PyPI publish via GitHub Actions
 
 ## Build from source
 
@@ -141,26 +146,55 @@ MIT
 
 Tested on 1,000,000 rows, Intel i-series CPU, Python 3.14, Windows.
 
-### maskops throughput (v0.1.1 — IBAN, VAT, Email, Phone)
+Benchmarks are broken down by pattern family so you only pay for what you use.
 
-| Profile | Expression | Time | Rows/s | MB/s |
-|---------|-----------|------|--------|------|
-| clean (no PII) | `mask_pii` | 0.625s | 1,600,939 | 35.2 |
-| clean (no PII) | `contains_pii` | 0.203s | 4,938,072 | 108.6 |
-| dense (all PII) | `mask_pii` | 1.871s | 534,502 | 11.8 |
-| dense (all PII) | `contains_pii` | 0.059s | 16,831,928 | 370.3 |
-| mixed (50/50) | `mask_pii` | 1.000s | 1,000,235 | 22.0 |
-| mixed (50/50) | `contains_pii` | 0.137s | 7,276,172 | 160.1 |
+### EU patterns (IBAN, VAT, Email, Phone)
 
-### vs pure Python regex (same machine)
+| Profile | Expression | Time | Rows/s |
+|---------|-----------|------|--------|
+| clean | `mask_pii` | 1.348s | 741,680 |
+| clean | `contains_pii` | 0.389s | 2,573,852 |
+| dense | `mask_pii` | 1.988s | 503,143 |
+| dense | `contains_pii` | 0.131s | 7,662,700 |
+| mixed | `mask_pii` | 1.895s | 527,772 |
+| mixed | `contains_pii` | 0.185s | 5,402,923 |
 
-| Profile | maskops `mask_pii` | Python `re` | Speedup |
-|---------|-------------------|-------------|---------|
-| clean | 0.625s | 0.918s | **1.5×** |
-| dense | 1.871s | 1.543s | **0.8×** |
-| mixed | 1.000s | 1.268s | **1.3×** |
+### LatAm patterns (RUT, CPF, CURP)
 
-> v0.1.1 adds email and phone patterns, so `mask_pii` now runs 4 pattern checks per row instead of 2. Clean and mixed data remain faster than pure Python. On dense data (every row contains PII matched by multiple patterns) the extra pattern overhead puts maskops slightly behind — this is expected and will improve with short-circuit optimisation in a future release. `contains_pii` is unaffected as it exits on first match.
+| Profile | Expression | Time | Rows/s |
+|---------|-----------|------|--------|
+| clean | `mask_pii` | 1.356s | 737,445 |
+| clean | `contains_pii` | 0.368s | 2,716,586 |
+| dense | `mask_pii` | 2.014s | 496,613 |
+| dense | `contains_pii` | 0.624s | 1,603,480 |
+| mixed | `mask_pii` | 1.833s | 545,422 |
+| mixed | `contains_pii` | 0.558s | 1,793,626 |
+
+> RUT and CPF include Módulo 11 check digit validation per row — this is the cost of zero false positives.
+
+### Network patterns (IP)
+
+| Profile | Expression | Time | Rows/s |
+|---------|-----------|------|--------|
+| clean | `mask_pii` | 1.401s | 713,678 |
+| clean | `contains_pii` | 0.369s | 2,707,311 |
+| dense | `mask_pii` | 1.557s | 642,336 |
+| dense | `contains_pii` | 0.208s | 4,819,110 |
+| mixed | `mask_pii` | 1.522s | 657,074 |
+| mixed | `contains_pii` | 0.255s | 3,923,478 |
+
+### All patterns active
+
+| Profile | Expression | maskops | Python `re` | Speedup |
+|---------|-----------|---------|-------------|---------|
+| clean | `mask_pii` | 1.377s | 5.798s | **4.2×** |
+| clean | `contains_pii` | 0.371s | — | — |
+| dense | `mask_pii` | 1.926s | 3.312s | **1.7×** |
+| dense | `contains_pii` | 0.323s | — | — |
+| mixed | `mask_pii` | 1.870s | 3.545s | **1.9×** |
+| mixed | `contains_pii` | 0.328s | — | — |
+
+> maskops throughput stays flat as pattern count grows — Python regex degrades linearly. With all 8 patterns active, maskops is up to 4× faster than an equivalent pure Python approach.
 
 ### vs Microsoft Presidio (estimated)
 
@@ -168,7 +202,7 @@ Presidio processes structured DataFrames via `presidio-structured`, which runs a
 
 | Tool | Throughput (structured data) | Requires NLP model |
 |------|------------------------------|-------------------|
-| maskops | ~500K–17M rows/s | No |
+| maskops | ~500K–7.6M rows/s | No |
 | Presidio (regex-only recognizers) | ~10–50K rows/s* | No |
 | Presidio (spaCy NER) | ~1–5K rows/s* | Yes (250MB+) |
 

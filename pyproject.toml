@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "maskops"
-version = "0.1.2"
+version = "0.1.3"
 description = "High-speed PII masking as a Polars plugin — powered by Rust"
 readme = "README.md"
 license = { text = "MIT" }
