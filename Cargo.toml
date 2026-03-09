@@ -8,7 +8,6 @@ name = "maskops"
 crate-type = ["cdylib"]
 
 [dependencies]
-polars = { version = "0.46", features = ["lazy"] }
 pyo3-polars = { version = "0.24", features = ["derive"] }
 regex = "1.10"
 once_cell = "1.19"

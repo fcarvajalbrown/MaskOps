@@ -25,4 +25,3 @@ Repository = "https://github.com/yourusername/maskops"
 # The Python package folder
 python-source = "."
 module-name = "maskops._maskops"
-features = ["pyo3/extension-module"]
