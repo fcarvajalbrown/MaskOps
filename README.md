@@ -1,4 +1,4 @@
-# maskops
+# MaskOps
 
 > High-speed PII masking as a native Polars plugin — powered by Rust.
 
@@ -27,7 +27,7 @@ No Python objects created per row. No NLP model loaded. No intermediate files.
 
 - **Presidio** is heavy — it spins up NLP models for structured CSV data that doesn't need them.
 - **Pure Python regex** on large DataFrames is slow.
-- **maskops** compiles to a native `.so` that Polars calls directly — same speed as built-in expressions.
+- **MaskOps** compiles to a native `.so` that Polars calls directly — same speed as built-in expressions.
 
 ## Architecture
 
@@ -45,13 +45,15 @@ maskops/
 │       ├── phone.rs         # E.164 phone regex + masking
 │       ├── ip.rs            # IPv4/IPv6 regex + masking
 │       ├── latam_id.rs      # RUT (Chile), CPF (Brazil), CURP (Mexico)
+│       ├── european_id.rs   # DNI/NIE (Spain), NIN (UK), Personalausweis (Germany)
+│       ├── credit_card.rs   # Visa, Mastercard, Amex, Discover, Maestro + Luhn
 │       └── country_codes.rs # Country prefix lookup table
 ├── maskops/
 │   └── __init__.py          # Python API via register_plugin_function
 ├── benchmarks/
 │   └── benchmark.py         # Per-family throughput benchmarks (1M rows)
 └── tests/
-    ├── test_masking.py      # pytest suite (53 tests)
+    ├── test_masking.py      # pytest suite (66 tests)
     ├── generate_fixtures.py # Faker-based EU test data generator
     └── fixtures/            # Generated CSVs (gitignored)
 ```
@@ -80,7 +82,7 @@ df.with_columns(maskops.mask_pii("notes"))
 df.filter(maskops.contains_pii("free_text"))
 ```
 
-## Supported patterns (v0.1.3)
+## Supported patterns (v0.1.4)
 
 | Pattern | Example input | Masked output |
 |---------|--------------|---------------|
@@ -92,18 +94,29 @@ df.filter(maskops.contains_pii("free_text"))
 | RUT (Chile) | `76.354.771-K` | `**********-K` |
 | CPF (Brazil) | `529.982.247-25` | `*********-25` |
 | CURP (Mexico) | `BADD110313HCMLNS09` | `******************` |
+| DNI (Spain) | `12345678Z` | `********Z` |
+| NIE (Spain) | `X1234567L` | `********L` |
+| NIN (UK) | `AB 12 34 56 C` | `*********** C` |
+| Personalausweis (Germany) | `T220001293` | `**********` |
+| Credit Card (Visa/MC/Amex/Discover/Maestro) | `4111111111111111` | `411111******1111` |
 
 Tested against 8 EU locales: DE, FR, ES, IT, NL, PL, PT, SE.
 Email and phone follow RFC 5322 and E.164 respectively.
 RUT and CPF include Módulo 11 check digit validation.
+DNI and NIE include modulo 23 check letter validation.
+Credit cards include Luhn validation — format-only matches are rejected.
+Personalausweis and NIN: format-only matching; check digit validation pending (v0.2.0+).
 
 ## Roadmap
 
 - [x] Email, phone patterns
 - [x] IP address patterns
 - [x] Latin American IDs (RUT, CPF, CURP)
+- [x] European IDs (DNI/NIE Spain, NIN UK, Personalausweis Germany)
+- [x] Credit cards (Visa, Mastercard, Amex, Discover, Maestro) with Luhn validation
 - [x] PyPI publish via GitHub Actions
 - [ ] Format-Preserving Encryption (FPE/FF3-1) for reversible masking
+- [ ] Check digit validation for Personalausweis (Germany) and NIN (UK)
 - [ ] Benchmark vs Presidio
 - [ ] Parquet streaming support
 

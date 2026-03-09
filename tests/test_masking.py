@@ -481,3 +481,115 @@ class TestPhoneFixtures:
             result = df.with_columns(maskops.mask_pii("col"))["col"][0]
             if "*" in result:
                 assert result.startswith(row["prefix"])
+
+# ---------------------------------------------------------------------------
+# Credit card (unit tests)
+# ---------------------------------------------------------------------------
+
+class TestMaskCard:
+    def test_visa_masked(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.startswith("411111")
+        assert result.endswith("1111")
+        assert result == "411111******1111"
+
+    def test_mastercard_masked(self):
+        df = pl.DataFrame({"col": ["5500005555555559"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.startswith("550000")
+        assert result.endswith("5559")
+
+    def test_amex_masked(self):
+        df = pl.DataFrame({"col": ["371449635398431"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.startswith("371449")
+        assert result.endswith("8431")
+        assert result == "371449*****8431"
+
+    def test_discover_masked(self):
+        df = pl.DataFrame({"col": ["6011111111111117"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.startswith("601111")
+        assert result.endswith("1117")
+
+    def test_card_in_sentence(self):
+        df = pl.DataFrame({"col": ["Charged to card 4111111111111111 approved"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "4111111111111111" not in result
+        assert "Charged to card" in result
+        assert "approved" in result
+
+    def test_contains_pii_detects_card(self):
+        df = pl.DataFrame({"col": ["4111111111111111", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_invalid_card_untouched(self):
+        original = "4111111111111112"  # valid format, fails Luhn
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+# ---------------------------------------------------------------------------
+# Credit card fixture-based tests
+# ---------------------------------------------------------------------------
+
+CARD_FIXTURE = Path(__file__).parent / "fixtures" / "card_pii_sample.csv"
+
+@pytest.mark.skipif(not CARD_FIXTURE.exists(), reason="Run generate_fixtures.py first")
+class TestCardFixtures:
+    def _load(self):
+        with open(CARD_FIXTURE, encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+
+    def test_bin_preserved_after_masking(self):
+        rows = self._load()
+        for row in rows:
+            df = pl.DataFrame({"col": [row["card_clean"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            assert result.startswith(row["card_clean"][:6]), \
+                f"BIN not preserved for {row['scheme']}: {result}"
+
+    def test_last4_preserved_after_masking(self):
+        rows = self._load()
+        for row in rows:
+            df = pl.DataFrame({"col": [row["card_clean"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            assert result.endswith(row["card_clean"][-4:]), \
+                f"Last 4 not preserved for {row['scheme']}: {result}"
+
+    def test_middle_is_masked(self):
+        rows = self._load()
+        for row in rows:
+            df = pl.DataFrame({"col": [row["card_clean"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            assert "*" in result, f"No masking applied for {row['scheme']}: {result}"
+            middle = result[6:-4]
+            assert all(c == "*" for c in middle), \
+                f"Middle not fully masked for {row['scheme']}: {result}"
+
+    def test_card_masked_in_notes(self):
+        rows = self._load()
+        card_rows = [r for r in rows if r["card_clean"] in r["notes"]]
+        assert len(card_rows) > 0, "No card-in-notes rows found"
+        for row in card_rows:
+            df = pl.DataFrame({"col": [row["notes"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            middle = row["card_clean"][6:-4]
+            assert middle not in result
+            assert "*" in result
+
+    def test_contains_pii_detects_all_schemes(self):
+        for scheme in ["visa", "mastercard", "amex", "discover", "maestro"]:
+            rows = [r for r in self._load() if r["scheme"] == scheme][:5]
+            df = pl.DataFrame({"col": [r["card_clean"] for r in rows]})
+            result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+            assert all(result), f"contains_pii missed cards for scheme: {scheme}"
+
+    def test_invalid_card_untouched(self):
+        # All same digit — fails Luhn
+        original = "1111111111111111"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original

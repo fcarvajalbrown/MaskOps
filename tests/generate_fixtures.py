@@ -2,12 +2,14 @@
 tests/generate_fixtures.py
 
 Generates fake but structurally valid PII test data for multiple locales.
-Covers: IBAN, EU VAT, email, phone, IPv4/IPv6, RUT, CPF, and CURP.
+
+Covers: IBAN, EU VAT, email, phone, IPv4/IPv6, RUT, CPF, CURP, and credit cards.
 
 Run once to produce:
   tests/fixtures/eu_pii_sample.csv
   tests/fixtures/phone_sample.csv
   tests/fixtures/latam_pii_sample.csv
+  tests/fixtures/card_pii_sample.csv
 
 Usage:
     pip install faker
@@ -199,6 +201,77 @@ for locale, fake in LATAM_FAKES.items():
 df_latam = pl.DataFrame(latam_rows)
 
 # ---------------------------------------------------------------------------
+# Credit card fixture — Visa, Mastercard, Amex, Discover, Maestro
+# ---------------------------------------------------------------------------
+
+def generate_luhn(partial: list) -> str:
+    """Complete a partial card number with a valid Luhn check digit."""
+    total = 0
+    for i, d in enumerate(reversed(partial)):
+        n = d * 2 if i % 2 == 0 else d
+        total += n - 9 if n > 9 else n
+    check = (10 - (total % 10)) % 10
+    return "".join(map(str, partial)) + str(check)
+
+
+def generate_visa() -> str:
+    """Generate a valid 16-digit Visa number."""
+    partial = [4] + [random.randint(0, 9) for _ in range(14)]
+    return generate_luhn(partial)
+
+
+def generate_mastercard() -> str:
+    """Generate a valid 16-digit Mastercard number (51-55 range)."""
+    partial = [5, random.randint(1, 5)] + [random.randint(0, 9) for _ in range(13)]
+    return generate_luhn(partial)
+
+
+def generate_amex() -> str:
+    """Generate a valid 15-digit Amex number (34 or 37 prefix)."""
+    partial = [3, random.choice([4, 7])] + [random.randint(0, 9) for _ in range(12)]
+    return generate_luhn(partial)
+
+
+def generate_discover() -> str:
+    """Generate a valid 16-digit Discover number (6011 prefix)."""
+    partial = [6, 0, 1, 1] + [random.randint(0, 9) for _ in range(11)]
+    return generate_luhn(partial)
+
+
+def generate_maestro() -> str:
+    """Generate a valid 16-digit Maestro number (6304 prefix)."""
+    partial = [6, 3, 0, 4] + [random.randint(0, 9) for _ in range(11)]
+    return generate_luhn(partial)
+
+
+CARD_GENERATORS = {
+    "visa":       generate_visa,
+    "mastercard": generate_mastercard,
+    "amex":       generate_amex,
+    "discover":   generate_discover,
+    "maestro":    generate_maestro,
+}
+
+fake_en = Faker("en_US")
+
+card_rows = []
+for scheme, gen in CARD_GENERATORS.items():
+    for _ in range(200):
+        card = gen()
+        card_rows.append({
+            "scheme": scheme,
+            "card_clean": card,
+            "notes": random.choice([
+                f"Payment charged to card {card}",
+                f"Card number: {card} approved",
+                f"Refund issued to {card}",
+                fake_en.sentence(),
+            ]),
+        })
+
+df_cards = pl.DataFrame(card_rows)
+
+# ---------------------------------------------------------------------------
 # Write fixtures
 # ---------------------------------------------------------------------------
 
@@ -209,6 +282,8 @@ df_eu.write_csv(out / "eu_pii_sample.csv")
 # polars write_csv doesn't take encoding — the file is already UTF-8, just the reader was wrong
 df_phone.write_csv(out / "phone_sample.csv")
 df_latam.write_csv(out / "latam_pii_sample.csv")
+df_cards.write_csv(out / "card_pii_sample.csv")
+print(f"Generated {len(df_cards)} card rows -> tests/fixtures/card_pii_sample.csv")
 
 print(f"Generated {len(df_eu)} EU rows -> tests/fixtures/eu_pii_sample.csv")
 print(f"Generated {len(df_phone)} phone rows -> tests/fixtures/phone_sample.csv")
