@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    # Runs every Monday at 08:00 UTC — catches upstream breaking changes
     - cron: "0 8 * * 1"
 
 jobs:
@@ -35,14 +34,23 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Install Python dependencies
-        run: pip install maturin faker polars pytest
+      - name: Install dependencies and build (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install maturin faker polars pytest
+          maturin develop --release
+          python tests/generate_fixtures.py
+          pytest tests/ -v
 
-      - name: Build extension
-        run: maturin develop --release
-
-      - name: Generate test fixtures
-        run: python tests/generate_fixtures.py
-
-      - name: Run tests
-        run: pytest tests/ -v
+      - name: Install dependencies and build (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          python -m venv .venv
+          .venv\Scripts\activate.bat
+          pip install maturin faker polars pytest
+          maturin develop --release
+          python tests/generate_fixtures.py
+          pytest tests/ -v
