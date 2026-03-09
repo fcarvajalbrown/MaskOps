@@ -6,3 +6,5 @@ target/
 tests/fixtures/
 *.whl
 .pytest_cache/
+dist/
+build/
