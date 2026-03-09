@@ -9,7 +9,7 @@
 mod patterns;
 
 use pyo3_polars::derive::polars_expr;
-use polars::prelude::*;
+use pyo3_polars::export::polars_core::prelude::*;
 use patterns::{mask_all, contains_any_pii};
 
 // ---------------------------------------------------------------------------
