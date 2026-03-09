@@ -1,10 +1,8 @@
-tests/fixtures/
-target/
-markops/.venv/
-.venv/
 __pycache__/
 *.pyc
 *.pyo
 .venv/
 target/
+tests/fixtures/
 *.whl
+.pytest_cache/
