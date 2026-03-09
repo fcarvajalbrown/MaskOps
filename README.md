@@ -97,6 +97,16 @@ python tests/generate_fixtures.py
 pytest tests/ -v
 ```
 
+Or just run the setup script:
+
+```powershell
+# Windows
+.\setup.bat
+
+# Linux/macOS
+./setup.sh
+```
+
 ## Key dependency versions
 
 | Package | Version |
@@ -120,20 +130,20 @@ Tested on 1,000,000 rows, Intel i-series CPU, Python 3.14, Windows.
 
 | Profile | Expression | Time | Rows/s | MB/s |
 |---------|-----------|------|--------|------|
-| clean (no PII) | `mask_pii` | 0.379s | 2,636,105 | 58.0 |
-| clean (no PII) | `contains_pii` | 0.170s | 5,872,663 | 129.2 |
-| dense (all PII) | `mask_pii` | 1.462s | 684,035 | 15.0 |
-| dense (all PII) | `contains_pii` | 0.059s | 16,858,176 | 370.9 |
-| mixed (50/50) | `mask_pii` | 0.742s | 1,347,927 | 29.7 |
-| mixed (50/50) | `contains_pii` | 0.119s | 8,401,603 | 184.8 |
+| clean (no PII) | `mask_pii` | 0.404s | 2,477,599 | 54.5 |
+| clean (no PII) | `contains_pii` | 0.169s | 5,915,970 | 130.2 |
+| dense (all PII) | `mask_pii` | 1.385s | 722,104 | 15.9 |
+| dense (all PII) | `contains_pii` | 0.059s | 16,987,879 | 373.7 |
+| mixed (50/50) | `mask_pii` | 0.760s | 1,315,407 | 28.9 |
+| mixed (50/50) | `contains_pii` | 0.133s | 7,498,315 | 165.0 |
 
 ### vs pure Python regex (same machine)
 
 | Profile | maskops `mask_pii` | Python `re` | Speedup |
 |---------|-------------------|-------------|---------|
-| clean | 0.379s | 0.907s | **2.4×** |
-| dense | 1.462s | 1.481s | **1.0×** |
-| mixed | 0.742s | 1.253s | **1.7×** |
+| clean | 0.404s | 0.925s | **2.3×** |
+| dense | 1.385s | 1.653s | **1.2×** |
+| mixed | 0.760s | 1.337s | **1.8×** |
 
 > On clean and mixed data maskops is consistently faster. On dense data (every row is a full IBAN) both are regex-bound — the bottleneck is the pattern itself, not Python overhead.
 
@@ -143,7 +153,7 @@ Presidio processes structured DataFrames via `presidio-structured`, which runs a
 
 | Tool | Throughput (structured data) | Requires NLP model |
 |------|------------------------------|-------------------|
-| maskops | ~1–16M rows/s | No |
+| maskops | ~700K–17M rows/s | No |
 | Presidio (regex-only recognizers) | ~10–50K rows/s* | No |
 | Presidio (spaCy NER) | ~1–5K rows/s* | Yes (250MB+) |
 
