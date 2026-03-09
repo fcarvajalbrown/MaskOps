@@ -33,7 +33,7 @@ No Python objects created per row. No NLP model loaded. No intermediate files.
 
 ```
 maskops/
-├── Cargo.toml               # Rust dependencies (pyo3 0.21, pyo3-polars 0.18, polars 0.46)
+├── Cargo.toml               # Rust dependencies
 ├── pyproject.toml           # maturin build backend + PyPI metadata
 ├── src/
 │   ├── lib.rs               # Polars expression registration (mask_pii, contains_pii)
@@ -43,11 +43,17 @@ maskops/
 │       ├── vat.rs           # EU VAT regex + masking
 │       ├── email.rs         # Email regex + masking (local part)
 │       ├── phone.rs         # E.164 phone regex + masking
+│       ├── ip.rs            # IPv4/IPv6 regex + masking
+│       ├── rut.rs           # Chilean RUT + Módulo 11 validation
+│       ├── cpf.rs           # Brazilian CPF + Módulo 11 validation
+│       ├── curp.rs          # Mexican CURP regex + masking
 │       └── country_codes.rs # Country prefix lookup table
 ├── maskops/
 │   └── __init__.py          # Python API via register_plugin_function
+├── benchmarks/
+│   └── benchmark.py         # Per-family throughput benchmarks (1M rows)
 └── tests/
-    ├── test_masking.py      # pytest suite
+    ├── test_masking.py      # pytest suite (39 tests)
     ├── generate_fixtures.py # Faker-based EU test data generator
     └── fixtures/            # Generated CSVs (gitignored)
 ```
