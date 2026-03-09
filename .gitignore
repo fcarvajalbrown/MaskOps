@@ -1,3 +1,10 @@
 tests/fixtures/
 target/
 markops/.venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+target/
+*.whl
