@@ -5,6 +5,10 @@ Run after `maturin develop`:
     pytest tests/ -v
 """
 
+import re
+import csv
+from pathlib import Path
+
 import polars as pl
 import pytest
 import maskops
@@ -154,6 +158,7 @@ class TestMaskPhone:
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result == original
 
+
 # ---------------------------------------------------------------------------
 # IP Address
 # ---------------------------------------------------------------------------
@@ -191,6 +196,7 @@ class TestMaskIP:
         df = pl.DataFrame({"col": ["192.168.1.1", "nothing"]})
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
+
 
 # ---------------------------------------------------------------------------
 # RUT (Chile)
@@ -234,6 +240,7 @@ class TestMaskRUT:
         df = pl.DataFrame({"col": ["76.354.771-K", "nothing"]})
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
+
 
 # ---------------------------------------------------------------------------
 # CPF (Brazil)
@@ -299,3 +306,178 @@ class TestMaskCURP:
         df = pl.DataFrame({"col": ["BADD110313HCMLNS09", "nothing"]})
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
+
+
+# ---------------------------------------------------------------------------
+# LatAm ID fixture-based tests
+# ---------------------------------------------------------------------------
+
+LATAM_FIXTURE = Path(__file__).parent / "fixtures" / "latam_pii_sample.csv"
+
+@pytest.mark.skipif(not LATAM_FIXTURE.exists(), reason="Run generate_fixtures.py first")
+class TestLatamFixtures:
+    def _load(self):
+        with open(LATAM_FIXTURE, encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+
+    def test_rut_masked_in_notes(self):
+        rows = self._load()
+        rut_rows = [r for r in rows if r["rut_clean"] in r["notes"]]
+        assert len(rut_rows) > 0, "No RUT-in-notes rows found"
+        for row in rut_rows:
+            df = pl.DataFrame({"col": [row["notes"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            body = row["rut_clean"].rsplit("-", 1)[0]
+            assert body not in result
+            assert "*" in result
+
+    def test_cpf_masked_in_notes(self):
+        rows = self._load()
+        cpf_rows = [r for r in rows if r["cpf_clean"] in r["notes"]]
+        assert len(cpf_rows) > 0, "No CPF-in-notes rows found"
+        for row in cpf_rows:
+            df = pl.DataFrame({"col": [row["notes"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            body = row["cpf_clean"].rsplit("-", 1)[0]
+            assert body not in result
+            assert "*" in result
+
+    def test_curp_masked_in_notes(self):
+        rows = self._load()
+        curp_rows = [r for r in rows if r["curp_clean"] in r["notes"]]
+        assert len(curp_rows) > 0, "No CURP-in-notes rows found"
+        for row in curp_rows:
+            df = pl.DataFrame({"col": [row["notes"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            assert row["curp_clean"] not in result
+            assert "*" in result
+
+    def test_contains_pii_on_rut_clean(self):
+        rows = self._load()[:20]
+        df = pl.DataFrame({"col": [r["rut_clean"] for r in rows]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert all(result)
+
+    def test_contains_pii_on_cpf_clean(self):
+        rows = self._load()[:20]
+        df = pl.DataFrame({"col": [r["cpf_clean"] for r in rows]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert all(result)
+
+
+# ---------------------------------------------------------------------------
+# EU PII fixture-based tests
+# ---------------------------------------------------------------------------
+
+EU_FIXTURE = Path(__file__).parent / "fixtures" / "eu_pii_sample.csv"
+
+@pytest.mark.skipif(not EU_FIXTURE.exists(), reason="Run generate_fixtures.py first")
+class TestEUFixtures:
+    def _load(self):
+        with open(EU_FIXTURE, encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+
+    def test_iban_masked_in_notes(self):
+        rows = self._load()
+        iban_rows = [r for r in rows if r["iban_clean"] in r["notes"]]
+        assert len(iban_rows) > 0, "No IBAN-in-notes rows found"
+        for row in iban_rows:
+            df = pl.DataFrame({"col": [row["notes"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            assert row["iban_clean"][4:] not in result
+            assert "*" in result
+
+    def test_iban_masked_in_free_text(self):
+        rows = self._load()
+        iban_rows = [r for r in rows if r["iban_clean"] in r["free_text"]]
+        assert len(iban_rows) > 0, "No IBAN-in-free_text rows found"
+        for row in iban_rows:
+            df = pl.DataFrame({"col": [row["free_text"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            assert row["iban_clean"][4:] not in result
+
+    def test_email_masked_in_notes(self):
+        rows = self._load()
+        email_rows = [r for r in rows if r["email_clean"] in r["notes"]]
+        assert len(email_rows) > 0, "No email-in-notes rows found"
+        for row in email_rows:
+            df = pl.DataFrame({"col": [row["notes"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            local = row["email_clean"].split("@")[0]
+            assert local not in result
+            assert "*" in result
+
+    def test_email_masked_in_free_text(self):
+        rows = self._load()
+        email_rows = [r for r in rows if r["email_clean"] in r["free_text"]]
+        assert len(email_rows) > 0, "No email-in-free_text rows found"
+        for row in email_rows:
+            df = pl.DataFrame({"col": [row["free_text"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            local = row["email_clean"].split("@")[0]
+            assert local not in result
+
+    def test_contains_pii_on_iban_clean(self):
+        rows = self._load()[:20]
+        df = pl.DataFrame({"col": [r["iban_clean"] for r in rows]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert all(result)
+
+    def test_contains_pii_on_email_clean(self):
+        rows = self._load()[:20]
+        df = pl.DataFrame({"col": [r["email_clean"] for r in rows]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert all(result)
+
+
+# ---------------------------------------------------------------------------
+# Phone fixture-based tests
+# ---------------------------------------------------------------------------
+
+PHONE_FIXTURE = Path(__file__).parent / "fixtures" / "phone_sample.csv"
+
+@pytest.mark.skipif(not PHONE_FIXTURE.exists(), reason="Run generate_fixtures.py first")
+class TestPhoneFixtures:
+    def _load(self):
+        with open(PHONE_FIXTURE, encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+
+    def test_phone_masked_in_sentence(self):
+        rows = self._load()
+        # Only clean E.164: + followed by digits only, length 10-15 chars total
+        e164_rows = [
+            r for r in rows
+            if re.fullmatch(r'\+\d{7,14}', r["phone_e164"])
+            and r["phone_e164"] in r["sentence"]
+        ]
+        assert len(e164_rows) > 0, "No clean E.164-in-sentence rows found"
+        masked_count = sum(
+            1 for row in e164_rows
+            if "*" in pl.DataFrame({"col": [row["sentence"]]})
+            .with_columns(maskops.mask_pii("col"))["col"][0]
+        )
+        assert masked_count / len(e164_rows) >= 0.7
+
+    def test_contains_pii_on_e164(self):
+        rows = self._load()
+        e164_rows = [
+            r for r in rows
+            if re.fullmatch(r'\+\d{7,14}', r["phone_e164"])
+        ][:30]
+        detected = []
+        for row in e164_rows:
+            df = pl.DataFrame({"col": [row["phone_e164"]]})
+            detected.append(df.with_columns(maskops.contains_pii("col"))["col"][0])
+        assert sum(detected) / len(detected) >= 0.7, "Less than 70% of E.164 phones detected"
+
+    def test_prefix_preserved_after_masking(self):
+        rows = self._load()
+        e164_rows = [
+            r for r in rows
+            if re.fullmatch(r'\+\d{7,14}', r["phone_e164"])
+        ][:30]
+        for row in e164_rows:
+            df = pl.DataFrame({"col": [row["phone_e164"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            if "*" in result:
+                assert result.startswith(row["prefix"])

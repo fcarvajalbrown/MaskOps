@@ -19,7 +19,7 @@ classifiers = [
 dependencies = ["polars>=0.46"]
 
 [project.urls]
-Repository = "https://github.com/yourusername/maskops"
+Repository = "https://github.com/fcarvajalbrown/maskops"
 
 [tool.maturin]
 # The Python package folder

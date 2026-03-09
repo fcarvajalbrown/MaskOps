@@ -2,11 +2,12 @@
 tests/generate_fixtures.py
 
 Generates fake but structurally valid PII test data for multiple locales.
-Covers: IBAN, EU VAT, email, and phone numbers for every country in country_codes.rs.
+Covers: IBAN, EU VAT, email, phone, IPv4/IPv6, RUT, CPF, and CURP.
 
 Run once to produce:
   tests/fixtures/eu_pii_sample.csv
   tests/fixtures/phone_sample.csv
+  tests/fixtures/latam_pii_sample.csv
 
 Usage:
     pip install faker
@@ -128,6 +129,76 @@ for prefix, locale in PHONE_LOCALES.items():
 df_phone = pl.DataFrame(phone_rows)
 
 # ---------------------------------------------------------------------------
+# LatAm ID fixture — RUT (Chile), CPF (Brazil), CURP (Mexico)
+# ---------------------------------------------------------------------------
+
+def generate_rut() -> str:
+    """Generate a valid Chilean RUT with correct Módulo 11 check digit."""
+    body = random.randint(1_000_000, 25_000_000)
+    digits = [int(d) for d in reversed(str(body))]
+    factors = [2, 3, 4, 5, 6, 7]
+    total = sum(d * factors[i % 6] for i, d in enumerate(digits))
+    remainder = 11 - (total % 11)
+    dv = "0" if remainder == 11 else "K" if remainder == 10 else str(remainder)
+    return f"{body:,}".replace(",", ".") + f"-{dv}"
+
+
+def generate_cpf() -> str:
+    """Generate a valid Brazilian CPF with correct Módulo 11 check digits."""
+    d = [random.randint(0, 9) for _ in range(9)]
+    # Reject all-same
+    while len(set(d)) == 1:
+        d = [random.randint(0, 9) for _ in range(9)]
+
+    r1 = (sum(v * (10 - i) for i, v in enumerate(d)) * 10) % 11
+    d1 = 0 if r1 == 10 else r1
+    d.append(d1)
+
+    r2 = (sum(v * (11 - i) for i, v in enumerate(d)) * 10) % 11
+    d2 = 0 if r2 == 10 else r2
+    d.append(d2)
+
+    return f"{''.join(map(str, d[:3]))}.{''.join(map(str, d[3:6]))}.{''.join(map(str, d[6:9]))}-{''.join(map(str, d[9:]))}"
+
+
+# CURP uses a fixed valid sample pool — generative synthesis is out of scope
+CURP_SAMPLES = [
+    "BADD110313HCMLNS09",
+    "GODE561231MDFRRL06",
+    "HEGE560427MVZRRL06",
+    "LOOA631201HVZPNS08",
+    "MOCA530428HVZRGL04",
+]
+
+LATAM_FAKES = {
+    "es_CL": Faker("es_CL"),
+    "pt_BR": Faker("pt_BR"),
+    "es_MX": Faker("es_MX"),
+}
+
+latam_rows = []
+for locale, fake in LATAM_FAKES.items():
+    for _ in range(200):
+        rut = generate_rut()
+        cpf = generate_cpf()
+        curp = random.choice(CURP_SAMPLES)
+        latam_rows.append({
+            "locale": locale,
+            "rut_clean": rut,
+            "cpf_clean": cpf,
+            "curp_clean": curp,
+            "notes": random.choice([
+                f"Cliente RUT {rut} registrado",
+                f"CPF do cliente: {cpf} confirmado",
+                f"CURP: {curp} registrado",
+                f"Datos: {rut} / {cpf}",
+                fake.sentence(),
+            ]),
+        })
+
+df_latam = pl.DataFrame(latam_rows)
+
+# ---------------------------------------------------------------------------
 # Write fixtures
 # ---------------------------------------------------------------------------
 
@@ -135,9 +206,12 @@ out = Path(__file__).parent / "fixtures"
 out.mkdir(exist_ok=True)
 
 df_eu.write_csv(out / "eu_pii_sample.csv")
+# polars write_csv doesn't take encoding — the file is already UTF-8, just the reader was wrong
 df_phone.write_csv(out / "phone_sample.csv")
+df_latam.write_csv(out / "latam_pii_sample.csv")
 
 print(f"Generated {len(df_eu)} EU rows -> tests/fixtures/eu_pii_sample.csv")
 print(f"Generated {len(df_phone)} phone rows -> tests/fixtures/phone_sample.csv")
 print(df_eu.head(3))
 print(df_phone.head(3))
+print(f"Generated {len(df_latam)} LatAm rows -> tests/fixtures/latam_pii_sample.csv")

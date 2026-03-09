@@ -44,16 +44,14 @@ maskops/
 │       ├── email.rs         # Email regex + masking (local part)
 │       ├── phone.rs         # E.164 phone regex + masking
 │       ├── ip.rs            # IPv4/IPv6 regex + masking
-│       ├── rut.rs           # Chilean RUT + Módulo 11 validation
-│       ├── cpf.rs           # Brazilian CPF + Módulo 11 validation
-│       ├── curp.rs          # Mexican CURP regex + masking
+│       ├── latam_id.rs      # RUT (Chile), CPF (Brazil), CURP (Mexico)
 │       └── country_codes.rs # Country prefix lookup table
 ├── maskops/
 │   └── __init__.py          # Python API via register_plugin_function
 ├── benchmarks/
 │   └── benchmark.py         # Per-family throughput benchmarks (1M rows)
 └── tests/
-    ├── test_masking.py      # pytest suite (39 tests)
+    ├── test_masking.py      # pytest suite (53 tests)
     ├── generate_fixtures.py # Faker-based EU test data generator
     └── fixtures/            # Generated CSVs (gitignored)
 ```
@@ -152,55 +150,60 @@ MIT
 
 Tested on 1,000,000 rows, Intel i-series CPU, Python 3.14, Windows.
 
+Median of 3 runs per benchmark. 
+Baseline uses equivalent regex coverage to maskops per family.
+
 Benchmarks are broken down by pattern family so you only pay for what you use.
 
 ### EU patterns (IBAN, VAT, Email, Phone)
 
-| Profile | Expression | Time | Rows/s |
-|---------|-----------|------|--------|
-| clean | `mask_pii` | 1.348s | 741,680 |
-| clean | `contains_pii` | 0.389s | 2,573,852 |
-| dense | `mask_pii` | 1.988s | 503,143 |
-| dense | `contains_pii` | 0.131s | 7,662,700 |
-| mixed | `mask_pii` | 1.895s | 527,772 |
-| mixed | `contains_pii` | 0.185s | 5,402,923 |
+| Profile | Expression | Time | Rows/s | Python re | Speedup |
+|---------|-----------|------|--------|-----------|---------|
+| clean | `mask_pii` | 1.285s | 778,053 | 2.779s | **2.2×** |
+| clean | `contains_pii` | 0.378s | 2,645,946 | — | — |
+| dense | `mask_pii` | 1.989s | 502,750 | 1.745s | 0.9× |
+| dense | `contains_pii` | 0.130s | 7,690,710 | — | — |
+| mixed | `mask_pii` | 1.869s | 535,082 | 1.943s | 1.0× |
+| mixed | `contains_pii` | 0.180s | 5,546,207 | — | — |
 
 ### LatAm patterns (RUT, CPF, CURP)
 
-| Profile | Expression | Time | Rows/s |
-|---------|-----------|------|--------|
-| clean | `mask_pii` | 1.356s | 737,445 |
-| clean | `contains_pii` | 0.368s | 2,716,586 |
-| dense | `mask_pii` | 2.014s | 496,613 |
-| dense | `contains_pii` | 0.624s | 1,603,480 |
-| mixed | `mask_pii` | 1.833s | 545,422 |
-| mixed | `contains_pii` | 0.558s | 1,793,626 |
+| Profile | Expression | Time | Rows/s | Python re | Speedup |
+|---------|-----------|------|--------|-----------|---------|
+| clean | `mask_pii` | 1.339s | 746,721 | 2.283s | **1.7×** |
+| clean | `contains_pii` | 0.375s | 2,668,890 | — | — |
+| dense | `mask_pii` | 2.033s | 491,792 | 1.618s | 0.8× |
+| dense | `contains_pii` | 0.632s | 1,582,181 | — | — |
+| mixed | `mask_pii` | 1.884s | 530,879 | 1.783s | 0.9× |
+| mixed | `contains_pii` | 0.588s | 1,701,419 | — | — |
 
 > RUT and CPF include Módulo 11 check digit validation per row — this is the cost of zero false positives.
 
 ### Network patterns (IP)
 
-| Profile | Expression | Time | Rows/s |
-|---------|-----------|------|--------|
-| clean | `mask_pii` | 1.401s | 713,678 |
-| clean | `contains_pii` | 0.369s | 2,707,311 |
-| dense | `mask_pii` | 1.557s | 642,336 |
-| dense | `contains_pii` | 0.208s | 4,819,110 |
-| mixed | `mask_pii` | 1.522s | 657,074 |
-| mixed | `contains_pii` | 0.255s | 3,923,478 |
+| Profile | Expression | Time | Rows/s | Python re | Speedup |
+|---------|-----------|------|--------|-----------|---------|
+| clean | `mask_pii` | 1.413s | 707,909 | 2.969s | **2.1×** |
+| clean | `contains_pii` | 0.376s | 2,658,206 | — | — |
+| dense | `mask_pii` | 2.346s | 426,330 | 2.192s | 0.9× |
+| dense | `contains_pii` | 0.324s | 3,081,799 | — | — |
+| mixed | `mask_pii` | 2.213s | 451,958 | 2.423s | 1.1× |
+| mixed | `contains_pii` | 0.385s | 2,596,104 | — | — |
 
 ### All patterns active
 
 | Profile | Expression | maskops | Python `re` | Speedup |
 |---------|-----------|---------|-------------|---------|
-| clean | `mask_pii` | 1.377s | 5.798s | **4.2×** |
-| clean | `contains_pii` | 0.371s | — | — |
-| dense | `mask_pii` | 1.926s | 3.312s | **1.7×** |
-| dense | `contains_pii` | 0.323s | — | — |
-| mixed | `mask_pii` | 1.870s | 3.545s | **1.9×** |
-| mixed | `contains_pii` | 0.328s | — | — |
+| clean | `mask_pii` | 1.997s | 6.350s | **3.2×** |
+| clean | `contains_pii` | 0.562s | — | — |
+| dense | `mask_pii` | 1.910s | 3.232s | **1.7×** |
+| dense | `contains_pii` | 0.319s | — | — |
+| mixed | `mask_pii` | 1.869s | 3.594s | **1.9×** |
+| mixed | `contains_pii` | 0.326s | — | — |
 
-> maskops throughput stays flat as pattern count grows — Python regex degrades linearly. With all 8 patterns active, maskops is up to 4× faster than an equivalent pure Python approach.
+> maskops throughput stays flat as pattern count grows — Python regex degrades linearly.
+> With all 8 patterns active, maskops is up to 3.2× faster than an equivalent pure Python approach.
+> `contains_pii` is consistently the fastest path — use it for filtering before masking in hot pipelines.
 
 ### vs Microsoft Presidio (estimated)
 
@@ -208,7 +211,7 @@ Presidio processes structured DataFrames via `presidio-structured`, which runs a
 
 | Tool | Throughput (structured data) | Requires NLP model |
 |------|------------------------------|-------------------|
-| maskops | ~500K–7.6M rows/s | No |
+| maskops | ~427K–7.7M rows/s (measured) | No |
 | Presidio (regex-only recognizers) | ~10–50K rows/s* | No |
 | Presidio (spaCy NER) | ~1–5K rows/s* | Yes (250MB+) |
 

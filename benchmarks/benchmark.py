@@ -13,14 +13,16 @@ Each family is tested across three data profiles:
   - dense:  every row contains PII from that family
   - mixed:  50/50 mix (realistic production workload)
 
-Also benchmarks pure Python regex per family as a comparison baseline.
+Timing: median of 3 runs per benchmark to reduce noise.
+Baseline: pure Python regex per family, equivalent pattern coverage to maskops.
 
 Usage:
     python benchmarks/benchmark.py
 """
 
-import time
 import re
+import time
+
 import polars as pl
 import maskops
 
@@ -29,6 +31,7 @@ import maskops
 # ---------------------------------------------------------------------------
 
 ROWS = 1_000_000
+RUNS = 3
 CLEAN_SAMPLE = "No sensitive information here, just a regular sentence."
 
 # ---------------------------------------------------------------------------
@@ -57,23 +60,37 @@ NETWORK_SAMPLES = [
 ALL_SAMPLES = EU_SAMPLES + LATAM_SAMPLES + NETWORK_SAMPLES
 
 # ---------------------------------------------------------------------------
-# Pure Python regex baselines (one per family)
+# Pure Python regex baselines
+# Each baseline covers the same patterns as maskops for that family.
 # ---------------------------------------------------------------------------
 
 EU_RE = re.compile(
+    # IBAN
     r"\b([A-Z]{2}\d{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16})\b"
+    # VAT (major EU countries)
+    r"|ATU[0-9]{8}|BE[01][0-9]{9}|BG[0-9]{9,10}|DE[0-9]{9}"
+    r"|ES[A-Z0-9][0-9]{7}[A-Z0-9]|FR[A-Z0-9]{2}[0-9]{9}"
+    r"|IT[0-9]{11}|NL[0-9]{9}B[0-9]{2}|PL[0-9]{10}"
+    # Email
     r"|[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
-    r"|\+?\d[\d\s\-().]{7,}\d"
+    # Phone (E.164-ish)
+    r"|\+\d{1,3}\d{6,12}\b"
 )
 
 LATAM_RE = re.compile(
+    # RUT
     r"\b\d{1,2}\.?\d{3}\.?\d{3}-[\dKk]\b"
+    # CPF
     r"|\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b"
+    # CURP
     r"|[A-Z][AEIOU][A-Z]{2}\d{6}[HM][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z0-9]\d"
 )
 
 NETWORK_RE = re.compile(
+    # IPv4
     r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b"
+    # IPv6 (simplified)
+    r"|[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4}){7}"
 )
 
 ALL_RE = re.compile(
@@ -110,31 +127,36 @@ def make_dataset(samples: list, profile: str) -> pl.DataFrame:
 # Benchmark runner
 # ---------------------------------------------------------------------------
 
-def bench(label: str, fn, warmup: bool = True) -> float:
+def bench(label: str, fn, runs: int = RUNS) -> float:
     """
-    Run fn() and return elapsed seconds.
+    Run fn() multiple times and report the median elapsed time.
 
     Args:
-        label:  Display label for the benchmark row.
-        fn:     Zero-argument callable to benchmark.
-        warmup: If True, runs fn() once before timing to exclude init costs.
+        label: Display label for the benchmark row.
+        fn:    Zero-argument callable to benchmark.
+        runs:  Number of timed runs (median is reported).
 
     Returns:
-        Elapsed time in seconds.
+        Median elapsed time in seconds.
     """
-    if warmup:
-        fn()
-    start = time.perf_counter()
+    # warmup — triggers Arrow buffer allocation and any lazy init
     fn()
-    elapsed = time.perf_counter() - start
+
+    times = []
+    for _ in range(runs):
+        start = time.perf_counter()
+        fn()
+        times.append(time.perf_counter() - start)
+
+    elapsed = sorted(times)[runs // 2]  # median
     rows_per_sec = ROWS / elapsed
-    mb_per_sec = (ROWS * 40) / elapsed / 1_000_000
-    print(f"  {label:<45} {elapsed:.3f}s  {rows_per_sec:>12,.0f} rows/s  {mb_per_sec:>7.1f} MB/s")
+    # Use actual DataFrame size for accurate MB/s
+    print(f"  {label:<45} {elapsed:.3f}s  {rows_per_sec:>12,.0f} rows/s")
     return elapsed
 
 def python_regex_mask(df: pl.DataFrame, pattern: re.Pattern) -> pl.Series:
     """
-    Pure Python regex masking baseline.
+    Pure Python regex masking baseline — equivalent coverage to maskops.
 
     Args:
         df:      DataFrame with 'text' column.
@@ -161,7 +183,7 @@ FAMILIES = [
 
 def main():
     """Run all benchmarks and print results to stdout."""
-    print(f"\nmaskops benchmark — {ROWS:,} rows")
+    print(f"\nmaskops benchmark — {ROWS:,} rows, median of {RUNS} runs")
 
     for family_name, samples, baseline_re in FAMILIES:
         print(f"\n{'='*75}")
@@ -173,12 +195,16 @@ def main():
             size_mb = df.estimated_size("mb")
             print(f"\n  Profile: {profile}  ({size_mb:.1f} MB in memory)")
             print(f"  {'-'*70}")
-            bench("mask_pii (maskops)",
-                  lambda: df.with_columns(maskops.mask_pii("text")))
-            bench("contains_pii (maskops)",
-                  lambda: df.with_columns(maskops.contains_pii("text")))
-            bench("mask_pii baseline (pure Python re)",
-                  lambda: python_regex_mask(df, baseline_re))
+
+            t_mask    = bench("mask_pii (maskops)",
+                              lambda df=df: df.with_columns(maskops.mask_pii("text")))
+            t_contains = bench("contains_pii (maskops)",
+                               lambda df=df: df.with_columns(maskops.contains_pii("text")))
+            t_baseline = bench("mask_pii baseline (pure Python re)",
+                               lambda df=df, r=baseline_re: python_regex_mask(df, r))
+
+            speedup = t_baseline / t_mask
+            print(f"\n  → maskops is {speedup:.1f}x faster than pure Python on '{profile}'")
 
     print(f"\n{'='*75}")
     print("Done.\n")
