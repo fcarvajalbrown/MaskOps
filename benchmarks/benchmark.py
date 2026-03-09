@@ -3,10 +3,12 @@ benchmarks/benchmark.py
 
 Measures maskops throughput on 1M rows, broken down by pattern family:
 
-  - EU:      IBAN, VAT, Email, Phone
-  - LatAm:   RUT (Chile), CPF (Brazil), CURP (Mexico)
-  - Network: IP address
-  - All:     every pattern active (worst case)
+  - EU:        IBAN, VAT, Email, Phone
+  - LatAm:     RUT (Chile), CPF (Brazil), CURP (Mexico)
+  - Network:   IP address
+  - Card:      Visa, Mastercard, Amex, Discover, Maestro
+  - EU ID:     DNI/NIE (Spain), NIN (UK), Personalausweis (Germany)
+  - All:       every pattern active (worst case)
 
 Each family is tested across three data profiles:
   - clean:  no PII (baseline, no masking work done)
@@ -57,7 +59,21 @@ NETWORK_SAMPLES = [
     "IPv6 client 2001:db8:0:0:1:2:3:4 connected",
 ]
 
-ALL_SAMPLES = EU_SAMPLES + LATAM_SAMPLES + NETWORK_SAMPLES
+CARD_SAMPLES = [
+    "Payment charged to card 4111111111111111 approved",
+    "Refund issued to 371449635398431",
+    "Card 5500005555555559 declined",
+    "Maestro 6304000000000000 accepted",
+]
+
+EU_ID_SAMPLES = [
+    "DNI del cliente: 12345678Z registrado",
+    "NIE registrado: X1234567L",
+    "NIN on file: AB 12 34 56 C",
+    "Ausweis-Nr: T220001293",
+]
+
+ALL_SAMPLES = EU_SAMPLES + LATAM_SAMPLES + NETWORK_SAMPLES + CARD_SAMPLES + EU_ID_SAMPLES
 
 # ---------------------------------------------------------------------------
 # Pure Python regex baselines
@@ -93,8 +109,30 @@ NETWORK_RE = re.compile(
     r"|[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4}){7}"
 )
 
+CARD_RE = re.compile(
+    # Visa/MC/Discover/Maestro 16-digit
+    r"\b4[0-9]{15}\b"
+    r"|\b5[1-5][0-9]{14}\b"
+    r"|\b(?:6011|65[0-9]{2}|64[4-9][0-9])[0-9]{12}\b"
+    r"|\b(?:6304|6759|676[1-3])[0-9]{12}\b"
+    # Amex 15-digit
+    r"|\b3[47][0-9]{13}\b"
+)
+
+EU_ID_RE = re.compile(
+    # DNI
+    r"\b\d{8}[A-HJ-NP-TV-Z]\b"
+    # NIE
+    r"|\b[XYZ]\d{7}[A-HJ-NP-TV-Z]\b"
+    # NIN
+    r"\b[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z]\s?\d{2}\s?\d{2}\s?\d{2}\s?[ABCD]\b"
+    # Personalausweis
+    r"|\b[A-Z][A-Z0-9]{8}[0-9]\b"
+)
+
 ALL_RE = re.compile(
     EU_RE.pattern + r"|" + LATAM_RE.pattern + r"|" + NETWORK_RE.pattern
+    + r"|" + CARD_RE.pattern + r"|" + EU_ID_RE.pattern
 )
 
 # ---------------------------------------------------------------------------
@@ -175,10 +213,12 @@ def python_regex_mask(df: pl.DataFrame, pattern: re.Pattern) -> pl.Series:
 # ---------------------------------------------------------------------------
 
 FAMILIES = [
-    ("EU (IBAN, VAT, Email, Phone)", EU_SAMPLES, EU_RE),
-    ("LatAm (RUT, CPF, CURP)",       LATAM_SAMPLES, LATAM_RE),
-    ("Network (IP)",                  NETWORK_SAMPLES, NETWORK_RE),
-    ("All patterns",                  ALL_SAMPLES, ALL_RE),
+    ("EU (IBAN, VAT, Email, Phone)",           EU_SAMPLES,     EU_RE),
+    ("LatAm (RUT, CPF, CURP)",                 LATAM_SAMPLES,  LATAM_RE),
+    ("Network (IP)",                            NETWORK_SAMPLES, NETWORK_RE),
+    ("Credit Card (Visa/MC/Amex/Discover/Maestro)", CARD_SAMPLES, CARD_RE),
+    ("European ID (DNI/NIE/NIN/Personalausweis)",   EU_ID_SAMPLES, EU_ID_RE),
+    ("All patterns",                            ALL_SAMPLES,    ALL_RE),
 ]
 
 def main():

@@ -2,7 +2,7 @@
 
 > High-speed PII masking as a native Polars plugin — powered by Rust.
 
-**maskops** extends Polars with zero-overhead PII detection and masking expressions.
+**MaskOps** extends Polars with zero-overhead PII detection and masking expressions.
 No NLP models. No intermediate files. Just regex + Rust running directly on Arrow buffers.
 
 ## How It Works
@@ -11,12 +11,13 @@ No NLP models. No intermediate files. Just regex + Rust running directly on Arro
 flowchart LR
     A[🐍 Python\nPolars DataFrame] -->|mask_pii / contains_pii| B[Polars\nExpression Engine]
     B -->|Arrow buffer\nzero-copy| C[🦀 Rust Core\nmaskops]
-    C -->|IBAN regex| D[Masked\nSeries]
-    C -->|VAT regex| D
-    C -->|Email regex| D
-    C -->|Phone regex| D
+    C -->|IBAN / VAT| D[Masked\nSeries]
+    C -->|Email / Phone| D
+    C -->|IP / Credit Card| D
+    C -->|DNI / NIE / NIN| D
+    C -->|Personalausweis| D
+    C -->|RUT / CPF / CURP| D
     D -->|back to Python| A
-
     style A fill:#306998,color:#fff
     style C fill:#CE422B,color:#fff
     style B fill:#2E2E2E,color:#fff
@@ -214,9 +215,16 @@ Benchmarks are broken down by pattern family so you only pay for what you use.
 | mixed | `mask_pii` | 1.869s | 3.594s | **1.9×** |
 | mixed | `contains_pii` | 0.326s | — | — |
 
-> maskops throughput stays flat as pattern count grows — Python regex degrades linearly.
-> With all 8 patterns active, maskops is up to 3.2× faster than an equivalent pure Python approach.
-> `contains_pii` is consistently the fastest path — use it for filtering before masking in hot pipelines.
+> **Note on per-family benchmarks:** maskops always runs the full pattern set —
+> there is no per-family dispatch. A "Credit Card only" benchmark still pays for
+> IBAN, VAT, email, phone, LatAm ID, and EU ID checks. The Python baseline only
+> runs one regex. This is why maskops underperforms on isolated families with
+> dense PII. The advantage emerges when all patterns are active simultaneously,
+> which is the realistic production case.
+
+> This is the realistic production workload. maskops is up to 5.4× faster than
+> an equivalent pure Python approach covering all 13 pattern types simultaneously.
+> `contains_pii` reaches 2.0M rows/s on mixed data — use it to pre-filter before masking.
 
 ### vs Microsoft Presidio (estimated)
 

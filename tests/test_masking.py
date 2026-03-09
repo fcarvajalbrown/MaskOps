@@ -593,3 +593,119 @@ class TestCardFixtures:
         df = pl.DataFrame({"col": [original]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result == original
+
+# ---------------------------------------------------------------------------
+# European ID (unit tests)
+# ---------------------------------------------------------------------------
+
+class TestMaskEuropeanID:
+    def test_dni_masked(self):
+        df = pl.DataFrame({"col": ["12345678Z"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.endswith("Z")
+        assert "12345678" not in result
+        assert result == "********Z"
+
+    def test_nie_masked(self):
+        df = pl.DataFrame({"col": ["X1234567L"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.endswith("L")
+        assert "X1234567" not in result
+        assert "*" in result
+
+    def test_nin_masked(self):
+        df = pl.DataFrame({"col": ["AB 12 34 56 C"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.endswith("C")
+        assert "12 34 56" not in result
+        assert "*" in result
+
+    def test_personalausweis_masked(self):
+        df = pl.DataFrame({"col": ["T220001293"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == "**********"
+
+    def test_dni_in_sentence(self):
+        df = pl.DataFrame({"col": ["DNI del cliente: 12345678Z registrado"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "12345678" not in result
+        assert "DNI del cliente:" in result
+        assert "registrado" in result
+
+    def test_invalid_dni_untouched(self):
+        original = "12345678A"  # wrong check letter
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_contains_pii_detects_dni(self):
+        df = pl.DataFrame({"col": ["12345678Z", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_contains_pii_detects_nin(self):
+        df = pl.DataFrame({"col": ["AB 12 34 56 C", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_contains_pii_detects_personalausweis(self):
+        df = pl.DataFrame({"col": ["T220001293", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+
+# ---------------------------------------------------------------------------
+# European ID fixture-based tests
+# ---------------------------------------------------------------------------
+
+EU_ID_FIXTURE = Path(__file__).parent / "fixtures" / "european_id_sample.csv"
+
+@pytest.mark.skipif(not EU_ID_FIXTURE.exists(), reason="Run generate_fixtures.py first")
+class TestEuropeanIDFixtures:
+    def _load(self):
+        with open(EU_ID_FIXTURE, encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+
+    def test_id_masked_in_notes(self):
+        rows = self._load()
+        id_rows = [r for r in rows if r["id_clean"] in r["notes"]]
+        assert len(id_rows) > 0, "No ID-in-notes rows found"
+        for row in id_rows:
+            df = pl.DataFrame({"col": [row["notes"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            assert "*" in result, \
+                f"No masking for {row['id_type']}: {row['id_clean']} → {result}"
+
+    def test_contains_pii_on_dni(self):
+        rows = [r for r in self._load() if r["id_type"] == "dni"][:20]
+        df = pl.DataFrame({"col": [r["id_clean"] for r in rows]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert all(result), "contains_pii missed DNI values"
+
+    def test_contains_pii_on_nie(self):
+        rows = [r for r in self._load() if r["id_type"] == "nie"][:20]
+        df = pl.DataFrame({"col": [r["id_clean"] for r in rows]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert all(result), "contains_pii missed NIE values"
+
+    def test_contains_pii_on_nin(self):
+        rows = [r for r in self._load() if r["id_type"] == "nin"][:20]
+        df = pl.DataFrame({"col": [r["id_clean"] for r in rows]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert all(result), "contains_pii missed NIN values"
+
+    def test_dni_check_letter_preserved(self):
+        rows = [r for r in self._load() if r["id_type"] == "dni"][:20]
+        for row in rows:
+            df = pl.DataFrame({"col": [row["id_clean"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            assert result.endswith(row["id_clean"][-1]), \
+                f"Check letter not preserved for DNI: {result}"
+
+    def test_personalausweis_fully_masked(self):
+        rows = [r for r in self._load() if r["id_type"] == "personalausweis"][:20]
+        for row in rows:
+            df = pl.DataFrame({"col": [row["id_clean"]]})
+            result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+            assert result == "*" * len(row["id_clean"]), \
+                f"Personalausweis not fully masked: {result}"

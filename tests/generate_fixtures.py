@@ -3,13 +3,15 @@ tests/generate_fixtures.py
 
 Generates fake but structurally valid PII test data for multiple locales.
 
-Covers: IBAN, EU VAT, email, phone, IPv4/IPv6, RUT, CPF, CURP, and credit cards.
+Covers: IBAN, EU VAT, email, phone, IPv4/IPv6, RUT, CPF, CURP, credit cards,
+        and European IDs (DNI/NIE, NIN, Personalausweis).
 
 Run once to produce:
   tests/fixtures/eu_pii_sample.csv
   tests/fixtures/phone_sample.csv
   tests/fixtures/latam_pii_sample.csv
   tests/fixtures/card_pii_sample.csv
+  tests/fixtures/european_id_sample.csv
 
 Usage:
     pip install faker
@@ -272,6 +274,89 @@ for scheme, gen in CARD_GENERATORS.items():
 df_cards = pl.DataFrame(card_rows)
 
 # ---------------------------------------------------------------------------
+# European ID fixture — DNI/NIE (Spain), NIN (UK), Personalausweis (Germany)
+# ---------------------------------------------------------------------------
+
+DNI_LETTERS = "TRWAGMYFPDXBNJZSQVHLCKE"
+
+def generate_dni() -> str:
+    """Generate a valid Spanish DNI with correct modulo 23 check letter."""
+    number = random.randint(10_000_000, 99_999_999)
+    letter = DNI_LETTERS[number % 23]
+    return f"{number}{letter}"
+
+
+def generate_nie() -> str:
+    """Generate a valid Spanish NIE with correct modulo 23 check letter."""
+    prefix = random.choice("XYZ")
+    prefix_digit = "XYZ".index(prefix)
+    number = random.randint(1_000_000, 9_999_999)
+    combined = int(f"{prefix_digit}{number}")
+    letter = DNI_LETTERS[combined % 23]
+    return f"{prefix}{number}{letter}"
+
+
+def generate_nin() -> str:
+    """Generate a valid UK NIN with correct prefix letter-pair rules."""
+    # First letter: not D, F, I, Q, U, V
+    first_pool = "ACEGHJ KLMNOPRSTW"
+    first_pool = [c for c in "ABCEGHJKLMNOPRSTWXYZ" if c not in "DFIQUV"]
+    # Second letter: not D, F, I, O, Q, U, V
+    second_pool = [c for c in "ABCEGHJKLMNOPRSTWXYZ" if c not in "DFIOQUV"]
+    # Also disallow GB and NK as prefixes
+    first = random.choice(first_pool)
+    second = random.choice(second_pool)
+    while f"{first}{second}" in ("GB", "NK", "TN", "ZZ"):
+        first = random.choice(first_pool)
+        second = random.choice(second_pool)
+    digits = "".join([str(random.randint(0, 9)) for _ in range(6)])
+    suffix = random.choice("ABCD")
+    return f"{first}{second} {digits[:2]} {digits[2:4]} {digits[4:6]} {suffix}"
+
+
+def generate_personalausweis() -> str:
+    """Generate a format-valid German Personalausweis number (format-only, no check digit)."""
+    # Format: 1 letter + 8 alphanumeric + 1 digit
+    first = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    middle = "".join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=8))
+    last = str(random.randint(0, 9))
+    return f"{first}{middle}{last}"
+
+
+EU_ID_FAKES = {
+    "es_ES": Faker("es_ES"),
+    "en_GB": Faker("en_GB"),
+    "de_DE": Faker("de_DE"),
+}
+
+EU_ID_GENERATORS = {
+    "es_ES": [("dni", generate_dni), ("nie", generate_nie)],
+    "en_GB": [("nin", generate_nin)],
+    "de_DE": [("personalausweis", generate_personalausweis)],
+}
+
+eu_id_rows = []
+for locale, generators in EU_ID_GENERATORS.items():
+    fake = EU_ID_FAKES[locale]
+    for id_type, gen in generators:
+        for _ in range(200):
+            id_val = gen()
+            eu_id_rows.append({
+                "locale": locale,
+                "id_type": id_type,
+                "id_clean": id_val,
+                "notes": random.choice([
+                    f"DNI del cliente: {id_val}" if id_type == "dni" else
+                    f"NIE registrado: {id_val}" if id_type == "nie" else
+                    f"NIN on file: {id_val}" if id_type == "nin" else
+                    f"Ausweis-Nr: {id_val}",
+                    fake.sentence(),
+                ]),
+            })
+
+df_eu_ids = pl.DataFrame(eu_id_rows)
+
+# ---------------------------------------------------------------------------
 # Write fixtures
 # ---------------------------------------------------------------------------
 
@@ -284,6 +369,8 @@ df_phone.write_csv(out / "phone_sample.csv")
 df_latam.write_csv(out / "latam_pii_sample.csv")
 df_cards.write_csv(out / "card_pii_sample.csv")
 print(f"Generated {len(df_cards)} card rows -> tests/fixtures/card_pii_sample.csv")
+df_eu_ids.write_csv(out / "european_id_sample.csv")
+print(f"Generated {len(df_eu_ids)} European ID rows -> tests/fixtures/european_id_sample.csv")
 
 print(f"Generated {len(df_eu)} EU rows -> tests/fixtures/eu_pii_sample.csv")
 print(f"Generated {len(df_phone)} phone rows -> tests/fixtures/phone_sample.csv")

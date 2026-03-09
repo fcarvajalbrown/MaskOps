@@ -18,11 +18,11 @@ use crate::patterns::latam_id::{
 };
 use crate::patterns::credit_card::{mask_card, contains_card};
 use crate::patterns::european_id::{
-    mask_dni, contains_dni, mask_nie, contains_nie, mask_nin, contains_nin,
+    mask_dni, contains_dni, mask_nie, contains_nie, mask_nin, contains_nin, mask_personalausweis, contains_personalausweis,
 }; 
 
 /// Applies all available masking patterns sequentially to the input string.
-/// Order: IBAN → VAT → Email → Phone → IP → RUT → CPF → CURP → Card
+/// Order: IBAN → VAT → Email → Phone → IP → RUT → CPF → CURP → Card → DNI → NIE → NIN → Personalausweis
 pub fn mask_all(value: &str) -> String {
     let s = mask_iban(value);
     let s = mask_vat(&s);
@@ -36,6 +36,7 @@ pub fn mask_all(value: &str) -> String {
     let s = mask_dni(&s);
     let s = mask_nie(&s);
     let s = mask_nin(&s);
+    let s = mask_personalausweis(&s);
     s
 }
 
@@ -54,4 +55,4 @@ pub fn contains_any_pii(value: &str) -> bool {
         || contains_nie(value)
         || contains_nin(value)
         || contains_personalausweis(value)
-    }
+}
