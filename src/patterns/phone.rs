@@ -41,13 +41,3 @@ pub fn mask_phone(value: &str) -> String {
 pub fn contains_phone(value: &str) -> bool {
     PHONE_RE.is_match(value)
 }
-
-/// Returns the detected country name for the first phone number found, if any.
-pub fn identify_phone_country(value: &str) -> Option<&'static str> {
-    PHONE_RE.find(value).and_then(|m| {
-        let normalized: String = m.as_str().chars()
-            .filter(|c| c.is_ascii_digit() || *c == '+')
-            .collect();
-        identify_country(&normalized).map(|cc| cc.country)
-    })
-}

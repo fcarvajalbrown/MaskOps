@@ -79,3 +79,77 @@ class TestContainsPII:
         df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
         result = df.with_columns(maskops.contains_pii("col"))["col"][0]
         assert result is None or result is False
+
+    def test_detects_email(self):
+        df = pl.DataFrame({"col": ["contact: user@example.com", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_detects_phone(self):
+        df = pl.DataFrame({"col": ["+14155552671", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+
+# ---------------------------------------------------------------------------
+# Email
+# ---------------------------------------------------------------------------
+
+class TestMaskEmail:
+    def test_local_part_masked(self):
+        df = pl.DataFrame({"col": ["user@example.com"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "@example.com" in result
+        assert "user" not in result
+        assert "*" in result
+
+    def test_domain_preserved(self):
+        df = pl.DataFrame({"col": ["john.doe@company.org"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.endswith("@company.org")
+
+    def test_email_in_sentence(self):
+        df = pl.DataFrame({"col": ["Send results to john@example.com please"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "john" not in result
+        assert "@example.com" in result
+        assert "Send results to" in result
+
+    def test_multiple_emails(self):
+        df = pl.DataFrame({"col": ["a@x.com and b@y.com"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "a@" not in result
+        assert "b@" not in result
+        assert "@x.com" in result
+        assert "@y.com" in result
+
+
+# ---------------------------------------------------------------------------
+# Phone
+# ---------------------------------------------------------------------------
+
+class TestMaskPhone:
+    def test_us_phone_masked(self):
+        df = pl.DataFrame({"col": ["+14155552671"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.startswith("+1")
+        assert "4155552671" not in result
+        assert "*" in result
+
+    def test_country_prefix_preserved(self):
+        df = pl.DataFrame({"col": ["+447911123456"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.startswith("+44")
+
+    def test_phone_in_sentence(self):
+        df = pl.DataFrame({"col": ["Call me at +14155552671 tomorrow"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "4155552671" not in result
+        assert "Call me at" in result
+        assert "tomorrow" in result
+
+    def test_non_phone_untouched(self):
+        original = "ref #12345"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
