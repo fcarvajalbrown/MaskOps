@@ -58,5 +58,5 @@ out = Path(__file__).parent / "fixtures"
 out.mkdir(exist_ok=True)
 df.write_csv(out / "eu_pii_sample.csv")
 
-print(f"Generated {len(df)} rows → tests/fixtures/eu_pii_sample.csv")
+print(f"Generated {len(df)} rows -> tests/fixtures/eu_pii_sample.csv")
 print(df.head(5))
