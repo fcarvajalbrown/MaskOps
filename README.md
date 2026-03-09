@@ -13,6 +13,8 @@ flowchart LR
     B -->|Arrow buffer\nzero-copy| C[🦀 Rust Core\nmaskops]
     C -->|IBAN regex| D[Masked\nSeries]
     C -->|VAT regex| D
+    C -->|Email regex| D
+    C -->|Phone regex| D
     D -->|back to Python| A
 
     style A fill:#306998,color:#fff
@@ -38,7 +40,10 @@ maskops/
 │   └── patterns/
 │       ├── mod.rs           # mask_all() and contains_any_pii() aggregators
 │       ├── iban.rs          # IBAN regex + masking
-│       └── vat.rs           # EU VAT regex + masking
+│       ├── vat.rs           # EU VAT regex + masking
+│       ├── email.rs         # Email regex + masking (local part)
+│       ├── phone.rs         # E.164 phone regex + masking
+│       └── country_codes.rs # Country prefix lookup table
 ├── maskops/
 │   └── __init__.py          # Python API via register_plugin_function
 └── tests/
@@ -71,18 +76,22 @@ df.with_columns(maskops.mask_pii("notes"))
 df.filter(maskops.contains_pii("free_text"))
 ```
 
-## Supported patterns (v0.1)
+## Supported patterns (v0.1.1)
 
 | Pattern | Example input | Masked output |
 |---------|--------------|---------------|
 | IBAN    | `DE89370400440532013000` | `DE89******************` |
 | EU VAT  | `DE123456789` | `DE*********` |
+| Email   | `john.doe@example.com` | `********@example.com` |
+| Phone   | `+14155552671` | `+1**********` |
 
 Tested against 8 EU locales: DE, FR, ES, IT, NL, PL, PT, SE.
+Email and phone follow RFC 5322 and E.164 respectively.
 
 ## Roadmap
 
-- [ ] Email, phone, IP address patterns
+- [x] Email, phone patterns
+- [ ] IP address patterns
 - [ ] Format-Preserving Encryption (FPE/FF3-1) for reversible masking
 - [ ] Latin American IDs (RUT, CPF, CURP)
 - [ ] Benchmark vs Presidio
@@ -111,16 +120,6 @@ pip install maturin faker polars pytest
 maturin develop --release
 python tests/generate_fixtures.py
 pytest tests/ -v
-```
-
-Or just run the setup script:
-
-```powershell
-# Windows
-.\setup.bat
-
-# Linux/macOS
-./setup.sh
 ```
 
 ## Key dependency versions

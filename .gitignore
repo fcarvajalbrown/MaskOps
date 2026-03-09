@@ -4,5 +4,4 @@ __pycache__/
 .venv/
 target/
 tests/fixtures/
-*.whl
 .pytest_cache/
