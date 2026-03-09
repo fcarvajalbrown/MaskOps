@@ -34,6 +34,10 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
+      - name: Add macOS ARM target
+        if: runner.os == 'macOS'
+        run: rustup target add aarch64-apple-darwin
+
       - name: Install dependencies and build (Unix)
         if: runner.os != 'Windows'
         run: |
