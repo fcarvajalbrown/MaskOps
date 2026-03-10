@@ -42,11 +42,15 @@ jobs:
         run: |
           source .venv/bin/activate
           maturin develop --release
+        env:
+          VIRTUAL_ENV: ${{ github.workspace }}/.venv
 
       - name: Run Presidio benchmark
         run: |
           source .venv/bin/activate
           python benchmarks/benchmark_presidio.py
+        env:
+          VIRTUAL_ENV: ${{ github.workspace }}/.venv
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
