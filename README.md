@@ -259,8 +259,6 @@ Baseline uses equivalent regex coverage to maskops per family.
 > maskops throughput stays roughly flat as pattern count grows — Python regex degrades with each additional pattern.
 > The clean profile gap (5.7×) reflects Python's overhead of compiling and scanning a large combined regex on short-circuit misses.
 
-### vs Microsoft Presidio (estimated)
-
 ### vs Microsoft Presidio (measured)
 
 Benchmarked on 10,000 rows of mixed real-world text (email, phone, IBAN, credit cards, IP),
