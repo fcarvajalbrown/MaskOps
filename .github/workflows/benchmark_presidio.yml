@@ -1,0 +1,58 @@
+name: Presidio Benchmark
+
+on:
+  workflow_dispatch:  # manual trigger only
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache spaCy model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: spacy-en-core-web-lg-${{ runner.os }}-py3.11
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: rust-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: rust-${{ runner.os }}-
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install maturin polars faker pytest
+          pip install presidio-analyzer presidio-anonymizer spacy
+
+      - name: Download spaCy model
+        run: python -m spacy download en_core_web_lg
+
+      - name: Build maskops
+        run: maturin develop --release
+
+      - name: Run Presidio benchmark
+        run: python benchmarks/benchmark_presidio.py
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: presidio-benchmark-results
+          path: benchmarks/
+          retention-days: 90

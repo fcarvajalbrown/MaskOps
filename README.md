@@ -125,8 +125,7 @@ Personalausweis and NIN: format-only matching; check digit validation pending (v
 - [x] Credit cards (Visa, Mastercard, Amex, Discover, Maestro) with Luhn validation
 - [x] PyPI publish via GitHub Actions
 - [x] Check digit validation for Personalausweis (Germany) and NIN (UK)
-- [ ] Format-Preserving Encryption (FPE/FF3-1) for reversible masking
-- [ ] Benchmark improvement vs pure Python
+- [x] Format-Preserving Encryption (FPE/FF3-1) for reversible masking
 - [ ] Benchmark vs Presidio
 - [ ] Parquet streaming support
 
