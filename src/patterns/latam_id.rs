@@ -135,3 +135,52 @@ pub fn mask_curp(s: &str) -> String {
         .replace_all(s, |caps: &regex::Captures| "*".repeat(caps[0].len()))
         .into_owned()
 }
+
+/// Masks the digit body of a valid Chilean RUT using FF3-1 FPE.
+///
+/// The check digit is preserved (it's a single char, too short for FPE).
+/// Separators are stripped — output is compact digits + check digit.
+/// Reversible with the same key and tweak.
+///
+/// Example: `12.345.678-9` → `87263401-9`
+pub fn mask_rut_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+    RUT_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            let rut = &caps[0];
+            if !valid_rut(rut) {
+                return rut.to_string();
+            }
+            let clean: String = rut.chars().filter(|c| c.is_alphanumeric()).collect();
+            let body = &clean[..clean.len() - 1];
+            let dv   = &clean[clean.len() - 1..];
+
+            match cipher.encrypt(body) {
+                Ok(encrypted) => format!("{}-{}", encrypted, dv),
+                Err(_)        => rut.to_string(),
+            }
+        })
+        .into_owned()
+}
+
+/// Masks the digit body of a valid Brazilian CPF using FF3-1 FPE.
+///
+/// All 11 digits are encrypted as a unit — separators stripped on output.
+/// Reversible with the same key and tweak.
+///
+/// Example: `529.982.247-25` → `73614052891`
+pub fn mask_cpf_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+    CPF_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            let cpf = &caps[0];
+            if !valid_cpf(cpf) {
+                return cpf.to_string();
+            }
+            let digits: String = cpf.chars().filter(|c| c.is_ascii_digit()).collect();
+
+            match cipher.encrypt(&digits) {
+                Ok(encrypted) => encrypted,
+                Err(_)        => cpf.to_string(),
+            }
+        })
+        .into_owned()
+}

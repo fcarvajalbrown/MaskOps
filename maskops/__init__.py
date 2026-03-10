@@ -88,3 +88,42 @@ def contains_pii(expr: IntoExpr) -> pl.Expr:
         args=[pl.col(expr) if isinstance(expr, str) else expr],
         is_elementwise=True,
     )
+
+def mask_pii_fpe(expr: IntoExpr, key: bytes, tweak: bytes) -> pl.Expr:
+    """
+    Mask digit-based PII (cards, phones, RUT, CPF) using FF3-1 format-preserving encryption.
+    Non-digit PII (IBAN, VAT, email, IP, EU IDs) is still asterisked.
+
+    The output preserves the original format and length — all digits in, all digits out.
+    Reversible using the same key and tweak via the Rust API (Ff3Cipher::decrypt).
+
+    Parameters
+    ----------
+    expr : IntoExpr
+        A Polars column name (str) or expression resolving to a String series.
+    key : bytes
+        32-byte AES-256 key. Must be kept separate from the data (GDPR requirement).
+    tweak : bytes
+        7-byte context identifier (e.g. tenant ID or dataset identifier).
+
+    Returns
+    -------
+    pl.Expr
+        A new expression with digit PII pseudonymised via FF3-1.
+
+    Examples
+    --------
+    >>> key   = secrets.token_bytes(32)
+    >>> tweak = secrets.token_bytes(7)
+    >>> df.with_columns(maskops.mask_pii_fpe("col", key, tweak))
+    """
+    return register_plugin_function(
+        plugin_path=_LIB,
+        function_name="mask_pii_fpe",
+        args=[
+            pl.col(expr) if isinstance(expr, str) else expr,
+            pl.lit(key, dtype=pl.Binary),
+            pl.lit(tweak, dtype=pl.Binary),
+        ],
+        is_elementwise=True,
+    )

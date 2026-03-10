@@ -41,3 +41,57 @@ pub fn mask_phone(value: &str) -> String {
 pub fn contains_phone(value: &str) -> bool {
     PHONE_RE.is_match(value)
 }
+
+/// Masks a phone number using FF3-1 format-preserving encryption on the subscriber digits.
+///
+/// The country code prefix is preserved. The subscriber digit sequence is
+/// extracted, encrypted as a unit, and reassembled with the original separators.
+/// Reversible with the same key and tweak.
+///
+/// Example: `+56912345678` → `+56361984203`  (same length, reversible)
+pub fn mask_phone_fpe(value: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+    PHONE_RE
+        .replace_all(value, |caps: &regex::Captures| {
+            let full = caps.get(0).unwrap().as_str();
+            let normalized: String = full
+                .chars()
+                .filter(|c| c.is_ascii_digit() || *c == '+')
+                .collect();
+            let prefix_len = identify_country(&normalized)
+                .map(|cc| cc.prefix.len())
+                .unwrap_or(2);
+
+            let keep = &full[..prefix_len.min(full.len())];
+            let rest = &full[prefix_len.min(full.len())..];
+
+            // Extract only digits from subscriber part for FPE.
+            let subscriber_digits: String = rest
+                .chars()
+                .filter(|c| c.is_ascii_digit())
+                .collect();
+
+            if subscriber_digits.len() < 2 {
+                return full.to_string();
+            }
+
+            match cipher.encrypt(&subscriber_digits) {
+                Ok(encrypted) => {
+                    // Reassemble: reinsert non-digit chars at their original positions.
+                    let mut enc_iter = encrypted.chars();
+                    let reassembled: String = rest
+                        .chars()
+                        .map(|c| {
+                            if c.is_ascii_digit() {
+                                enc_iter.next().unwrap_or(c)
+                            } else {
+                                c
+                            }
+                        })
+                        .collect();
+                    format!("{}{}", keep, reassembled)
+                }
+                Err(_) => full.to_string(),
+            }
+        })
+        .into_owned()
+}

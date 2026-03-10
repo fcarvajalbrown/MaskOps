@@ -709,3 +709,118 @@ class TestEuropeanIDFixtures:
             result = df.with_columns(maskops.mask_pii("col"))["col"][0]
             assert result == "*" * len(row["id_clean"]), \
                 f"Personalausweis not fully masked: {result}"
+
+                # ---------------------------------------------------------------------------
+# FPE unit tests
+# ---------------------------------------------------------------------------
+
+KEY  = b"\x00" * 32  # 32-byte AES-256 key (test only — never use zero key in production)
+TWEAK = b"\x00" * 7  # 7-byte tweak
+
+class TestMaskPiiFpe:
+    def test_card_fpe_preserves_length(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert len(result) == 16
+
+    def test_card_fpe_output_is_digits(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert result.isdigit()
+
+    def test_card_fpe_differs_from_plaintext(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert result != "4111111111111111"
+
+    def test_card_fpe_differs_from_asterisk(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        fpe    = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        ast    = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert fpe != ast
+        assert "*" not in fpe
+
+    def test_phone_fpe_preserves_prefix(self):
+        df = pl.DataFrame({"col": ["+56912345678"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert result.startswith("+56")
+
+    def test_phone_fpe_no_asterisks(self):
+        df = pl.DataFrame({"col": ["+56912345678"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert "*" not in result
+
+    def test_different_tweaks_differ(self):
+        tweak2 = b"\x01" * 7
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        r1 = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        r2 = df.with_columns(maskops.mask_pii_fpe("col", KEY, tweak2))["col"][0]
+        assert r1 != r2
+
+    def test_non_digit_pii_still_asterisked(self):
+        df = pl.DataFrame({"col": ["email: john@example.com card: 4111111111111111"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert "*" in result           # email asterisked
+        assert "john" not in result
+        assert "4111111111111111" not in result
+
+    def test_wrong_key_length_raises(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        with pytest.raises(Exception):
+            df.with_columns(maskops.mask_pii_fpe("col", b"\x00" * 16, TWEAK))
+
+    def test_wrong_tweak_length_raises(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        with pytest.raises(Exception):
+            df.with_columns(maskops.mask_pii_fpe("col", KEY, b"\x00" * 4))
+
+    def test_rut_fpe_no_asterisks(self):
+        df = pl.DataFrame({"col": ["12.345.678-9"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert "*" not in result
+
+    def test_cpf_fpe_no_asterisks(self):
+        df = pl.DataFrame({"col": ["529.982.247-25"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert "*" not in result
+
+# ---------------------------------------------------------------------------
+# FPE fixture-based tests
+# ---------------------------------------------------------------------------
+
+class TestFpeFixtures:
+    def _load(self, fixture):
+        with open(fixture, encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+
+    def test_cards_fpe_all_digits(self):
+        rows = self._load(CARD_FIXTURE)[:50]
+        for row in rows:
+            df = pl.DataFrame({"col": [row["card_clean"]]})
+            result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+            assert result.isdigit(), f"Non-digit in FPE output: {result}"
+
+    def test_cards_fpe_preserves_length(self):
+        rows = self._load(CARD_FIXTURE)[:50]
+        for row in rows:
+            df = pl.DataFrame({"col": [row["card_clean"]]})
+            result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+            assert len(result) == len(row["card_clean"]), \
+                f"Length changed for {row['scheme']}: {result}"
+
+    def test_cards_fpe_differs_from_plaintext(self):
+        rows = self._load(CARD_FIXTURE)[:50]
+        for row in rows:
+            df = pl.DataFrame({"col": [row["card_clean"]]})
+            result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+            assert result != row["card_clean"], \
+                f"FPE did not change value for {row['scheme']}: {result}"
+
+    def test_latam_fpe_no_asterisks(self):
+        rows = self._load(LATAM_FIXTURE)[:50]
+        for row in rows:
+            for field in ["rut_clean", "cpf_clean"]:
+                df = pl.DataFrame({"col": [row[field]]})
+                result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+                assert "*" not in result, \
+                    f"Asterisk found in FPE output for {field}: {result}"

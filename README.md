@@ -116,8 +116,9 @@ Personalausweis and NIN: format-only matching; check digit validation pending (v
 - [x] European IDs (DNI/NIE Spain, NIN UK, Personalausweis Germany)
 - [x] Credit cards (Visa, Mastercard, Amex, Discover, Maestro) with Luhn validation
 - [x] PyPI publish via GitHub Actions
+- [x] Check digit validation for Personalausweis (Germany) and NIN (UK)
 - [ ] Format-Preserving Encryption (FPE/FF3-1) for reversible masking
-- [ ] Check digit validation for Personalausweis (Germany) and NIN (UK)
+- [ ] Benchmark improvement vs pure Python
 - [ ] Benchmark vs Presidio
 - [ ] Parquet streaming support
 
@@ -162,7 +163,7 @@ MIT
 
 ## Benchmarks
 
-Tested on 1,000,000 rows, Intel i-series CPU, Python 3.11, Ubuntu (CI).
+Tested on 1,000,000 rows, Intel i-series CPU, Python 3.14, Windows.
 
 Median of 3 runs per benchmark.
 Baseline uses equivalent regex coverage to maskops per family.
@@ -178,23 +179,23 @@ Baseline uses equivalent regex coverage to maskops per family.
 
 | Profile | Expression | Time | Rows/s | Python re | Speedup |
 |---------|-----------|------|--------|-----------|---------|
-| clean | `mask_pii` | 2.252s | 444,043 | 2.822s | **1.3×** |
-| clean | `contains_pii` | 0.786s | 1,272,071 | — | — |
-| dense | `mask_pii` | 3.750s | 266,674 | 2.539s | 0.7× |
-| dense | `contains_pii` | 0.199s | 5,030,634 | — | — |
-| mixed | `mask_pii` | 4.200s | 238,086 | 2.843s | 0.7× |
-| mixed | `contains_pii` | 0.418s | 2,394,223 | — | — |
+| clean | `mask_pii` | 2.455s | 407,300 | 4.268s | **1.7×** |
+| clean | `contains_pii` | 1.184s | 844,846 | — | — |
+| dense | `mask_pii` | 3.184s | 314,093 | 1.784s | 0.6× |
+| dense | `contains_pii` | 0.133s | 7,497,325 | — | — |
+| mixed | `mask_pii` | 2.943s | 339,774 | 1.993s | 0.7× |
+| mixed | `contains_pii` | 0.282s | 3,551,833 | — | — |
 
 ### LatAm patterns (RUT, CPF, CURP)
 
 | Profile | Expression | Time | Rows/s | Python re | Speedup |
 |---------|-----------|------|--------|-----------|---------|
-| clean | `mask_pii` | 2.605s | 383,825 | 2.320s | 0.9× |
-| clean | `contains_pii` | 0.793s | 1,260,977 | — | — |
-| dense | `mask_pii` | 2.952s | 338,780 | 1.657s | 0.6× |
-| dense | `contains_pii` | 0.626s | 1,597,899 | — | — |
-| mixed | `mask_pii` | 2.798s | 357,436 | 1.793s | 0.6× |
-| mixed | `contains_pii` | 0.695s | 1,438,803 | — | — |
+| clean | `mask_pii` | 2.276s | 439,367 | 2.319s | 1.0× |
+| clean | `contains_pii` | 0.795s | 1,258,169 | — | — |
+| dense | `mask_pii` | 3.048s | 328,080 | 1.690s | 0.6× |
+| dense | `contains_pii` | 0.640s | 1,562,313 | — | — |
+| mixed | `mask_pii` | 2.880s | 347,173 | 1.854s | 0.6× |
+| mixed | `contains_pii` | 0.705s | 1,418,784 | — | — |
 
 > RUT and CPF include Módulo 11 check digit validation per row — this is the cost of zero false positives.
 
@@ -202,23 +203,23 @@ Baseline uses equivalent regex coverage to maskops per family.
 
 | Profile | Expression | Time | Rows/s | Python re | Speedup |
 |---------|-----------|------|--------|-----------|---------|
-| clean | `mask_pii` | 2.364s | 422,974 | 2.060s | 0.9× |
-| clean | `contains_pii` | 0.796s | 1,255,531 | — | — |
-| dense | `mask_pii` | 2.496s | 400,576 | 1.469s | 0.6× |
-| dense | `contains_pii` | 0.208s | 4,815,812 | — | — |
-| mixed | `mask_pii` | 2.453s | 407,628 | 1.665s | 0.7× |
-| mixed | `contains_pii` | 0.362s | 2,763,168 | — | — |
+| clean | `mask_pii` | 2.301s | 434,502 | 2.093s | 0.9× |
+| clean | `contains_pii` | 0.799s | 1,251,735 | — | — |
+| dense | `mask_pii` | 2.509s | 398,628 | 1.553s | 0.6× |
+| dense | `contains_pii` | 0.215s | 4,655,272 | — | — |
+| mixed | `mask_pii` | 2.504s | 399,408 | 1.684s | 0.7× |
+| mixed | `contains_pii` | 0.374s | 2,671,550 | — | — |
 
 ### Credit card patterns (Visa, Mastercard, Amex, Discover, Maestro)
 
 | Profile | Expression | Time | Rows/s | Python re | Speedup |
 |---------|-----------|------|--------|-----------|---------|
-| clean | `mask_pii` | 2.333s | 428,549 | 0.952s | 0.4× |
-| clean | `contains_pii` | 0.794s | 1,259,331 | — | — |
-| dense | `mask_pii` | 2.755s | 362,944 | 0.974s | 0.4× |
-| dense | `contains_pii` | 0.594s | 1,684,403 | — | — |
-| mixed | `mask_pii` | 2.696s | 370,982 | 0.981s | 0.4× |
-| mixed | `contains_pii` | 0.658s | 1,520,816 | — | — |
+| clean | `mask_pii` | 2.243s | 445,762 | 0.954s | 0.4× |
+| clean | `contains_pii` | 0.792s | 1,261,873 | — | — |
+| dense | `mask_pii` | 2.797s | 357,473 | 1.005s | 0.4× |
+| dense | `contains_pii` | 0.628s | 1,591,805 | — | — |
+| mixed | `mask_pii` | 2.687s | 372,166 | 1.014s | 0.4× |
+| mixed | `contains_pii` | 0.674s | 1,484,572 | — | — |
 
 > Luhn validation runs per candidate match — this eliminates false positives at the cost of single-family throughput.
 
@@ -226,30 +227,30 @@ Baseline uses equivalent regex coverage to maskops per family.
 
 | Profile | Expression | Time | Rows/s | Python re | Speedup |
 |---------|-----------|------|--------|-----------|---------|
-| clean | `mask_pii` | 2.316s | 431,758 | 1.397s | 0.6× |
-| clean | `contains_pii` | 0.816s | 1,225,246 | — | — |
-| dense | `mask_pii` | 2.558s | 390,956 | 1.082s | 0.4× |
-| dense | `contains_pii` | 0.636s | 1,573,124 | — | — |
-| mixed | `mask_pii` | 3.754s | 266,371 | 1.669s | 0.4× |
-| mixed | `contains_pii` | 0.969s | 1,031,843 | — | — |
+| clean | `mask_pii` | 2.282s | 438,149 | 1.410s | 0.6× |
+| clean | `contains_pii` | 0.801s | 1,248,547 | — | — |
+| dense | `mask_pii` | 2.609s | 383,334 | 1.107s | 0.4× |
+| dense | `contains_pii` | 0.604s | 1,654,937 | — | — |
+| mixed | `mask_pii` | 2.590s | 386,037 | 1.179s | 0.5× |
+| mixed | `contains_pii` | 0.665s | 1,504,806 | — | — |
 
 ### All patterns active
 
-> This is the realistic production workload — all 13 pattern types running simultaneously.
-> maskops is up to **5.4× faster** than an equivalent pure Python approach.
-> `contains_pii` reaches 2.0M rows/s on mixed data — use it to pre-filter before masking in hot pipelines.
+> This is the realistic production workload — all 15 pattern types running simultaneously.
+> maskops is up to **5.7× faster** than an equivalent pure Python approach.
+> `contains_pii` reaches 1.9M rows/s on mixed data — use it to pre-filter before masking in hot pipelines.
 
 | Profile | Expression | maskops | Python `re` | Speedup |
 |---------|-----------|---------|-------------|---------|
-| clean | `mask_pii` | 3.445s | 18.459s | **5.4×** |
-| clean | `contains_pii` | 1.176s | — | — |
-| dense | `mask_pii` | 3.966s | 5.949s | **1.5×** |
-| dense | `contains_pii` | 0.626s | — | — |
-| mixed | `mask_pii` | 2.988s | 6.966s | **2.3×** |
-| mixed | `contains_pii` | 0.502s | — | — |
+| clean | `mask_pii` | 2.344s | 13.445s | **5.7×** |
+| clean | `contains_pii` | 0.822s | — | — |
+| dense | `mask_pii` | 3.269s | 6.625s | **2.0×** |
+| dense | `contains_pii` | 0.520s | — | — |
+| mixed | `mask_pii` | 3.285s | 6.581s | **2.0×** |
+| mixed | `contains_pii` | 0.545s | — | — |
 
 > maskops throughput stays roughly flat as pattern count grows — Python regex degrades with each additional pattern.
-> The clean profile gap (5.4×) reflects Python's overhead of compiling and scanning a large combined regex on short-circuit misses.
+> The clean profile gap (5.7×) reflects Python's overhead of compiling and scanning a large combined regex on short-circuit misses.
 
 ### vs Microsoft Presidio (estimated)
 
@@ -257,10 +258,14 @@ Presidio processes structured DataFrames via `presidio-structured`, which runs a
 
 | Tool | Throughput (structured data) | Requires NLP model |
 |------|------------------------------|-------------------|
-| maskops | ~252K–5.0M rows/s (measured) | No |
+| maskops | ~305K–7.5M rows/s (measured) | No |
 | Presidio (regex-only recognizers) | ~10–50K rows/s* | No |
 | Presidio (spaCy NER) | ~1–5K rows/s* | Yes (250MB+) |
 
 \* Estimated from community benchmarks and Presidio's own documentation noting it is "not optimized for bulk structured data." [Microsoft confirmed no official throughput benchmarks exist.](https://github.com/microsoft/presidio/discussions/1226)
 
 **maskops is purpose-built for structured data pipelines where Presidio's NLP overhead is unnecessary.**
+
+---
+
+*This project was developed with AI assistance from [Claude](https://claude.ai) (Anthropic). All architecture decisions, security properties, and code were reviewed and validated by the author.*

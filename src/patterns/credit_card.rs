@@ -98,3 +98,27 @@ pub fn mask_card(s: &str) -> String {
         })
         .into_owned()
 }
+
+/// Masks any valid credit card number found using FF3-1 format-preserving encryption.
+///
+/// The digit body (BIN + middle + last4) is encrypted as a single unit,
+/// preserving total length. Separators are stripped — output is always compact.
+/// Reversible with the same key and tweak.
+///
+/// Example:
+///   `4111111111111111` → `4782591043821657`  (same length, all digits, reversible)
+pub fn mask_card_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+    CARD_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            let raw = caps.get(0).unwrap().as_str();
+            if !luhn_valid(raw) {
+                return raw.to_string();
+            }
+            let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+            match cipher.encrypt(&digits) {
+                Ok(encrypted) => encrypted,
+                Err(_) => digits, // fallback: return plain digits if FPE fails
+            }
+        })
+        .into_owned()
+}
