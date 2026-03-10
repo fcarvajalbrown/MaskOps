@@ -9,19 +9,26 @@ No NLP models. No intermediate files. Just regex + Rust running directly on Arro
 
 ```mermaid
 flowchart LR
-    A[🐍 Python\nPolars DataFrame] -->|mask_pii / contains_pii| B[Polars\nExpression Engine]
+    A[🐍 Python\nPolars DataFrame] -->|mask_pii\ncontains_pii\nmask_pii_fpe| B[Polars\nExpression Engine]
     B -->|Arrow buffer\nzero-copy| C[🦀 Rust Core\nmaskops]
-    C -->|IBAN / VAT| D[Masked\nSeries]
-    C -->|Email / Phone| D
-    C -->|IP / Credit Card| D
-    C -->|DNI / NIE / NIN| D
-    C -->|Personalausweis| D
-    C -->|RUT / CPF / CURP| D
-    D -->|back to Python| A
+
+    C --> D[Asterisk\nMasking]
+    C --> E[FF3-1 FPE\nPseudonymisation]
+
+    D -->|IBAN / VAT / Email| F[Masked Series]
+    D -->|IP / EU IDs / CURP| F
+    D -->|Cards / Phone / RUT / CPF| F
+
+    E -->|Cards / Phone\nRUT / CPF| F
+
+    F -->|back to Python| A
+
     style A fill:#306998,color:#fff
     style C fill:#CE422B,color:#fff
     style B fill:#2E2E2E,color:#fff
-    style D fill:#2E7D32,color:#fff
+    style D fill:#1565C0,color:#fff
+    style E fill:#6A1B9A,color:#fff
+    style F fill:#2E7D32,color:#fff
 ```
 
 No Python objects created per row. No NLP model loaded. No intermediate files.
