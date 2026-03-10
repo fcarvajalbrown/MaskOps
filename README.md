@@ -37,25 +37,26 @@ maskops/
 ├── Cargo.toml               # Rust dependencies
 ├── pyproject.toml           # maturin build backend + PyPI metadata
 ├── src/
-│   ├── lib.rs               # Polars expression registration (mask_pii, contains_pii)
+│   ├── lib.rs               # Polars expression registration (mask_pii, contains_pii, mask_pii_fpe)
 │   └── patterns/
-│       ├── mod.rs           # mask_all() and contains_any_pii() aggregators
+│       ├── mod.rs           # mask_all(), mask_all_fpe(), contains_any_pii() aggregators
 │       ├── iban.rs          # IBAN regex + masking
 │       ├── vat.rs           # EU VAT regex + masking
 │       ├── email.rs         # Email regex + masking (local part)
-│       ├── phone.rs         # E.164 phone regex + masking
+│       ├── phone.rs         # E.164 phone regex + masking + FPE
 │       ├── ip.rs            # IPv4/IPv6 regex + masking
-│       ├── latam_id.rs      # RUT (Chile), CPF (Brazil), CURP (Mexico)
+│       ├── latam_id.rs      # RUT (Chile), CPF (Brazil), CURP (Mexico) + FPE
 │       ├── european_id.rs   # DNI/NIE (Spain), NIN (UK), Personalausweis (Germany)
-│       ├── credit_card.rs   # Visa, Mastercard, Amex, Discover, Maestro + Luhn
+│       ├── credit_card.rs   # Visa, Mastercard, Amex, Discover, Maestro + Luhn + FPE
+│       ├── fpe.rs           # FF3-1 AES-256 format-preserving encryption (NIST SP 800-38G Rev.1)
 │       └── country_codes.rs # Country prefix lookup table
 ├── maskops/
-│   └── __init__.py          # Python API via register_plugin_function
+│   └── __init__.py          # Python API (mask_pii, contains_pii, mask_pii_fpe)
 ├── benchmarks/
 │   └── benchmark.py         # Per-family throughput benchmarks (1M rows)
 └── tests/
-    ├── test_masking.py      # pytest suite (66 tests)
-    ├── generate_fixtures.py # Faker-based EU test data generator
+    ├── test_masking.py      # pytest suite (97 tests)
+    ├── generate_fixtures.py # Faker-based test data generator (5 fixture files)
     └── fixtures/            # Generated CSVs (gitignored)
 ```
 
