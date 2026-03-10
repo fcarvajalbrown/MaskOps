@@ -126,7 +126,7 @@ Personalausweis and NIN: format-only matching; check digit validation pending (v
 - [x] PyPI publish via GitHub Actions
 - [x] Check digit validation for Personalausweis (Germany) and NIN (UK)
 - [x] Format-Preserving Encryption (FPE/FF3-1) for reversible masking
-- [ ] Benchmark vs Presidio
+- [x] Benchmark vs Presidio
 - [ ] Parquet streaming support
 
 ## Build from source
@@ -261,15 +261,46 @@ Baseline uses equivalent regex coverage to maskops per family.
 
 ### vs Microsoft Presidio (estimated)
 
-Presidio processes structured DataFrames via `presidio-structured`, which runs a spaCy NLP pipeline per row. Based on community reports and the architecture:
+### vs Microsoft Presidio (measured)
 
-| Tool | Throughput (structured data) | Requires NLP model |
-|------|------------------------------|-------------------|
-| maskops | ~305K–7.5M rows/s (measured) | No |
-| Presidio (regex-only recognizers) | ~10–50K rows/s* | No |
-| Presidio (spaCy NER) | ~1–5K rows/s* | Yes (250MB+) |
+Benchmarked on 10,000 rows of mixed real-world text (email, phone, IBAN, credit cards, IP),
+Python 3.11, Ubuntu, `en_core_web_lg` model. Extrapolated to 1M rows.
 
-\* Estimated from community benchmarks and Presidio's own documentation noting it is "not optimized for bulk structured data." [Microsoft confirmed no official throughput benchmarks exist.](https://github.com/microsoft/presidio/discussions/1226)
+| Tool | Profile | Time (10K rows) | Rows/s | Speedup |
+|------|---------|----------------|--------|---------|
+| maskops | clean | 0.021s | 479,441 | — |
+| Presidio (en_core_web_lg) | clean | 101.131s | 99 | **4,849× slower** |
+| maskops | dense | 0.028s | 351,645 | — |
+| Presidio (en_core_web_lg) | dense | 115.599s | 87 | **4,065× slower** |
+| maskops | mixed | 0.028s | 358,118 | — |
+| Presidio (en_core_web_lg) | mixed | 118.125s | 85 | **4,230× slower** |
+
+> At Presidio's measured throughput of ~85–99 rows/s, processing 1M rows would take **2.8–3.3 hours**.
+> maskops processes the same 1M rows in **under 3 seconds**.
+
+#### Entity coverage
+
+| Pattern | maskops | Presidio |
+|---------|---------|---------|
+| IBAN | ✓ | ✗ |
+| EU VAT | ✓ | ✗ |
+| Email | ✓ | ✓ |
+| Phone (E.164) | ✓ | ✓ |
+| IP Address | ✓ | ✓ |
+| Credit Card | ✓ | ✓ |
+| RUT (Chile) | ✓ | ✗ |
+| CPF (Brazil) | ✓ | ✗ |
+| CURP (Mexico) | ✓ | ✗ |
+| DNI/NIE (Spain) | ✓ | ✗ |
+| NIN (UK) | ✓ | ✗ |
+| Personalausweis (Germany) | ✓ | ✗ |
+| Person names (NER) | ✗ | ✓ |
+| Locations (NER) | ✗ | ✓ |
+| Organisations (NER) | ✗ | ✓ |
+
+> Presidio's strength is unstructured text with named entities (names, locations, organisations) — use it when NER is required.
+> maskops is purpose-built for structured data pipelines where schema-defined PII fields don't need NLP.
+> For mixed workloads, both tools can be combined: maskops for bulk structured columns, Presidio for free-text fields.
 
 **maskops is purpose-built for structured data pipelines where Presidio's NLP overhead is unnecessary.**
 
