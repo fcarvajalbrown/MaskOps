@@ -18,10 +18,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12"]
-      exclude:
-        # TODO: Rust extension fails to load on ubuntu-latest + 3.12 (dlopen).
-        - os: ubuntu-latest
-          python-version: "3.12"
+        exclude:
+          # TODO: Rust extension fails to load on ubuntu-latest + 3.12 (dlopen).
+          - os: ubuntu-latest
+            python-version: "3.12"
 
     steps:
       - name: Checkout
