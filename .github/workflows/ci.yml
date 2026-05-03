@@ -38,10 +38,10 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           python -m venv .venv
-          .venv/bin/pip install maturin faker polars pytest
+          .venv/bin/pip install maturin faker polars pytest pytest-cov
           .venv/bin/maturin develop --release
           .venv/bin/python tests/generate_fixtures.py
-          .venv/bin/pytest tests/ -v
+          .venv/bin/pytest tests/ -v --cov=maskops --cov-report=xml
 
       - name: Install dependencies and build (Windows)
         if: runner.os == 'Windows'
@@ -49,7 +49,15 @@ jobs:
         run: |
           python -m venv .venv
           .venv\Scripts\activate.bat
-          pip install maturin faker polars pytest
+          pip install maturin faker polars pytest pytest-cov
           maturin develop --release
           python tests/generate_fixtures.py
-          pytest tests/ -v
+          pytest tests/ -v --cov=maskops --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: false
