@@ -78,3 +78,6 @@
 - [ ] Fix Rust extension `dlopen` failure on `ubuntu-latest` + Python 3.12.
   Suspected causes: `maturin develop` editable-install path mismatch, or missing `.so` in the source tree when Polars tries to load the plugin.
 - [ ] Add Rust coverage (e.g. `cargo tarpaulin`) and merge with Python report on Codecov for an accurate combined number.
+- [ ] Update GitHub Actions (`actions/checkout`, `actions/setup-python`) to versions supporting Node.js 24.
+  Node.js 20 is deprecated; forced default becomes Node.js 24 on June 2nd 2026 and Node.js 20 is removed from runners on September 16th 2026.
+  See: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
