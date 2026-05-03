@@ -56,6 +56,13 @@
 
 ---
 
+## Agent Interaction Rules
+
+- "Add to AGENTS.md" means write to the file locally and STOP. Do NOT commit or push unless explicitly asked.
+- This is a scratchpad for deferred work, not an action item to execute immediately.
+
+---
+
 ## Response Style
 
 - Brief and factually correct — no over-explaining simple things.
