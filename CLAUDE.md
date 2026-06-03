@@ -14,6 +14,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **"Add to AGENTS.md"** means write to that file locally and stop — do not commit or push unless explicitly asked.
 
+## Changelog
+
+Update `docs/CHANGELOG.md` with every commit that adds, removes, or changes public API behavior (new patterns, new expressions, breaking changes, significant bug fixes). One entry per change, one line max. Skip internal refactors, test changes, CI tweaks, and dependency bumps unless they affect behavior. Target 3–10 entries per release — never dump raw commit messages.
+
 ## Code style
 
 - Comments: 1-line max, no block comments. Informal tone is fine if it fits on one line.
