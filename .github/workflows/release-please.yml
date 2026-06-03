@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -19,34 +20,29 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      - name: Auto-merge release PR and tag
+      # Merge the release PR, then re-trigger this workflow so release-please
+      # can detect the merged PR, create the tag, and set release_created=true.
+      # (GITHUB_TOKEN merges don't auto-trigger push workflows — we re-trigger manually.)
+      - name: Auto-merge release PR
         if: ${{ steps.release.outputs.pr }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_JSON='${{ steps.release.outputs.pr }}'
-          PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number')
-          VERSION=$(echo "$PR_JSON" | jq -r '.title' | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
-          TAG="v${VERSION}"
-
-          # Merge and delete the release branch
+          PR_NUMBER=$(echo '${{ steps.release.outputs.pr }}' | jq -r '.number')
           gh pr merge --merge --delete-branch --repo "${{ github.repository }}" "$PR_NUMBER"
+          gh workflow run release-please.yml --repo "${{ github.repository }}"
 
-          # Get the merge commit SHA (head of main after merge)
-          MERGE_SHA=$(gh api "repos/${{ github.repository }}/git/ref/heads/main" --jq '.object.sha')
-
-          # Create the tag (skip if it already exists)
-          if ! gh api "repos/${{ github.repository }}/git/ref/tags/${TAG}" --silent 2>/dev/null; then
-            gh api "repos/${{ github.repository }}/git/refs" \
-              --method POST \
-              -f ref="refs/tags/${TAG}" \
-              -f sha="${MERGE_SHA}"
-          fi
-
-          # Create the GitHub Release
-          gh release create "$TAG" \
+      # Runs on the re-triggered workflow_dispatch after the PR is merged.
+      # release-please creates the tag; we create the GitHub Release here.
+      - name: Create GitHub Release
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${{ steps.release.outputs.version }}
+          gh release create "v${VERSION}" \
             --repo "${{ github.repository }}" \
-            --title "$TAG" \
+            --title "v${VERSION}" \
             --notes "## Install
 
           \`\`\`bash
