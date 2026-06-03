@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — v0.9
+
+- French NIR (INSEE social security number): detection + asterisk masking
+- Italian Codice Fiscale: detection + asterisk masking
+- Uruguayan cédula de identidad: detection + asterisk, FPE, and consistent masking
+- Canadian SIN: detection + asterisk, FPE, and consistent masking (formatted and compact)
+- Australian TFN: detection + asterisk, FPE, and consistent masking (spaced and compact)
+
 ## [Unreleased] — v0.8
 
 - `mask_pii(mode="consistent", salt=...)`: HMAC-SHA256 deterministic pseudonymization for digit PII
