@@ -1,5 +1,3 @@
-# MaskOps
-
 <p align="center">
   <img src="assets/icon.svg" alt="MaskOps" width="110"/>
 </p>
