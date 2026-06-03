@@ -16,6 +16,7 @@ use crate::patterns::eu::european_id::{
 use crate::patterns::contact::email::{mask_email, contains_email};
 use crate::patterns::contact::phone::{mask_phone, contains_phone, mask_phone_fpe};
 use crate::patterns::contact::ip::{mask_ip, contains_ip};
+use crate::patterns::latam::{contains_ec_cedula, mask_ec_cedula, mask_ec_cedula_fpe};
 use crate::patterns::latam::latam_id::{
     mask_rut, contains_rut, mask_cpf, contains_cpf, mask_curp, contains_curp,
     mask_rut_fpe, mask_cpf_fpe,
@@ -65,6 +66,7 @@ pub fn mask_digit(value: &str) -> String {
     let s = mask_arg_dni(&s);
     let s = mask_co_cc(&s);
     let s = mask_co_nit(&s);
+    let s = mask_ec_cedula(&s);
     s
 }
 
@@ -81,6 +83,7 @@ pub fn mask_digit_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     let s = mask_arg_dni_fpe(&s, cipher);
     let s = mask_co_cc_fpe(&s, cipher);
     let s = mask_co_nit_fpe(&s, cipher);
+    let s = mask_ec_cedula_fpe(&s, cipher);
     s
 }
 
@@ -126,4 +129,5 @@ pub fn contains_any_pii(value: &str) -> bool {
         || contains_arg_dni(value)
         || contains_co_cc(value)
         || contains_co_nit(value)
+        || contains_ec_cedula(value)
 }

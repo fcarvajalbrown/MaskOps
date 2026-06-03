@@ -19,6 +19,7 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          skip-github-release: true
 
       # Merge the release PR, then re-trigger this workflow so release-please
       # can detect the merged PR, create the tag, and set release_created=true.

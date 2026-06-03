@@ -2,7 +2,6 @@
   "packages": {
     ".": {
       "release-type": "python",
-      "skip-github-release": true,
       "changelog-path": "docs/CHANGELOG.md",
       "extra-files": [
         {
