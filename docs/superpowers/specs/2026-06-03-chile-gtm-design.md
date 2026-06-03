@@ -210,8 +210,23 @@ This is GDPR Art. 4(5) pseudonymization. Lighter regulatory burden than storing 
 | **Phase 2** | 3 paying Chilean clients (USD 600/month) | Begin Argentina outreach. **Argentine DNI (v0.5.0) must be shipped first.** |
 | **Phase 3** | 5 paying clients total (USD 1K+/month) | Colombia and Peru. Colombian CC/NIT and Peruvian DNI must be shipped. |
 | **Phase 4** | v1.0 ships (CLI + policy files live) | Approach Medium-tier and state-adjacent companies with a full product demo |
+| **Phase 5** | 2+ reference clients + stable revenue | Pursue Mercado Público (Chilean government procurement). ISO 27001 certification likely required as a prerequisite — budget USD 15–40K and 6–12 months. Do not pursue earlier. |
 
 **Rule:** Never pitch a country whose ID format is not yet implemented. GTM and roadmap expand in lockstep.
+
+### ISO certification — deferred to Phase 5
+
+ISO certification applies to the *service provider* (you), not to the MaskOps software itself. Relevant standards:
+
+| Standard | What it covers | Relevance |
+|----------|---------------|-----------|
+| **ISO 27001** | Information security management system | Prerequisite for 27701. Required for Mercado Público bids. |
+| **ISO 27701** | Privacy information management (extends 27001) | Maps directly to Ley 21.719 and GDPR obligations. Most defensible proof of compliance for Chilean DPA. |
+| **CMF NCG 311** | Cybersecurity and data governance for financial entities | Required for clients regulated by CMF — MaskOps *helps them comply*, you don't need it yourself. |
+
+**Sales angle now (no certification needed):** *"MaskOps is built to help your team achieve ISO 27701 compliance"* — accurate, honest, effective.
+
+**Certification angle later (Phase 5):** Once pursuing government contracts via Mercado Público, ISO 27001 → 27701 certification becomes a genuine prerequisite. Revisit then with dedicated budget.
 
 ---
 

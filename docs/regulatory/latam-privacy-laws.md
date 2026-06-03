@@ -70,6 +70,14 @@
 - **Official current text (Spanish):** https://www.bcn.cl/leychile/navegar?idNorma=141599
 - **New bill tracking:** https://www.camara.cl/pley/pley_detalle.aspx?prmID=16919
 
+**Additional Chilean regulatory layer — CMF NCG 311:**
+Entities regulated by the Comisión para el Mercado Financiero (banks, fintechs, payment processors, AFPs, ISAPREs) must comply with CMF NCG 311, which mandates cybersecurity and data governance standards for financial data. MaskOps directly supports NCG 311 compliance for these clients.
+
+**ISO certification relevance for Chile:**
+- **ISO 27701** is the most defensible proof of compliance with Ley 21.719 for a service provider. Required investment: USD 15–40K + 6–12 months. Relevant only at Phase 5 (government procurement via Mercado Público).
+- **Mercado Público** (Chilean government procurement platform) frequently requires ISO 27001 and ISO 27701 as mandatory prerequisites for technology bids. Pursue only after 2+ reference clients.
+- **Sales angle now:** *"MaskOps is built to help your team achieve ISO 27701 compliance"* — accurate and effective without any certification required on your part.
+
 ---
 
 ## Colombia — Ley 1581
