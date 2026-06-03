@@ -19,27 +19,38 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      - name: Auto-merge release PR
+      - name: Auto-merge release PR and tag
         if: ${{ steps.release.outputs.pr }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_NUMBER=$(echo '${{ steps.release.outputs.pr }}' | jq -r '.number')
+          PR_JSON='${{ steps.release.outputs.pr }}'
+          PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number')
+          VERSION=$(echo "$PR_JSON" | jq -r '.title' | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          TAG="v${VERSION}"
+
+          # Merge and delete the release branch
           gh pr merge --merge --delete-branch --repo "${{ github.repository }}" "$PR_NUMBER"
 
-      # After a release PR is merged and the tag is created,
-      # create a GitHub Release with auto-generated notes.
-      - name: Create GitHub Release
-        if: ${{ steps.release.outputs.release_created }}
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.release.outputs.tag_name }}
-          generate_release_notes: true
-          body: |
-            ## Install
+          # Get the merge commit SHA (head of main after merge)
+          MERGE_SHA=$(gh api "repos/${{ github.repository }}/git/ref/heads/main" --jq '.object.sha')
 
-            ```bash
-            pip install maskops==${{ steps.release.outputs.version }}
-            ```
+          # Create the tag (skip if it already exists)
+          if ! gh api "repos/${{ github.repository }}/git/ref/tags/${TAG}" --silent 2>/dev/null; then
+            gh api "repos/${{ github.repository }}/git/refs" \
+              --method POST \
+              -f ref="refs/tags/${TAG}" \
+              -f sha="${MERGE_SHA}"
+          fi
 
-            See [CHANGELOG](https://github.com/fcarvajalbrown/MaskOps/blob/main/docs/CHANGELOG.md) for details.
+          # Create the GitHub Release
+          gh release create "$TAG" \
+            --repo "${{ github.repository }}" \
+            --title "$TAG" \
+            --notes "## Install
+
+          \`\`\`bash
+          pip install maskops==${VERSION}
+          \`\`\`
+
+          See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/docs/CHANGELOG.md) for details."
