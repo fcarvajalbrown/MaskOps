@@ -9,6 +9,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - License: MIT → GPL-3.0-or-later
 - PyPI classifiers: added Healthcare Industry, expanded keyword coverage
 
+## [0.4.0] — 2026-06-03
+
+### Added
+- Lazy scan pipeline support verified: `scan_parquet` → `sink_parquet` works with all three expressions (`mask_pii`, `contains_pii`, `mask_pii_fpe`); 5 streaming integration tests added.
+- Benchmark refresh: US family (SSN, passport) added; "All patterns" baseline updated to cover full pattern set.
+
 ## [0.3.0] — 2026-06-03
 
 ### Added

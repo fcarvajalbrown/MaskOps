@@ -7,6 +7,7 @@ Run after `maturin develop`:
 
 import re
 import csv
+import tempfile
 from pathlib import Path
 
 import polars as pl
@@ -936,3 +937,86 @@ class TestMaskUSPassport:
         df = pl.DataFrame({"col": ["A12345678"]})
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert result == "*********"
+
+
+# ---------------------------------------------------------------------------
+# Lazy scan pipeline (streaming)
+# ---------------------------------------------------------------------------
+
+class TestLazyScanPipeline:
+    """Verifies mask_pii and contains_pii work through scan_parquet → sink_parquet."""
+
+    PII_ROWS = [
+        "SSN: 123-45-6789",
+        "Passport: A12345678",
+        "Email: john@example.com",
+        "IBAN: DE89370400440532013000",
+        "Card: 4111111111111111",
+        "RUT: 76.354.771-K",
+        "Clean row with no PII",
+    ]
+
+    def _write_parquet(self, tmp_path: Path) -> Path:
+        p = tmp_path / "input.parquet"
+        pl.DataFrame({"text": self.PII_ROWS}).write_parquet(p)
+        return p
+
+    def test_mask_pii_lazy_collect(self, tmp_path):
+        src = self._write_parquet(tmp_path)
+        result = (
+            pl.scan_parquet(src)
+            .with_columns(maskops.mask_pii("text"))
+            .collect()
+        )
+        assert len(result) == len(self.PII_ROWS)
+        assert "123-45-6789" not in result["text"].to_list()
+        assert "john@example.com" not in result["text"].to_list()
+        assert "Clean row with no PII" in result["text"].to_list()
+
+    def test_mask_pii_sink_parquet(self, tmp_path):
+        src = self._write_parquet(tmp_path)
+        out = tmp_path / "output.parquet"
+        (
+            pl.scan_parquet(src)
+            .with_columns(maskops.mask_pii("text"))
+            .sink_parquet(out)
+        )
+        result = pl.read_parquet(out)
+        assert len(result) == len(self.PII_ROWS)
+        assert "123-45-6789" not in result["text"].to_list()
+        assert "A12345678" not in result["text"].to_list()
+
+    def test_contains_pii_lazy_collect(self, tmp_path):
+        src = self._write_parquet(tmp_path)
+        result = (
+            pl.scan_parquet(src)
+            .with_columns(maskops.contains_pii("text"))
+            .collect()
+        )
+        flags = result["text"].to_list()
+        assert flags[-1] is False  # clean row
+        assert any(flags[:-1])     # at least one PII row detected
+
+    def test_mask_pii_fpe_lazy_collect(self, tmp_path):
+        src = self._write_parquet(tmp_path)
+        result = (
+            pl.scan_parquet(src)
+            .with_columns(maskops.mask_pii_fpe("text", KEY, TWEAK))
+            .collect()
+        )
+        assert len(result) == len(self.PII_ROWS)
+        assert "4111111111111111" not in result["text"].to_list()
+        assert "Clean row with no PII" in result["text"].to_list()
+
+    def test_filter_then_mask_lazy(self, tmp_path):
+        src = self._write_parquet(tmp_path)
+        result = (
+            pl.scan_parquet(src)
+            .filter(maskops.contains_pii("text"))
+            .with_columns(maskops.mask_pii("text"))
+            .collect()
+        )
+        assert len(result) == len(self.PII_ROWS) - 1  # clean row filtered out
+        for row in result["text"].to_list():
+            assert "123-45-6789" not in row
+            assert "john@example.com" not in row

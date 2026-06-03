@@ -8,6 +8,7 @@ Measures maskops throughput on 1M rows, broken down by pattern family:
   - Network:   IP address
   - Card:      Visa, Mastercard, Amex, Discover, Maestro
   - EU ID:     DNI/NIE (Spain), NIN (UK), Personalausweis (Germany)
+  - US:        SSN, Passport
   - All:       every pattern active (worst case)
 
 Each family is tested across three data profiles:
@@ -73,7 +74,13 @@ EU_ID_SAMPLES = [
     "Ausweis-Nr: T220001293",
 ]
 
-ALL_SAMPLES = EU_SAMPLES + LATAM_SAMPLES + NETWORK_SAMPLES + CARD_SAMPLES + EU_ID_SAMPLES
+US_SAMPLES = [
+    "SSN on file: 123-45-6789 confirmed",
+    "Passport number A12345678 scanned",
+    "SSN 234-56-7890 linked to account",
+]
+
+ALL_SAMPLES = EU_SAMPLES + LATAM_SAMPLES + NETWORK_SAMPLES + CARD_SAMPLES + EU_ID_SAMPLES + US_SAMPLES
 
 # ---------------------------------------------------------------------------
 # Pure Python regex baselines
@@ -130,9 +137,16 @@ EU_ID_RE = re.compile(
     r"|\b[A-Z][A-Z0-9]{8}[0-9]\b"
 )
 
+US_RE = re.compile(
+    # SSN (dashed)
+    r"\b\d{3}-\d{2}-\d{4}\b"
+    # US passport
+    r"|\b[A-Z][0-9]{8}\b"
+)
+
 ALL_RE = re.compile(
     EU_RE.pattern + r"|" + LATAM_RE.pattern + r"|" + NETWORK_RE.pattern
-    + r"|" + CARD_RE.pattern + r"|" + EU_ID_RE.pattern
+    + r"|" + CARD_RE.pattern + r"|" + EU_ID_RE.pattern + r"|" + US_RE.pattern
 )
 
 # ---------------------------------------------------------------------------
@@ -213,12 +227,13 @@ def python_regex_mask(df: pl.DataFrame, pattern: re.Pattern) -> pl.Series:
 # ---------------------------------------------------------------------------
 
 FAMILIES = [
-    ("EU (IBAN, VAT, Email, Phone)",           EU_SAMPLES,     EU_RE),
-    ("LatAm (RUT, CPF, CURP)",                 LATAM_SAMPLES,  LATAM_RE),
-    ("Network (IP)",                            NETWORK_SAMPLES, NETWORK_RE),
-    ("Credit Card (Visa/MC/Amex/Discover/Maestro)", CARD_SAMPLES, CARD_RE),
-    ("European ID (DNI/NIE/NIN/Personalausweis)",   EU_ID_SAMPLES, EU_ID_RE),
-    ("All patterns",                            ALL_SAMPLES,    ALL_RE),
+    ("EU (IBAN, VAT, Email, Phone)",                 EU_SAMPLES,      EU_RE),
+    ("LatAm (RUT, CPF, CURP)",                       LATAM_SAMPLES,   LATAM_RE),
+    ("Network (IP)",                                  NETWORK_SAMPLES, NETWORK_RE),
+    ("Credit Card (Visa/MC/Amex/Discover/Maestro)",  CARD_SAMPLES,    CARD_RE),
+    ("European ID (DNI/NIE/NIN/Personalausweis)",    EU_ID_SAMPLES,   EU_ID_RE),
+    ("US (SSN, Passport)",                           US_SAMPLES,      US_RE),
+    ("All patterns",                                  ALL_SAMPLES,     ALL_RE),
 ]
 
 def main():
