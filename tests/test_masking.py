@@ -1107,3 +1107,64 @@ class TestMaskCONIT:
         assert result.endswith("-8")
         assert "*" not in result
         assert result != "900123456-8"
+
+
+# ---------------------------------------------------------------------------
+# Pattern selection
+# ---------------------------------------------------------------------------
+
+class TestPatternSelection:
+    """mask_pii / contains_pii / mask_pii_fpe with patterns= argument."""
+
+    def test_mask_only_email(self):
+        df = pl.DataFrame({"col": ["email: john@example.com and SSN: 123-45-6789"]})
+        result = df.with_columns(maskops.mask_pii("col", patterns=["email"]))["col"][0]
+        assert "john@example.com" not in result
+        assert "123-45-6789" in result  # SSN untouched
+
+    def test_mask_only_ssn(self):
+        df = pl.DataFrame({"col": ["email: john@example.com and SSN: 123-45-6789"]})
+        result = df.with_columns(maskops.mask_pii("col", patterns=["ssn"]))["col"][0]
+        assert "john@example.com" in result  # email untouched
+        assert "123-45-6789" not in result
+
+    def test_mask_multiple_patterns(self):
+        df = pl.DataFrame({"col": ["john@example.com card 4111111111111111"]})
+        result = df.with_columns(maskops.mask_pii("col", patterns=["email", "credit_card"]))["col"][0]
+        assert "john@example.com" not in result
+        assert "4111111111111111" not in result
+
+    def test_mask_no_patterns_masks_all(self):
+        df = pl.DataFrame({"col": ["john@example.com and 123-45-6789"]})
+        full = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        selected_all = df.with_columns(maskops.mask_pii("col", patterns=["email", "ssn"]))["col"][0]
+        assert "john@example.com" not in full
+        assert "123-45-6789" not in full
+        assert "john@example.com" not in selected_all
+        assert "123-45-6789" not in selected_all
+
+    def test_unknown_pattern_ignored(self):
+        original = "john@example.com"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col", patterns=["nonexistent_pattern"]))["col"][0]
+        assert result == original  # nothing masked
+
+    def test_contains_pii_pattern_filter(self):
+        df = pl.DataFrame({"col": ["john@example.com", "123-45-6789", "nothing"]})
+        email_only = df.with_columns(maskops.contains_pii("col", patterns=["email"]))["col"].to_list()
+        ssn_only = df.with_columns(maskops.contains_pii("col", patterns=["ssn"]))["col"].to_list()
+        assert email_only == [True, False, False]
+        assert ssn_only == [False, True, False]
+
+    def test_mask_pii_fpe_pattern_filter(self):
+        df = pl.DataFrame({"col": ["phone +56912345678 card 4111111111111111"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK, patterns=["credit_card"]))["col"][0]
+        assert "4111111111111111" not in result
+        assert "+56912345678" in result  # phone untouched
+
+    def test_backward_compatible_no_patterns(self):
+        df = pl.DataFrame({"col": ["john@example.com"]})
+        with_none = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        with_explicit = df.with_columns(maskops.mask_pii("col", patterns=None))["col"][0]
+        assert with_none == with_explicit
+        assert "john@example.com" not in with_none

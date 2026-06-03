@@ -10,7 +10,8 @@ use pyo3::prelude::*;
 use pyo3::types::PyModuleMethods;
 use pyo3_polars::derive::polars_expr;
 use pyo3_polars::export::polars_core::prelude::*;
-use patterns::{mask_all, mask_all_fpe, contains_any_pii};
+use patterns::{mask_all, mask_all_fpe, contains_any_pii,
+               mask_all_selected, mask_all_selected_fpe, contains_any_selected};
 use patterns::{Ff3Cipher, KEY_LEN, TWEAK_LEN};
 pub use patterns::fpe::Ff3Cipher as MaskopsFpe;
 
@@ -18,13 +19,18 @@ pub use patterns::fpe::Ff3Cipher as MaskopsFpe;
 // Expression: mask_pii
 // ---------------------------------------------------------------------------
 
-/// Polars expression: replaces all PII in a Utf8 column with masked equivalents.
+/// Polars expression: replaces PII in a Utf8 column with masked equivalents.
+/// inputs[0]: string column; inputs[1] (optional): comma-separated pattern names.
 #[polars_expr(output_type=String)]
 fn mask_pii(inputs: &[Series]) -> PolarsResult<Series> {
     let ca = inputs[0].str()?;
-    let out: StringChunked = ca.apply(|opt_val: Option<&str>| {
-        opt_val.map(|s| std::borrow::Cow::Owned(mask_all(s)))
-    });
+    let out: StringChunked = if inputs.len() > 1 {
+        let pat_str = inputs[1].str()?.get(0).unwrap_or("");
+        let patterns: Vec<&str> = pat_str.split(',').filter(|s| !s.is_empty()).collect();
+        ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_selected(s, &patterns))))
+    } else {
+        ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all(s))))
+    };
     Ok(out.into_series())
 }
 
@@ -33,12 +39,17 @@ fn mask_pii(inputs: &[Series]) -> PolarsResult<Series> {
 // ---------------------------------------------------------------------------
 
 /// Polars expression: returns a boolean Series — true where PII was detected.
+/// inputs[0]: string column; inputs[1] (optional): comma-separated pattern names.
 #[polars_expr(output_type=Boolean)]
 fn contains_pii(inputs: &[Series]) -> PolarsResult<Series> {
     let ca = inputs[0].str()?;
-    let out: BooleanChunked = ca.apply_nonnull_values_generic(DataType::Boolean, |s| {
-        contains_any_pii(s)
-    });
+    let out: BooleanChunked = if inputs.len() > 1 {
+        let pat_str = inputs[1].str()?.get(0).unwrap_or("");
+        let patterns: Vec<&str> = pat_str.split(',').filter(|s| !s.is_empty()).collect();
+        ca.apply_nonnull_values_generic(DataType::Boolean, |s| contains_any_selected(s, &patterns))
+    } else {
+        ca.apply_nonnull_values_generic(DataType::Boolean, |s| contains_any_pii(s))
+    };
     Ok(out.into_series())
 }
 
@@ -80,9 +91,13 @@ fn mask_pii_fpe(inputs: &[Series]) -> PolarsResult<Series> {
     let tweak: [u8; TWEAK_LEN] = tweak_bytes.try_into().unwrap();
     let cipher = Ff3Cipher::new(&key, &tweak);
 
-    let out: StringChunked = ca.apply(|opt_val: Option<&str>| {
-        opt_val.map(|s| std::borrow::Cow::Owned(mask_all_fpe(s, &cipher)))
-    });
+    let out: StringChunked = if inputs.len() > 3 {
+        let pat_str = inputs[3].str()?.get(0).unwrap_or("");
+        let patterns: Vec<&str> = pat_str.split(',').filter(|s| !s.is_empty()).collect();
+        ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_selected_fpe(s, &patterns, &cipher))))
+    } else {
+        ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_fpe(s, &cipher))))
+    };
     Ok(out.into_series())
 }
 

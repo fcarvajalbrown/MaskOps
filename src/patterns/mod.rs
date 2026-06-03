@@ -109,6 +109,95 @@ pub fn mask_all_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     mask_digit_fpe(&s, cipher)
 }
 
+/// Masks only the selected PII patterns with asterisks.
+///
+/// Pattern names: email, phone, ip, iban, vat, dni, nie, nin, personalausweis,
+/// us_passport, curp, rut, cpf, ssn, arg_dni, co_cc, co_nit, ec_cedula, credit_card.
+pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
+    let mut s = value.to_string();
+    for pat in patterns {
+        s = match *pat {
+            "email"           => mask_email(&s),
+            "phone"           => mask_phone(&s),
+            "ip"              => mask_ip(&s),
+            "iban"            => mask_iban(&s),
+            "vat"             => mask_vat(&s),
+            "dni"             => mask_dni(&s),
+            "nie"             => mask_nie(&s),
+            "nin"             => mask_nin(&s),
+            "personalausweis" => mask_personalausweis(&s),
+            "us_passport"     => mask_us_passport(&s),
+            "curp"            => mask_curp(&s),
+            "rut"             => mask_rut(&s),
+            "cpf"             => mask_cpf(&s),
+            "ssn"             => mask_ssn(&s),
+            "arg_dni"         => mask_arg_dni(&s),
+            "co_cc"           => mask_co_cc(&s),
+            "co_nit"          => mask_co_nit(&s),
+            "ec_cedula"       => mask_ec_cedula(&s),
+            "credit_card"     => mask_card(&s),
+            _                 => s,
+        };
+    }
+    s
+}
+
+/// Masks only the selected PII patterns — non-digit asterisked, digit FPE.
+pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &Ff3Cipher) -> String {
+    let mut s = value.to_string();
+    for pat in patterns {
+        s = match *pat {
+            "email"           => mask_email(&s),
+            "phone"           => mask_phone_fpe(&s, cipher),
+            "ip"              => mask_ip(&s),
+            "iban"            => mask_iban(&s),
+            "vat"             => mask_vat(&s),
+            "dni"             => mask_dni(&s),
+            "nie"             => mask_nie(&s),
+            "nin"             => mask_nin(&s),
+            "personalausweis" => mask_personalausweis(&s),
+            "us_passport"     => mask_us_passport(&s),
+            "curp"            => mask_curp(&s),
+            "rut"             => mask_rut_fpe(&s, cipher),
+            "cpf"             => mask_cpf_fpe(&s, cipher),
+            "ssn"             => mask_ssn_fpe(&s, cipher),
+            "arg_dni"         => mask_arg_dni_fpe(&s, cipher),
+            "co_cc"           => mask_co_cc_fpe(&s, cipher),
+            "co_nit"          => mask_co_nit_fpe(&s, cipher),
+            "ec_cedula"       => mask_ec_cedula_fpe(&s, cipher),
+            "credit_card"     => mask_card_fpe(&s, cipher),
+            _                 => s,
+        };
+    }
+    s
+}
+
+/// Returns true if any of the selected PII patterns is found in the string.
+pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
+    patterns.iter().any(|pat| match *pat {
+        "email"           => contains_email(value),
+        "phone"           => contains_phone(value),
+        "ip"              => contains_ip(value),
+        "iban"            => contains_iban(value),
+        "vat"             => contains_vat(value),
+        "dni"             => contains_dni(value),
+        "nie"             => contains_nie(value),
+        "nin"             => contains_nin(value),
+        "personalausweis" => contains_personalausweis(value),
+        "us_passport"     => contains_us_passport(value),
+        "curp"            => contains_curp(value),
+        "rut"             => contains_rut(value),
+        "cpf"             => contains_cpf(value),
+        "ssn"             => contains_ssn(value),
+        "arg_dni"         => contains_arg_dni(value),
+        "co_cc"           => contains_co_cc(value),
+        "co_nit"          => contains_co_nit(value),
+        "ec_cedula"       => contains_ec_cedula(value),
+        "credit_card"     => contains_card(value),
+        _                 => false,
+    })
+}
+
 /// Returns true if any known PII pattern is found in the string.
 pub fn contains_any_pii(value: &str) -> bool {
     contains_iban(value)

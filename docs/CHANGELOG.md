@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.0] — 2026-06-03
+
+### Added
+- `patterns=` argument on `mask_pii`, `contains_pii`, and `mask_pii_fpe` — limits detection/masking to the specified PII families. Backward-compatible: omitting `patterns` preserves existing behavior.
+
 ## [0.3.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.2.0...v0.3.0) (2026-06-03)
 
 

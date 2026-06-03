@@ -33,36 +33,41 @@ if TYPE_CHECKING:
 _LIB = Path(__file__).parent
 
 
-def mask_pii(expr: IntoExpr) -> pl.Expr:
+def mask_pii(expr: IntoExpr, patterns: list = None) -> pl.Expr:
     """
-    Mask all detected PII in a String column.
+    Mask detected PII in a String column.
 
-    Replaces matched PII (IBAN, VAT, …) with asterisks while preserving
-    non-sensitive characters around the match.
+    Replaces matched PII with asterisks. Pass ``patterns`` to limit masking to
+    specific PII families; omit it (or pass ``None``) to mask everything.
 
     Parameters
     ----------
     expr : IntoExpr
         A Polars column name (str) or expression resolving to a String series.
-
-    Returns
-    -------
-    pl.Expr
-        A new expression with PII replaced by `*` characters.
+    patterns : list[str] | None
+        Optional list of pattern names to apply. Valid names:
+        ``email``, ``phone``, ``ip``, ``iban``, ``vat``, ``dni``, ``nie``,
+        ``nin``, ``personalausweis``, ``us_passport``, ``curp``, ``rut``,
+        ``cpf``, ``ssn``, ``arg_dni``, ``co_cc``, ``co_nit``, ``ec_cedula``,
+        ``credit_card``. Unknown names are silently ignored.
 
     Examples
     --------
-    >>> df.with_columns(maskops.mask_pii("iban_col"))
+    >>> df.with_columns(maskops.mask_pii("col"))
+    >>> df.with_columns(maskops.mask_pii("col", patterns=["email", "ssn"]))
     """
+    args = [pl.col(expr) if isinstance(expr, str) else expr]
+    if patterns is not None:
+        args.append(pl.lit(",".join(patterns)))
     return register_plugin_function(
         plugin_path=_LIB,
         function_name="mask_pii",
-        args=[pl.col(expr) if isinstance(expr, str) else expr],
+        args=args,
         is_elementwise=True,
     )
 
 
-def contains_pii(expr: IntoExpr) -> pl.Expr:
+def contains_pii(expr: IntoExpr, patterns: list = None) -> pl.Expr:
     """
     Detect whether a String column contains any known PII pattern.
 
@@ -72,24 +77,26 @@ def contains_pii(expr: IntoExpr) -> pl.Expr:
     ----------
     expr : IntoExpr
         A Polars column name (str) or expression resolving to a String series.
-
-    Returns
-    -------
-    pl.Expr
-        A Boolean expression.
+    patterns : list[str] | None
+        Optional list of pattern names to check. Same valid names as
+        ``mask_pii``. Omit to check all patterns.
 
     Examples
     --------
     >>> df.filter(maskops.contains_pii("notes"))
+    >>> df.filter(maskops.contains_pii("notes", patterns=["email", "ssn"]))
     """
+    args = [pl.col(expr) if isinstance(expr, str) else expr]
+    if patterns is not None:
+        args.append(pl.lit(",".join(patterns)))
     return register_plugin_function(
         plugin_path=_LIB,
         function_name="contains_pii",
-        args=[pl.col(expr) if isinstance(expr, str) else expr],
+        args=args,
         is_elementwise=True,
     )
 
-def mask_pii_fpe(expr: IntoExpr, key: bytes, tweak: bytes) -> pl.Expr:
+def mask_pii_fpe(expr: IntoExpr, key: bytes, tweak: bytes, patterns: list = None) -> pl.Expr:
     """
     Mask digit-based PII (cards, phones, RUT, CPF) using FF3-1 format-preserving encryption.
     Non-digit PII (IBAN, VAT, email, IP, EU IDs) is still asterisked.
@@ -117,13 +124,16 @@ def mask_pii_fpe(expr: IntoExpr, key: bytes, tweak: bytes) -> pl.Expr:
     >>> tweak = secrets.token_bytes(7)
     >>> df.with_columns(maskops.mask_pii_fpe("col", key, tweak))
     """
+    args = [
+        pl.col(expr) if isinstance(expr, str) else expr,
+        pl.lit(key, dtype=pl.Binary),
+        pl.lit(tweak, dtype=pl.Binary),
+    ]
+    if patterns is not None:
+        args.append(pl.lit(",".join(patterns)))
     return register_plugin_function(
         plugin_path=_LIB,
         function_name="mask_pii_fpe",
-        args=[
-            pl.col(expr) if isinstance(expr, str) else expr,
-            pl.lit(key, dtype=pl.Binary),
-            pl.lit(tweak, dtype=pl.Binary),
-        ],
+        args=args,
         is_elementwise=True,
     )
