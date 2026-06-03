@@ -77,12 +77,26 @@ The pattern pipeline in `mod.rs` is: non-digit PII first (`mask_non_digit`), the
 ### FPE vs asterisk masking
 
 Digit-based PII (credit cards, phones, RUT, CPF) supports two modes:
-- **Asterisk** (`mask_all`): irreversible, replaces digits with `*`
-- **FPE** (`mask_all_fpe`): FF3-1 AES-256 format-preserving encryption — same length/format, reversible with the same key+tweak
+- **Asterisk** (`mask_all`): irreversible anonymization — replaces digits with `*`. No recovery possible.
+- **FPE** (`mask_all_fpe`): FF3-1 AES-256 format-preserving encryption — same length/format, reversible with the same key+tweak.
 
 Non-digit PII (IBAN, VAT, email, IP, EU IDs, CURP) is always asterisked regardless of mode.
 
 `mask_pii_fpe` requires a 32-byte key and 7-byte tweak passed as Polars `Binary` literals.
+
+### GDPR / data protection compliance model — hard rules
+
+These are architectural invariants. Never break them in any code change:
+
+1. **FPE = pseudonymization, not anonymization.** Under GDPR Art. 4(5) and Chile's new data protection law, FPE output is pseudonymous data — still personal data, but with reduced risk. The key is what makes it personal. Communicate this correctly; never claim FPE output is "anonymous."
+
+2. **Key separation is mandatory.** The FPE key must never be stored alongside the masked data. The client owns the key. MaskOps never sees, stores, or transmits it. This is what makes FPE legally valid as pseudonymization — without key separation it's just obfuscation.
+
+3. **Asterisk masking is irreversible.** Do not add any recovery mechanism to asterisk-masked output. Its legal value is that it cannot be re-identified.
+
+4. **No network calls, ever.** MaskOps must remain 100% air-gappable. No telemetry, no update pings, no external API calls in any code path. This is both a security property and a legal one — data never leaves the client's environment.
+
+5. **New patterns must declare their compliance category.** When adding a new PII type, its module docstring must state: (a) which regulation defines it as personal data, (b) whether it supports FPE or asterisk-only, and (c) what check digit or validation logic prevents false positives.
 
 ## CI notes
 
