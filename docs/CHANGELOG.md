@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.6.0...v0.7.0) (2026-06-03)
+
+
+### Features
+
+* **cli:** add maskops run command ([3e320c3](https://github.com/fcarvajalbrown/MaskOps/commit/3e320c3530b1308397c43b601de3c1ff2803d026))
+* **coverage:** add NIR, Codice Fiscale, UY CI, Canadian SIN, Australian TFN (v0.9) ([53f8c7b](https://github.com/fcarvajalbrown/MaskOps/commit/53f8c7bacc01e79e28ddfb87be40c9951abef0d1))
+
+
+### Documentation
+
+* add CLI entry to changelog ([1e765c6](https://github.com/fcarvajalbrown/MaskOps/commit/1e765c6389d6faabddd9635526caa02bafd0037d))
+* mark v0.9 complete, add coverage changelog entries ([a51ebe1](https://github.com/fcarvajalbrown/MaskOps/commit/a51ebe129d8dc739cfb578f252b8e4b4ce2b2f5c))
+
 ## [Unreleased] — v1.0
 
 - `maskops run <config.toml> <input.parquet> <output.parquet>` — CLI for pipeline use without writing Python
