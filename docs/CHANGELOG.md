@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.4.0...v0.5.0) (2026-06-03)
+
+
+### Features
+
+* **patterns:** add NPI, MBI, NHS, Peruvian DNI (v0.7.0) ([96cff61](https://github.com/fcarvajalbrown/MaskOps/commit/96cff61702185fdf7763a28fde2818e64c8b2e61))
+
 ## [0.7.0] — 2026-06-03
 
 ### Added
