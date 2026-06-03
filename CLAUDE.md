@@ -84,19 +84,17 @@ Non-digit PII (IBAN, VAT, email, IP, EU IDs, CURP) is always asterisked regardle
 
 `mask_pii_fpe` requires a 32-byte key and 7-byte tweak passed as Polars `Binary` literals.
 
-### GDPR / data protection compliance model — hard rules
+### GDPR / data protection compliance model
 
-These are architectural invariants. Never break them in any code change:
+See [`docs/gdpr/gdpr-reference.md`](docs/gdpr/gdpr-reference.md) for the full reference.
 
-1. **FPE = pseudonymization, not anonymization.** Under GDPR Art. 4(5) and Chile's new data protection law, FPE output is pseudonymous data — still personal data, but with reduced risk. The key is what makes it personal. Communicate this correctly; never claim FPE output is "anonymous."
+Hard rules — never break these in any code change:
 
-2. **Key separation is mandatory.** The FPE key must never be stored alongside the masked data. The client owns the key. MaskOps never sees, stores, or transmits it. This is what makes FPE legally valid as pseudonymization — without key separation it's just obfuscation.
-
-3. **Asterisk masking is irreversible.** Do not add any recovery mechanism to asterisk-masked output. Its legal value is that it cannot be re-identified.
-
-4. **No network calls, ever.** MaskOps must remain 100% air-gappable. No telemetry, no update pings, no external API calls in any code path. This is both a security property and a legal one — data never leaves the client's environment.
-
-5. **New patterns must declare their compliance category.** When adding a new PII type, its module docstring must state: (a) which regulation defines it as personal data, (b) whether it supports FPE or asterisk-only, and (c) what check digit or validation logic prevents false positives.
+1. **FPE = pseudonymization, not anonymization** (GDPR Art. 4(5)) — never claim FPE output is anonymous.
+2. **Key separation is mandatory** — the FPE key must never be stored alongside masked data. Client owns the key. MaskOps never sees it.
+3. **Asterisk masking is irreversible** — do not add any recovery mechanism.
+4. **No network calls, ever** — MaskOps must remain 100% air-gappable.
+5. **New patterns must declare compliance category** in their module docstring: which regulation, FPE or asterisk-only, and what validation prevents false positives.
 
 ## CI notes
 
