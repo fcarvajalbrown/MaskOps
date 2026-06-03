@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.2.0...v0.3.0) (2026-06-03)
+
+
+### Features
+
+* **patterns:** add Ecuadorian cédula (Módulo 10, LOPDP compliance) ([2118200](https://github.com/fcarvajalbrown/MaskOps/commit/2118200db1e15edfd9220fe7b0e0dcaac10748ac))
+
+
+### Documentation
+
+* add v* tag deployment rule to CLAUDE.md ([517e256](https://github.com/fcarvajalbrown/MaskOps/commit/517e256521e6b1222dc31444d0dee178c3088cd6))
+
 ## [0.2.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.1.5...v0.2.0) (2026-06-03)
 
 
