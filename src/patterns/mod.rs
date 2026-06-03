@@ -1,28 +1,26 @@
+pub mod eu;
+pub mod latam;
+pub mod contact;
+pub mod financial;
+pub mod us;
+pub mod healthcare;
 pub mod country_codes;
-pub mod email;
-pub mod iban;
-pub mod ip;
-pub mod phone;
-pub mod vat;
-pub mod latam_id;
-pub mod credit_card;
-pub mod european_id;
 pub mod fpe;
 
-use crate::patterns::iban::{mask_iban, contains_iban};
-use crate::patterns::vat::{mask_vat, contains_vat};
-use crate::patterns::email::{mask_email, contains_email};
-use crate::patterns::phone::{mask_phone, contains_phone, mask_phone_fpe};
-use crate::patterns::ip::{mask_ip, contains_ip};
-use crate::patterns::latam_id::{
-    mask_rut, contains_rut, mask_cpf, contains_cpf, mask_curp, contains_curp,
-    mask_rut_fpe, mask_cpf_fpe,
-};
-use crate::patterns::credit_card::{mask_card, contains_card, mask_card_fpe};
-use crate::patterns::european_id::{
+use crate::patterns::eu::iban::{mask_iban, contains_iban};
+use crate::patterns::eu::vat::{mask_vat, contains_vat};
+use crate::patterns::eu::european_id::{
     mask_dni, contains_dni, mask_nie, contains_nie, mask_nin, contains_nin,
     mask_personalausweis, contains_personalausweis,
 };
+use crate::patterns::contact::email::{mask_email, contains_email};
+use crate::patterns::contact::phone::{mask_phone, contains_phone, mask_phone_fpe};
+use crate::patterns::contact::ip::{mask_ip, contains_ip};
+use crate::patterns::latam::latam_id::{
+    mask_rut, contains_rut, mask_cpf, contains_cpf, mask_curp, contains_curp,
+    mask_rut_fpe, mask_cpf_fpe,
+};
+use crate::patterns::financial::credit_card::{mask_card, contains_card, mask_card_fpe};
 pub use crate::patterns::fpe::{Ff3Cipher, KEY_LEN, TWEAK_LEN};
 
 // ---------------------------------------------------------------------------

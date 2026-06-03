@@ -4,11 +4,11 @@
 //!   - Spanish DNI (Documento Nacional de Identidad): 8 digits + letter
 //!   - Spanish NIE (Número de Identidad de Extranjero): X/Y/Z + 7 digits + letter
 //!   - UK NIN (National Insurance Number): AB 12 34 56 C format
-//!   - German Personalausweis: 10 alphanumeric chars + check digit (format-only)
+//!   - German Personalausweis: 10 alphanumeric chars + check digit
 //!
 //! DNI and NIE include modulo 23 check letter validation.
-//! NIN includes prefix letter-pair rules per HMRC specification.
-//! Personalausweis uses format-only matching — check digit validation is pending (v0.2.0+).
+//! NIN enforces prefix letter-pair rules + HMRC-excluded prefix pairs.
+//! Personalausweis uses weighted-sum check digit (weights 7, 3, 1 cyclical).
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -35,9 +35,7 @@ static NIN_RE: Lazy<Regex> = Lazy::new(|| {
     ).unwrap()
 });
 
-/// German Personalausweis: letter + 9 alphanumeric chars (format-only).
-/// Real format: LXXXXXXXXX where L is a letter and X is alphanumeric.
-/// Check digit validation deferred to v0.2.0.
+/// German Personalausweis: letter + 8 alphanumeric + 1 check digit.
 static PA_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"\b([A-Z][A-Z0-9]{8}[0-9])\b").unwrap()
 });
@@ -77,6 +75,43 @@ fn valid_nie(nie: &str) -> bool {
     };
     let normalized = format!("{}{}", prefix, &nie[1..]);
     valid_dni(&normalized)
+}
+
+/// Prefix pairs excluded by HMRC regardless of individual letter rules.
+const NIN_INVALID_PREFIXES: &[&str] = &["BG", "GB", "KN", "NK", "NT", "TN", "ZZ"];
+
+/// Returns true if the NIN prefix pair is HMRC-valid.
+fn valid_nin_prefix(nin: &str) -> bool {
+    let prefix: String = nin.chars().filter(|c| c.is_ascii_alphabetic()).take(2).collect();
+    !NIN_INVALID_PREFIXES.contains(&prefix.as_str())
+}
+
+/// Converts an alphanumeric Personalausweis character to its numeric value.
+/// 0-9 → 0-9, A-Z → 10-35.
+fn pa_char_value(c: char) -> u32 {
+    if c.is_ascii_digit() {
+        c as u32 - b'0' as u32
+    } else {
+        c as u32 - b'A' as u32 + 10
+    }
+}
+
+/// Validates a German Personalausweis number using the weighted-sum check digit.
+/// Weights [7, 3, 1] applied cyclically to positions 1-9; result mod 10 = position 10.
+fn valid_personalausweis(id: &str) -> bool {
+    if id.len() != 10 {
+        return false;
+    }
+    let chars: Vec<char> = id.chars().collect();
+    let weights = [7u32, 3, 1, 7, 3, 1, 7, 3, 1];
+    let sum: u32 = chars[..9]
+        .iter()
+        .zip(weights.iter())
+        .map(|(c, w)| pa_char_value(*c) * w)
+        .sum();
+    let check_digit = sum % 10;
+    let last = chars[9] as u32 - b'0' as u32;
+    check_digit == last
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -123,9 +158,9 @@ pub fn mask_nie(s: &str) -> String {
         .into_owned()
 }
 
-/// Returns true if the input contains a UK NIN.
+/// Returns true if the input contains a valid UK NIN.
 pub fn contains_nin(s: &str) -> bool {
-    NIN_RE.is_match(s)
+    NIN_RE.find_iter(s).any(|m| valid_nin_prefix(m.as_str()))
 }
 
 /// Masks any UK NIN found, preserving only the suffix letter.
@@ -135,15 +170,18 @@ pub fn mask_nin(s: &str) -> String {
     NIN_RE
         .replace_all(s, |caps: &regex::Captures| {
             let nin = &caps[0];
+            if !valid_nin_prefix(nin) {
+                return nin.to_string();
+            }
             let suffix = &nin[nin.len() - 1..];
             format!("{}{}", "*".repeat(nin.len() - 1), suffix)
         })
         .into_owned()
 }
 
-/// Returns true if the input contains a German Personalausweis number.
+/// Returns true if the input contains a valid German Personalausweis number.
 pub fn contains_personalausweis(s: &str) -> bool {
-    PA_RE.is_match(s)
+    PA_RE.find_iter(s).any(|m| valid_personalausweis(m.as_str()))
 }
 
 /// Masks any German Personalausweis number found (full redaction).
@@ -152,7 +190,11 @@ pub fn contains_personalausweis(s: &str) -> bool {
 pub fn mask_personalausweis(s: &str) -> String {
     PA_RE
         .replace_all(s, |caps: &regex::Captures| {
-            "*".repeat(caps[0].len())
+            let id = &caps[0];
+            if !valid_personalausweis(id) {
+                return id.to_string();
+            }
+            "*".repeat(id.len())
         })
         .into_owned()
 }

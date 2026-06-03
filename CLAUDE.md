@@ -36,16 +36,18 @@ MaskOps is a native Polars plugin for high-speed PII masking. The Rust core comp
 
 ## Build & develop
 
-Always work inside a venv:
+Always work inside a `.venv` at the project root. If it doesn't exist, create it before running any Python or maturin command — regardless of which machine you're on:
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate          # macOS/Linux
 pip install maturin faker polars pytest
 maturin develop --release          # compiles Rust + installs editable Python package
 ```
 
-On Windows (PowerShell), run each command separately — no `&&`.
+On Windows (PowerShell), run each command separately — no `&&`. Use `.venv\Scripts\activate` instead of `source`.
+
+Never assume a `.venv` already exists. Always check with `ls .venv` or just re-run `python3 -m venv .venv` (safe to run on an existing venv — it no-ops).
 
 ## Tests
 

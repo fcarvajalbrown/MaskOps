@@ -299,14 +299,14 @@ def generate_nie() -> str:
 def generate_nin() -> str:
     """Generate a valid UK NIN with correct prefix letter-pair rules."""
     # First letter: not D, F, I, Q, U, V
-    first_pool = "ACEGHJ KLMNOPRSTW"
     first_pool = [c for c in "ABCEGHJKLMNOPRSTWXYZ" if c not in "DFIQUV"]
     # Second letter: not D, F, I, O, Q, U, V
     second_pool = [c for c in "ABCEGHJKLMNOPRSTWXYZ" if c not in "DFIOQUV"]
-    # Also disallow GB and NK as prefixes
+    # All HMRC-excluded prefix pairs
+    invalid_pairs = {"BG", "GB", "KN", "NK", "NT", "TN", "ZZ"}
     first = random.choice(first_pool)
     second = random.choice(second_pool)
-    while f"{first}{second}" in ("GB", "NK", "TN", "ZZ"):
+    while f"{first}{second}" in invalid_pairs:
         first = random.choice(first_pool)
         second = random.choice(second_pool)
     digits = "".join([str(random.randint(0, 9)) for _ in range(6)])
@@ -314,13 +314,20 @@ def generate_nin() -> str:
     return f"{first}{second} {digits[:2]} {digits[2:4]} {digits[4:6]} {suffix}"
 
 
+def _pa_char_value(c: str) -> int:
+    """Personalausweis character value: 0-9 → 0-9, A-Z → 10-35."""
+    return int(c) if c.isdigit() else ord(c) - ord("A") + 10
+
+
 def generate_personalausweis() -> str:
-    """Generate a format-valid German Personalausweis number (format-only, no check digit)."""
-    # Format: 1 letter + 8 alphanumeric + 1 digit
+    """Generate a German Personalausweis number with a valid weighted-sum check digit."""
+    # Format: 1 letter + 8 alphanumeric + 1 check digit
     first = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
     middle = "".join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=8))
-    last = str(random.randint(0, 9))
-    return f"{first}{middle}{last}"
+    body = first + middle
+    weights = [7, 3, 1, 7, 3, 1, 7, 3, 1]
+    check = sum(_pa_char_value(c) * w for c, w in zip(body, weights)) % 10
+    return f"{body}{check}"
 
 
 EU_ID_FAKES = {
