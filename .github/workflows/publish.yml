@@ -6,40 +6,90 @@ on:
       - "v*"
 
 jobs:
-  publish:
-    name: Build and publish
+  linux:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        target: [x86_64, aarch64]
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          command: build
+          args: --release --strip --out dist --interpreter python${{ matrix.python }}
+          manylinux: auto
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-${{ matrix.target }}-py${{ matrix.python }}
+          path: dist
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+  macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [x86_64, aarch64]
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          command: build
+          args: --release --strip --out dist --interpreter python${{ matrix.python }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos-${{ matrix.target }}-py${{ matrix.python }}
+          path: dist
 
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
+  windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          args: --release --strip --out dist --interpreter python${{ matrix.python }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-x86_64-py${{ matrix.python }}
+          path: dist
 
-      - name: Create virtualenv
-        run: python -m venv .venv
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist
 
-      - name: Install dependencies
-        run: |
-          source .venv/bin/activate
-          pip install maturin
-
-      - name: Build wheels
-        run: |
-          source .venv/bin/activate
-          maturin build --release --strip
-
+  publish:
+    needs: [linux, macos, windows, sdist]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: dist
       - name: Publish to PyPI
         run: |
-          source .venv/bin/activate
           pip install twine
-          twine upload target/wheels/* --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
+          twine upload dist/* --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
