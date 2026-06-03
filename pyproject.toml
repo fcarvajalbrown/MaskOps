@@ -7,14 +7,34 @@ name = "maskops"
 version = "0.1.5"
 description = "High-speed PII masking as a Polars plugin — powered by Rust"
 readme = "README.md"
-license = { text = "MIT" }
+license = { text = "GPL-3.0-or-later" }
 requires-python = ">=3.9"
-keywords = ["polars", "pii", "masking", "gdpr", "rust"]
+keywords = [
+    "polars", "polars-plugin", "polars-extension",
+    "pii", "pii-detection", "pii-masking",
+    "data-masking", "data-anonymization", "pseudonymization",
+    "gdpr", "data-privacy", "compliance",
+    "fpe", "format-preserving-encryption", "ff3",
+    "iban", "credit-card", "cpf", "rut", "curp",
+    "rust", "arrow", "regex"
+]
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Security",
+    "Topic :: Security :: Cryptography",
     "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Healthcare Industry",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
 ]
 dependencies = ["polars>=0.46"]
 
