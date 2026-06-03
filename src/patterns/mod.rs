@@ -4,6 +4,7 @@ pub mod contact;
 pub mod financial;
 pub mod us;
 pub mod healthcare;
+pub mod apac;
 pub mod country_codes;
 pub mod fpe;
 pub mod consistent;
@@ -13,6 +14,13 @@ use crate::patterns::eu::vat::{mask_vat, contains_vat};
 use crate::patterns::eu::european_id::{
     mask_dni, contains_dni, mask_nie, contains_nie, mask_nin, contains_nin,
     mask_personalausweis, contains_personalausweis,
+};
+use crate::patterns::eu::nir::{mask_nir, contains_nir};
+use crate::patterns::eu::codice_fiscale::{mask_cf, contains_cf};
+use crate::patterns::latam::{contains_uy_ci, mask_uy_ci, mask_uy_ci_fpe, mask_uy_ci_consistent};
+use crate::patterns::apac::{
+    contains_sin, mask_sin, mask_sin_fpe, mask_sin_consistent,
+    contains_tfn, mask_tfn, mask_tfn_fpe, mask_tfn_consistent,
 };
 use crate::patterns::contact::email::{mask_email, contains_email};
 use crate::patterns::contact::phone::{mask_phone, contains_phone, mask_phone_fpe};
@@ -66,6 +74,8 @@ pub fn mask_non_digit(value: &str) -> String {
     let s = mask_personalausweis(&s);
     let s = mask_us_passport(&s);
     let s = mask_mbi(&s);
+    let s = mask_nir(&s);
+    let s = mask_cf(&s);
     s
 }
 
@@ -88,6 +98,9 @@ pub fn mask_digit(value: &str) -> String {
     let s = mask_pe_dni(&s);
     let s = mask_npi(&s);
     let s = mask_nhs(&s);
+    let s = mask_uy_ci(&s);
+    let s = mask_sin(&s);
+    let s = mask_tfn(&s);
     s
 }
 
@@ -108,6 +121,9 @@ pub fn mask_digit_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     let s = mask_pe_dni_fpe(&s, cipher);
     let s = mask_npi_fpe(&s, cipher);
     let s = mask_nhs_fpe(&s, cipher);
+    let s = mask_uy_ci_fpe(&s, cipher);
+    let s = mask_sin_fpe(&s, cipher);
+    let s = mask_tfn_fpe(&s, cipher);
     s
 }
 
@@ -149,6 +165,9 @@ pub fn mask_digit_consistent(value: &str, hasher: &ConsistentHasher) -> String {
     let s = mask_pe_dni_consistent(&s, hasher);
     let s = mask_npi_consistent(&s, hasher);
     let s = mask_nhs_consistent(&s, hasher);
+    let s = mask_uy_ci_consistent(&s, hasher);
+    let s = mask_sin_consistent(&s, hasher);
+    let s = mask_tfn_consistent(&s, hasher);
     s
 }
 
@@ -191,6 +210,11 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
             "mbi"             => mask_mbi(&s),
             "nhs"             => mask_nhs(&s),
             "pe_dni"          => mask_pe_dni(&s),
+            "nir"             => mask_nir(&s),
+            "codice_fiscale"  => mask_cf(&s),
+            "uy_ci"           => mask_uy_ci(&s),
+            "sin"             => mask_sin(&s),
+            "tfn"             => mask_tfn(&s),
             _                 => s,
         };
     }
@@ -225,6 +249,11 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &Ff3Cipher)
             "mbi"             => mask_mbi(&s),  // alphanumeric — asterisk only
             "nhs"             => mask_nhs_fpe(&s, cipher),
             "pe_dni"          => mask_pe_dni_fpe(&s, cipher),
+            "nir"             => mask_nir(&s),       // non-digit — asterisk only
+            "codice_fiscale"  => mask_cf(&s),        // non-digit — asterisk only
+            "uy_ci"           => mask_uy_ci_fpe(&s, cipher),
+            "sin"             => mask_sin_fpe(&s, cipher),
+            "tfn"             => mask_tfn_fpe(&s, cipher),
             _                 => s,
         };
     }
@@ -259,6 +288,11 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
             "mbi"             => mask_mbi(&s),
             "nhs"             => mask_nhs_consistent(&s, hasher),
             "pe_dni"          => mask_pe_dni_consistent(&s, hasher),
+            "nir"             => mask_nir(&s),       // non-digit — asterisk only
+            "codice_fiscale"  => mask_cf(&s),        // non-digit — asterisk only
+            "uy_ci"           => mask_uy_ci_consistent(&s, hasher),
+            "sin"             => mask_sin_consistent(&s, hasher),
+            "tfn"             => mask_tfn_consistent(&s, hasher),
             _                 => s,
         };
     }
@@ -291,6 +325,11 @@ pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
         "mbi"             => contains_mbi(value),
         "nhs"             => contains_nhs(value),
         "pe_dni"          => contains_pe_dni(value),
+        "nir"             => contains_nir(value),
+        "codice_fiscale"  => contains_cf(value),
+        "uy_ci"           => contains_uy_ci(value),
+        "sin"             => contains_sin(value),
+        "tfn"             => contains_tfn(value),
         _                 => false,
     })
 }
@@ -320,4 +359,9 @@ pub fn contains_any_pii(value: &str) -> bool {
         || contains_npi(value)
         || contains_mbi(value)
         || contains_nhs(value)
+        || contains_nir(value)
+        || contains_cf(value)
+        || contains_uy_ci(value)
+        || contains_sin(value)
+        || contains_tfn(value)
 }

@@ -1378,3 +1378,315 @@ class TestMaskPiiConsistent:
             maskops.mask_pii("col", mode="consistent", salt=self.SALT)
         )["col"][0]
         assert result is None
+
+
+# ---------------------------------------------------------------------------
+# v0.9 — EU depth + LatAm + APAC
+# ---------------------------------------------------------------------------
+
+class TestMaskNIR:
+    """French NIR / INSEE social security number."""
+
+    VALID = "185037505600181"    # sex=1, 1985-03, dept=75/Paris, commune=056, order=001, key=81
+    INVALID = "185037505600100"  # wrong key
+
+    def _mask(self, value):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.mask_pii("col"))["col"][0]
+
+    def _contains(self, value):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.contains_pii("col"))["col"][0]
+
+    def test_detects_valid_nir(self):
+        assert self._contains(self.VALID)
+
+    def test_does_not_detect_invalid_key(self):
+        assert not self._contains(self.INVALID)
+
+    def test_masks_valid_nir(self):
+        out = self._mask(self.VALID)
+        assert self.VALID not in out
+        assert "*" in out
+
+    def test_full_redaction_length(self):
+        out = self._mask(self.VALID)
+        assert len(out) == 15
+        assert all(c == "*" for c in out)
+
+    def test_invalid_key_not_masked(self):
+        out = self._mask(self.INVALID)
+        assert out == self.INVALID
+
+    def test_in_sentence(self):
+        text = f"NIR du patient : {self.VALID} date de naissance 1985-03-01"
+        out = self._mask(text)
+        assert self.VALID not in out
+        assert "*" * 15 in out
+
+    def test_patterns_filter(self):
+        df = pl.DataFrame({"col": [self.VALID]})
+        out = df.with_columns(maskops.mask_pii("col", patterns=["nir"]))["col"][0]
+        assert self.VALID not in out
+        assert "*" in out
+
+    def test_null_passthrough(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result is None
+
+
+class TestMaskCodiceFiscale:
+    """Italian Codice Fiscale."""
+
+    VALID = "RSSMRA80A01H501U"    # Mario Rossi, Rome, Jan 1 1980
+    INVALID = "RSSMRA80A01H501X"  # wrong check char
+
+    def _mask(self, value):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.mask_pii("col"))["col"][0]
+
+    def _contains(self, value):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.contains_pii("col"))["col"][0]
+
+    def test_detects_valid_cf(self):
+        assert self._contains(self.VALID)
+
+    def test_does_not_detect_invalid_check(self):
+        assert not self._contains(self.INVALID)
+
+    def test_full_redaction(self):
+        out = self._mask(self.VALID)
+        assert out == "*" * 16
+
+    def test_invalid_not_masked(self):
+        out = self._mask(self.INVALID)
+        assert out == self.INVALID
+
+    def test_in_sentence(self):
+        text = f"Il codice fiscale è {self.VALID} e la data di nascita è 01/01/1980."
+        out = self._mask(text)
+        assert self.VALID not in out
+        assert "*" * 16 in out
+
+    def test_patterns_filter(self):
+        df = pl.DataFrame({"col": [self.VALID]})
+        out = df.with_columns(maskops.mask_pii("col", patterns=["codice_fiscale"]))["col"][0]
+        assert out == "*" * 16
+
+    def test_null_passthrough(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result is None
+
+
+class TestMaskUruguayCedula:
+    """Uruguayan cédula de identidad."""
+
+    VALID = "1.111.111-1"    # body=1111111, check=1
+    INVALID = "1.111.111-9"  # wrong check
+
+    def _mask(self, value, **kwargs):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.mask_pii("col", **kwargs))["col"][0]
+
+    def _contains(self, value):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.contains_pii("col"))["col"][0]
+
+    def test_detects_valid_ci(self):
+        assert self._contains(self.VALID)
+
+    def test_does_not_detect_invalid_check(self):
+        assert not self._contains(self.INVALID)
+
+    def test_asterisk_mask(self):
+        out = self._mask(self.VALID)
+        assert self.VALID not in out
+        assert "*" in out
+        assert len(out) == len(self.VALID)
+
+    def test_invalid_not_masked(self):
+        out = self._mask(self.INVALID)
+        assert out == self.INVALID
+
+    def test_in_sentence(self):
+        text = f"Cédula: {self.VALID}, expedida por el Registro Civil"
+        out = self._mask(text)
+        assert self.VALID not in out
+
+    def test_fpe_preserves_format(self):
+        key = b"\x00" * 32
+        tweak = b"\x00" * 7
+        df = pl.DataFrame({"col": [self.VALID]})
+        out = df.with_columns(
+            maskops.mask_pii_fpe("col", key, tweak)
+        )["col"][0]
+        assert out != self.VALID
+        assert re.fullmatch(r"\d\.\d{3}\.\d{3}-\d", out), f"format broken: {out}"
+
+    def test_consistent_deterministic(self):
+        out1 = self._mask(self.VALID, mode="consistent", salt="test-salt")
+        out2 = self._mask(self.VALID, mode="consistent", salt="test-salt")
+        assert out1 == out2
+
+    def test_consistent_not_original(self):
+        out = self._mask(self.VALID, mode="consistent", salt="test-salt")
+        assert out != self.VALID
+
+    def test_patterns_filter(self):
+        df = pl.DataFrame({"col": [self.VALID]})
+        out = df.with_columns(maskops.mask_pii("col", patterns=["uy_ci"]))["col"][0]
+        assert self.VALID not in out
+        assert "*" in out
+
+    def test_null_passthrough(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result is None
+
+
+class TestMaskCanadaSIN:
+    """Canadian Social Insurance Number."""
+
+    VALID_FORMATTED = "130-692-544"
+    VALID_COMPACT   = "130692544"
+    INVALID         = "130-692-543"  # fails Luhn
+
+    def _mask(self, value, **kwargs):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.mask_pii("col", **kwargs))["col"][0]
+
+    def _contains(self, value):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.contains_pii("col"))["col"][0]
+
+    def test_detects_formatted(self):
+        assert self._contains(self.VALID_FORMATTED)
+
+    def test_detects_compact(self):
+        assert self._contains(self.VALID_COMPACT)
+
+    def test_does_not_detect_invalid_luhn(self):
+        assert not self._contains(self.INVALID)
+
+    def test_asterisk_formatted(self):
+        out = self._mask(self.VALID_FORMATTED)
+        assert self.VALID_FORMATTED not in out
+        assert "*" in out
+        assert len(out) == len(self.VALID_FORMATTED)
+
+    def test_asterisk_compact(self):
+        out = self._mask(self.VALID_COMPACT)
+        assert out == "*" * 9
+
+    def test_invalid_not_masked(self):
+        out = self._mask(self.INVALID)
+        assert out == self.INVALID
+
+    def test_in_sentence(self):
+        text = f"SIN: {self.VALID_FORMATTED} — do not share"
+        out = self._mask(text)
+        assert self.VALID_FORMATTED not in out
+
+    def test_fpe_preserves_digit_count(self):
+        key = b"\x00" * 32
+        tweak = b"\x00" * 7
+        df = pl.DataFrame({"col": [self.VALID_COMPACT]})
+        out = df.with_columns(
+            maskops.mask_pii_fpe("col", key, tweak)
+        )["col"][0]
+        assert len(out) == 9
+        assert out.isdigit()
+
+    def test_consistent_deterministic(self):
+        out1 = self._mask(self.VALID_COMPACT, mode="consistent", salt="test-salt")
+        out2 = self._mask(self.VALID_COMPACT, mode="consistent", salt="test-salt")
+        assert out1 == out2
+
+    def test_consistent_not_original(self):
+        out = self._mask(self.VALID_COMPACT, mode="consistent", salt="test-salt")
+        assert out != self.VALID_COMPACT
+
+    def test_patterns_filter(self):
+        df = pl.DataFrame({"col": [self.VALID_COMPACT]})
+        out = df.with_columns(maskops.mask_pii("col", patterns=["sin"]))["col"][0]
+        assert self.VALID_COMPACT not in out
+
+    def test_null_passthrough(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result is None
+
+
+class TestMaskAustraliaTFN:
+    """Australian Tax File Number."""
+
+    VALID_SPACED  = "123 456 782"
+    VALID_COMPACT = "123456782"
+    INVALID       = "123456789"   # fails mod-11 check
+
+    def _mask(self, value, **kwargs):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.mask_pii("col", **kwargs))["col"][0]
+
+    def _contains(self, value):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.contains_pii("col"))["col"][0]
+
+    def test_detects_spaced(self):
+        assert self._contains(self.VALID_SPACED)
+
+    def test_detects_compact(self):
+        assert self._contains(self.VALID_COMPACT)
+
+    def test_does_not_detect_invalid(self):
+        assert not self._contains(self.INVALID)
+
+    def test_asterisk_spaced(self):
+        out = self._mask(self.VALID_SPACED)
+        assert self.VALID_SPACED not in out
+        assert "*" in out
+
+    def test_asterisk_compact(self):
+        out = self._mask(self.VALID_COMPACT)
+        assert out == "*" * 9
+
+    def test_invalid_not_masked(self):
+        out = self._mask(self.INVALID)
+        assert out == self.INVALID
+
+    def test_in_sentence(self):
+        text = f"TFN: {self.VALID_SPACED} — confidential ATO record"
+        out = self._mask(text)
+        assert self.VALID_SPACED not in out
+
+    def test_fpe_preserves_digit_count(self):
+        key = b"\x00" * 32
+        tweak = b"\x00" * 7
+        df = pl.DataFrame({"col": [self.VALID_COMPACT]})
+        out = df.with_columns(
+            maskops.mask_pii_fpe("col", key, tweak)
+        )["col"][0]
+        assert len(out) == 9
+        assert out.isdigit()
+
+    def test_consistent_deterministic(self):
+        out1 = self._mask(self.VALID_COMPACT, mode="consistent", salt="test-salt")
+        out2 = self._mask(self.VALID_COMPACT, mode="consistent", salt="test-salt")
+        assert out1 == out2
+
+    def test_consistent_not_original(self):
+        out = self._mask(self.VALID_COMPACT, mode="consistent", salt="test-salt")
+        assert out != self.VALID_COMPACT
+
+    def test_patterns_filter(self):
+        df = pl.DataFrame({"col": [self.VALID_COMPACT]})
+        out = df.with_columns(maskops.mask_pii("col", patterns=["tfn"]))["col"][0]
+        assert self.VALID_COMPACT not in out
+
+    def test_null_passthrough(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result is None
