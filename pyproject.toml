@@ -36,7 +36,13 @@ classifiers = [
     "Operating System :: OS Independent",
     "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
 ]
-dependencies = ["polars>=0.46"]
+dependencies = [
+    "polars>=0.46",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[project.scripts]
+maskops = "maskops._cli:main"
 
 [project.urls]
 Repository = "https://github.com/fcarvajalbrown/maskops"
