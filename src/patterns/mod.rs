@@ -19,6 +19,9 @@ use crate::patterns::contact::ip::{mask_ip, contains_ip};
 use crate::patterns::latam::latam_id::{
     mask_rut, contains_rut, mask_cpf, contains_cpf, mask_curp, contains_curp,
     mask_rut_fpe, mask_cpf_fpe,
+    mask_arg_dni, contains_arg_dni, mask_arg_dni_fpe,
+    mask_co_cc, contains_co_cc, mask_co_cc_fpe,
+    mask_co_nit, contains_co_nit, mask_co_nit_fpe,
 };
 use crate::patterns::financial::credit_card::{mask_card, contains_card, mask_card_fpe};
 use crate::patterns::us::{mask_ssn, contains_ssn, mask_ssn_fpe, mask_us_passport, contains_us_passport};
@@ -59,6 +62,9 @@ pub fn mask_digit(value: &str) -> String {
     let s = mask_cpf(&s);
     let s = mask_card(&s);
     let s = mask_ssn(&s);
+    let s = mask_arg_dni(&s);
+    let s = mask_co_cc(&s);
+    let s = mask_co_nit(&s);
     s
 }
 
@@ -72,6 +78,9 @@ pub fn mask_digit_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     let s = mask_cpf_fpe(&s, cipher);
     let s = mask_card_fpe(&s, cipher);
     let s = mask_ssn_fpe(&s, cipher);
+    let s = mask_arg_dni_fpe(&s, cipher);
+    let s = mask_co_cc_fpe(&s, cipher);
+    let s = mask_co_nit_fpe(&s, cipher);
     s
 }
 
@@ -114,4 +123,7 @@ pub fn contains_any_pii(value: &str) -> bool {
         || contains_personalausweis(value)
         || contains_ssn(value)
         || contains_us_passport(value)
+        || contains_arg_dni(value)
+        || contains_co_cc(value)
+        || contains_co_nit(value)
 }

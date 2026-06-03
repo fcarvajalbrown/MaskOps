@@ -25,7 +25,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_NUMBER=$(echo '${{ steps.release.outputs.pr }}' | jq -r '.number')
-          gh pr merge --merge --delete-branch "$PR_NUMBER"
+          gh pr merge --merge --delete-branch --repo "${{ github.repository }}" "$PR_NUMBER"
 
       # After a release PR is merged and the tag is created,
       # create a GitHub Release with auto-generated notes.

@@ -1020,3 +1020,90 @@ class TestLazyScanPipeline:
         for row in result["text"].to_list():
             assert "123-45-6789" not in row
             assert "john@example.com" not in row
+
+
+# ---------------------------------------------------------------------------
+# Argentine DNI
+# ---------------------------------------------------------------------------
+
+class TestMaskArgDNI:
+    def test_dotted_8digit_masked(self):
+        df = pl.DataFrame({"col": ["DNI: 12.345.678"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "12.345.678" not in result
+        assert "*" in result
+        assert "." in result
+
+    def test_dotted_7digit_masked(self):
+        df = pl.DataFrame({"col": ["DNI: 1.234.567"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "1.234.567" not in result
+        assert "*" in result
+
+    def test_contains_pii_detects_arg_dni(self):
+        df = pl.DataFrame({"col": ["12.345.678", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_arg_dni_fpe_no_asterisks(self):
+        df = pl.DataFrame({"col": ["12.345.678"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert "*" not in result
+        assert result != "12.345.678"
+
+
+# ---------------------------------------------------------------------------
+# Colombian CC
+# ---------------------------------------------------------------------------
+
+class TestMaskCOCC:
+    def test_10digit_cc_masked(self):
+        df = pl.DataFrame({"col": ["Cédula: 1.234.567.890"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "1.234.567.890" not in result
+        assert "*" in result
+
+    def test_contains_pii_detects_co_cc(self):
+        df = pl.DataFrame({"col": ["1.234.567.890", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_co_cc_fpe_no_asterisks(self):
+        df = pl.DataFrame({"col": ["1.234.567.890"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert "*" not in result
+        assert result != "1.234.567.890"
+
+
+# ---------------------------------------------------------------------------
+# Colombian NIT
+# ---------------------------------------------------------------------------
+
+class TestMaskCONIT:
+    def test_valid_nit_masked(self):
+        # NIT 900123456 with DIAN check digit
+        # sum = 6*3+5*7+4*13+3*17+2*19+1*23+0*29+0*37+9*41 = 18+35+52+51+38+23+0+0+369 = 586
+        # 586 % 11 = 3, check = 11-3 = 8
+        df = pl.DataFrame({"col": ["NIT: 900123456-8"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "900123456" not in result
+        assert result.endswith("-8")
+        assert "*" in result
+
+    def test_invalid_nit_check_untouched(self):
+        original = "900123456-0"  # wrong check digit
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_contains_pii_detects_co_nit(self):
+        df = pl.DataFrame({"col": ["900123456-8", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_nit_fpe_preserves_check_digit(self):
+        df = pl.DataFrame({"col": ["900123456-8"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert result.endswith("-8")
+        assert "*" not in result
+        assert result != "900123456-8"
