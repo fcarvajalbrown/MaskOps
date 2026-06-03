@@ -15,6 +15,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Canadian SIN: detection + asterisk, FPE, and consistent masking (formatted and compact)
 - Australian TFN: detection + asterisk, FPE, and consistent masking (spaced and compact)
 
+## [0.6.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.5.1...v0.6.0) (2026-06-03)
+
+
+### Features
+
+* **consistent:** add HMAC-SHA256 deterministic pseudonymization (v0.8) ([d7228ef](https://github.com/fcarvajalbrown/MaskOps/commit/d7228efc0517651fa223e53271261d5095608a96))
+
+
+### Documentation
+
+* mark v0.8 complete, add consistent masking changelog entry ([d44a1e6](https://github.com/fcarvajalbrown/MaskOps/commit/d44a1e65541fb862dbb162ac7d29157e64ef6bfb))
+
 ## [Unreleased] — v0.8
 
 - `mask_pii(mode="consistent", salt=...)`: HMAC-SHA256 deterministic pseudonymization for digit PII
