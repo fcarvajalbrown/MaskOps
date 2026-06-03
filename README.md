@@ -1,5 +1,15 @@
 # MaskOps
 
+<p align="center">
+  <img src="assets/icon.svg" alt="MaskOps" width="110"/>
+</p>
+
+<p align="center">
+  <a href="https://github.com/fcarvajalbrown/MaskOps/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/fcarvajalbrown/MaskOps/ci.yml?style=flat-square&label=CI&color=3DDB81" alt="CI"/></a>
+  <a href="https://pypi.org/project/maskops/"><img src="https://img.shields.io/pypi/v/maskops?style=flat-square&color=3DDB81&logo=pypi&logoColor=white" alt="PyPI"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3DDB81?style=flat-square" alt="License: MPL-2.0"/></a>
+</p>
+
 > High-speed PII masking as a native Polars plugin — powered by Rust.
 
 **MaskOps** extends Polars with zero-overhead PII detection and masking expressions.
@@ -47,14 +57,18 @@ maskops/
 │   ├── lib.rs               # Polars expression registration (mask_pii, contains_pii, mask_pii_fpe)
 │   └── patterns/
 │       ├── mod.rs           # mask_all(), mask_all_fpe(), contains_any_pii() aggregators
-│       ├── iban.rs          # IBAN regex + masking
-│       ├── vat.rs           # EU VAT regex + masking
-│       ├── email.rs         # Email regex + masking (local part)
-│       ├── phone.rs         # E.164 phone regex + masking + FPE
-│       ├── ip.rs            # IPv4/IPv6 regex + masking
-│       ├── latam_id.rs      # RUT (Chile), CPF (Brazil), CURP (Mexico) + FPE
-│       ├── european_id.rs   # DNI/NIE (Spain), NIN (UK), Personalausweis (Germany)
-│       ├── credit_card.rs   # Visa, Mastercard, Amex, Discover, Maestro + Luhn + FPE
+│       ├── eu/
+│       │   ├── iban.rs      # IBAN regex + masking
+│       │   ├── vat.rs       # EU VAT regex + masking
+│       │   └── european_id.rs # DNI/NIE (Spain), NIN (UK), Personalausweis (Germany)
+│       ├── latam/
+│       │   └── latam_id.rs  # RUT (Chile), CPF (Brazil), CURP (Mexico) + FPE
+│       ├── contact/
+│       │   ├── email.rs     # Email regex + masking (local part)
+│       │   ├── phone.rs     # E.164 phone regex + masking + FPE
+│       │   └── ip.rs        # IPv4/IPv6 regex + masking
+│       ├── financial/
+│       │   └── credit_card.rs # Visa, Mastercard, Amex, Discover, Maestro + Luhn + FPE
 │       ├── fpe.rs           # FF3-1 AES-256 format-preserving encryption (NIST SP 800-38G Rev.1)
 │       └── country_codes.rs # Country prefix lookup table
 ├── maskops/
@@ -91,7 +105,7 @@ df.with_columns(maskops.mask_pii("notes"))
 df.filter(maskops.contains_pii("free_text"))
 ```
 
-## Supported patterns (v0.1.4)
+## Supported patterns (v0.2.0)
 
 | Pattern | Example input | Masked output |
 |---------|--------------|---------------|
@@ -114,7 +128,7 @@ Email and phone follow RFC 5322 and E.164 respectively.
 RUT and CPF include Módulo 11 check digit validation.
 DNI and NIE include modulo 23 check letter validation.
 Credit cards include Luhn validation — format-only matches are rejected.
-Personalausweis and NIN: format-only matching; check digit validation pending (v0.2.0+).
+Personalausweis: weighted-sum check digit (weights [7,3,1] cyclic, mod 10). NIN: HMRC-excluded prefix validation (BG, GB, KN, NK, NT, TN, ZZ rejected).
 
 ## Roadmap
 
@@ -166,7 +180,7 @@ pytest tests/ -v
 
 ## License
 
-MIT
+[Mozilla Public License 2.0](LICENSE). Commercial use requires a separate license — see [CLA.md](CLA.md) or contact [fcarvajalbrown@gmail.com](mailto:fcarvajalbrown@gmail.com).
 
 ## Benchmarks
 
@@ -302,6 +316,3 @@ Python 3.11, Ubuntu, `en_core_web_lg` model. Extrapolated to 1M rows.
 
 **maskops is purpose-built for structured data pipelines where Presidio's NLP overhead is unnecessary.**
 
----
-
-*This project was developed with AI assistance from [Claude](https://claude.ai) (Anthropic). All architecture decisions, security properties, and code were reviewed and validated by the author.*

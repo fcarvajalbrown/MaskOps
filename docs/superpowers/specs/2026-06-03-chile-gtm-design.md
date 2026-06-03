@@ -168,7 +168,7 @@ Target: 10–15 prospects/week, 20 minutes of manual sending.
 
 | Tier | Price | When to use |
 |------|-------|-------------|
-| Launch (first 3 clients) | USD 200/month | Remove all friction, close fast |
+| Launch (first 10 clients) | USD 200/month | Remove all friction, close fast · rate grandfathered forever |
 | Standard | USD 400/month | After 1 reference client |
 | Dual-jurisdiction (GDPR + Chile) | USD 700/month | Multinational subsidiaries, auditor requirements |
 
