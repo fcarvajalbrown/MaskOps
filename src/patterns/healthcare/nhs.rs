@@ -48,6 +48,24 @@ pub fn mask_nhs(s: &str) -> String {
         .into_owned()
 }
 
+/// Masks a valid NHS number using HMAC-SHA256 consistent pseudonymization on the 10 digits.
+///
+/// Spaces stripped on output. Not reversible without salt.
+pub fn mask_nhs_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+    NHS_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            if !valid_nhs(&caps[0]) {
+                return caps[0].to_string();
+            }
+            let digits: String = caps[0].chars().filter(|c| c.is_ascii_digit()).collect();
+            match hasher.encrypt(&digits) {
+                Ok(hashed) => hashed,
+                Err(_)     => caps[0].to_string(),
+            }
+        })
+        .into_owned()
+}
+
 /// Masks a valid NHS number using FF3-1 FPE on the 10 digits.
 ///
 /// Spaces stripped on output. Reversible with the same key and tweak.

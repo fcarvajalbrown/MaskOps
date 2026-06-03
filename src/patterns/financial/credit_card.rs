@@ -99,6 +99,25 @@ pub fn mask_card(s: &str) -> String {
         .into_owned()
 }
 
+/// Masks any valid credit card number found using HMAC-SHA256 consistent pseudonymization.
+///
+/// All digits hashed as a unit — same PAN always produces the same output. Not reversible without salt.
+pub fn mask_card_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+    CARD_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            let raw = caps.get(0).unwrap().as_str();
+            if !luhn_valid(raw) {
+                return raw.to_string();
+            }
+            let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+            match hasher.encrypt(&digits) {
+                Ok(hashed) => hashed,
+                Err(_) => digits,
+            }
+        })
+        .into_owned()
+}
+
 /// Masks any valid credit card number found using FF3-1 format-preserving encryption.
 ///
 /// The digit body (BIN + middle + last4) is encrypted as a single unit,

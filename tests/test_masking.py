@@ -1288,3 +1288,93 @@ class TestMaskPeDNI:
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert "*" not in result
         assert result != "12345678"
+
+
+# ---------------------------------------------------------------------------
+# Consistent masking (v0.8)
+# ---------------------------------------------------------------------------
+
+class TestMaskPiiConsistent:
+    """Deterministic hash-based pseudonymization via mode='consistent'."""
+
+    SALT = "test-salt-v08"
+
+    def _mask(self, value, **kwargs):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(
+            maskops.mask_pii("col", mode="consistent", salt=self.SALT, **kwargs)
+        )["col"][0]
+
+    # --- Determinism ---
+
+    def test_same_input_same_output(self):
+        out1 = self._mask("123-45-6789")
+        out2 = self._mask("123-45-6789")
+        assert out1 == out2
+
+    def test_different_input_different_output(self):
+        out1 = self._mask("123-45-6789")
+        out2 = self._mask("987-65-4321")
+        assert out1 != out2
+
+    def test_different_salt_different_output(self):
+        df = pl.DataFrame({"col": ["123-45-6789"]})
+        out1 = df.with_columns(maskops.mask_pii("col", mode="consistent", salt="salt-a"))["col"][0]
+        out2 = df.with_columns(maskops.mask_pii("col", mode="consistent", salt="salt-b"))["col"][0]
+        assert out1 != out2
+
+    # --- Output is not the original ---
+
+    def test_ssn_not_original(self):
+        out = self._mask("123-45-6789")
+        assert "123456789" not in out.replace("-", "")
+        assert out != "123-45-6789"
+
+    def test_credit_card_not_original(self):
+        out = self._mask("4111111111111111")
+        assert out != "4111111111111111"
+        assert len(out) == 16
+        assert out.isdigit()
+
+    # --- Non-digit PII still asterisked ---
+
+    def test_email_asterisked(self):
+        out = self._mask("send to user@example.com please")
+        assert "user@example.com" not in out
+        assert "*" in out
+
+    def test_iban_asterisked(self):
+        out = self._mask("DE89370400440532013000")
+        assert "370400440532013000" not in out
+        assert "*" in out
+
+    # --- Format of digit PII output ---
+
+    def test_ssn_format_preserved(self):
+        out = self._mask("123-45-6789")
+        assert re.fullmatch(r"\d{3}-\d{2}-\d{4}", out), f"SSN format broken: {out}"
+
+    def test_credit_card_16_digits(self):
+        out = self._mask("4111111111111111")
+        assert len(out) == 16
+        assert out.isdigit()
+
+    # --- patterns= filter respected ---
+
+    def test_patterns_filter_only_masks_selected(self):
+        text = "SSN 123-45-6789 card 4111111111111111"
+        df = pl.DataFrame({"col": [text]})
+        out = df.with_columns(
+            maskops.mask_pii("col", mode="consistent", salt=self.SALT, patterns=["ssn"])
+        )["col"][0]
+        assert "123-45-6789" not in out
+        assert "4111111111111111" in out
+
+    # --- Null passthrough ---
+
+    def test_null_passthrough(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        result = df.with_columns(
+            maskops.mask_pii("col", mode="consistent", salt=self.SALT)
+        )["col"][0]
+        assert result is None

@@ -42,6 +42,54 @@ pub fn contains_phone(value: &str) -> bool {
     PHONE_RE.is_match(value)
 }
 
+/// Masks a phone number using HMAC-SHA256 consistent pseudonymization on the subscriber digits.
+///
+/// Country code prefix preserved. Same subscriber digits → same output. Not reversible without salt.
+pub fn mask_phone_consistent(value: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+    PHONE_RE
+        .replace_all(value, |caps: &regex::Captures| {
+            let full = caps.get(0).unwrap().as_str();
+            let normalized: String = full
+                .chars()
+                .filter(|c| c.is_ascii_digit() || *c == '+')
+                .collect();
+            let prefix_len = identify_country(&normalized)
+                .map(|cc| cc.prefix.len())
+                .unwrap_or(2);
+
+            let keep = &full[..prefix_len.min(full.len())];
+            let rest = &full[prefix_len.min(full.len())..];
+
+            let subscriber_digits: String = rest
+                .chars()
+                .filter(|c| c.is_ascii_digit())
+                .collect();
+
+            if subscriber_digits.len() < 2 {
+                return full.to_string();
+            }
+
+            match hasher.encrypt(&subscriber_digits) {
+                Ok(hashed) => {
+                    let mut hash_iter = hashed.chars();
+                    let reassembled: String = rest
+                        .chars()
+                        .map(|c| {
+                            if c.is_ascii_digit() {
+                                hash_iter.next().unwrap_or(c)
+                            } else {
+                                c
+                            }
+                        })
+                        .collect();
+                    format!("{}{}", keep, reassembled)
+                }
+                Err(_) => full.to_string(),
+            }
+        })
+        .into_owned()
+}
+
 /// Masks a phone number using FF3-1 format-preserving encryption on the subscriber digits.
 ///
 /// The country code prefix is preserved. The subscriber digit sequence is

@@ -32,6 +32,20 @@ pub fn mask_pe_dni(s: &str) -> String {
         .into_owned()
 }
 
+/// Masks a Peruvian DNI using HMAC-SHA256 consistent pseudonymization on all 8 digits.
+///
+/// Not reversible without salt.
+pub fn mask_pe_dni_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+    PE_DNI_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            match hasher.encrypt(&caps[0]) {
+                Ok(hashed) => hashed,
+                Err(_)     => caps[0].to_string(),
+            }
+        })
+        .into_owned()
+}
+
 /// Masks a Peruvian DNI using FF3-1 FPE on all 8 digits.
 ///
 /// Reversible with the same key and tweak.

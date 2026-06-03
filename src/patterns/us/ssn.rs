@@ -47,6 +47,24 @@ pub fn mask_ssn(s: &str) -> String {
         .into_owned()
 }
 
+/// Masks any SSN using HMAC-SHA256 consistent pseudonymization on the 9 digits.
+///
+/// Dashes preserved in output. Not reversible without salt.
+pub fn mask_ssn_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+    SSN_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            if !valid_ssn(&caps[1], &caps[2], &caps[3]) {
+                return caps[0].to_string();
+            }
+            let digits = format!("{}{}{}", &caps[1], &caps[2], &caps[3]);
+            match hasher.encrypt(&digits) {
+                Ok(hashed) => format!("{}-{}-{}", &hashed[..3], &hashed[3..5], &hashed[5..]),
+                Err(_)     => caps[0].to_string(),
+            }
+        })
+        .into_owned()
+}
+
 /// Masks any SSN using FF3-1 format-preserving encryption on the 9 digits.
 ///
 /// Dashes are preserved in the output. Reversible with the same key and tweak.

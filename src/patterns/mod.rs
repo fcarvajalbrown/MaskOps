@@ -6,6 +6,7 @@ pub mod us;
 pub mod healthcare;
 pub mod country_codes;
 pub mod fpe;
+pub mod consistent;
 
 use crate::patterns::eu::iban::{mask_iban, contains_iban};
 use crate::patterns::eu::vat::{mask_vat, contains_vat};
@@ -33,6 +34,16 @@ use crate::patterns::latam::latam_id::{
 use crate::patterns::financial::credit_card::{mask_card, contains_card, mask_card_fpe};
 use crate::patterns::us::{mask_ssn, contains_ssn, mask_ssn_fpe, mask_us_passport, contains_us_passport};
 pub use crate::patterns::fpe::{Ff3Cipher, KEY_LEN, TWEAK_LEN};
+pub use crate::patterns::consistent::ConsistentHasher;
+use crate::patterns::contact::phone::mask_phone_consistent;
+use crate::patterns::financial::credit_card::mask_card_consistent;
+use crate::patterns::latam::latam_id::{
+    mask_rut_consistent, mask_cpf_consistent,
+    mask_arg_dni_consistent, mask_co_cc_consistent, mask_co_nit_consistent,
+};
+use crate::patterns::latam::{mask_ec_cedula_consistent, mask_pe_dni_consistent};
+use crate::patterns::us::mask_ssn_consistent;
+use crate::patterns::healthcare::{mask_npi_consistent, mask_nhs_consistent};
 
 // ---------------------------------------------------------------------------
 // Non-digit PII: IBAN, VAT, Email, IP, EU IDs
@@ -122,6 +133,33 @@ pub fn mask_all_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     mask_digit_fpe(&s, cipher)
 }
 
+/// Masks digit-based PII with HMAC-SHA256 consistent pseudonymization.
+///
+/// Same input → same output given the same salt. Not reversible without the salt.
+pub fn mask_digit_consistent(value: &str, hasher: &ConsistentHasher) -> String {
+    let s = mask_phone_consistent(value, hasher);
+    let s = mask_rut_consistent(&s, hasher);
+    let s = mask_cpf_consistent(&s, hasher);
+    let s = mask_card_consistent(&s, hasher);
+    let s = mask_ssn_consistent(&s, hasher);
+    let s = mask_arg_dni_consistent(&s, hasher);
+    let s = mask_co_cc_consistent(&s, hasher);
+    let s = mask_co_nit_consistent(&s, hasher);
+    let s = mask_ec_cedula_consistent(&s, hasher);
+    let s = mask_pe_dni_consistent(&s, hasher);
+    let s = mask_npi_consistent(&s, hasher);
+    let s = mask_nhs_consistent(&s, hasher);
+    s
+}
+
+/// Masks all PII — non-digit with asterisks, digit with HMAC-SHA256 consistent pseudonymization.
+///
+/// Same input → same output given the same salt. Not reversible without the salt.
+pub fn mask_all_consistent(value: &str, hasher: &ConsistentHasher) -> String {
+    let s = mask_non_digit(value);
+    mask_digit_consistent(&s, hasher)
+}
+
 /// Masks only the selected PII patterns with asterisks.
 ///
 /// Pattern names: email, phone, ip, iban, vat, dni, nie, nin, personalausweis,
@@ -187,6 +225,40 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &Ff3Cipher)
             "mbi"             => mask_mbi(&s),  // alphanumeric — asterisk only
             "nhs"             => mask_nhs_fpe(&s, cipher),
             "pe_dni"          => mask_pe_dni_fpe(&s, cipher),
+            _                 => s,
+        };
+    }
+    s
+}
+
+/// Masks only the selected PII patterns — non-digit asterisked, digit consistently hashed.
+pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &ConsistentHasher) -> String {
+    let mut s = value.to_string();
+    for pat in patterns {
+        s = match *pat {
+            "email"           => mask_email(&s),
+            "phone"           => mask_phone_consistent(&s, hasher),
+            "ip"              => mask_ip(&s),
+            "iban"            => mask_iban(&s),
+            "vat"             => mask_vat(&s),
+            "dni"             => mask_dni(&s),
+            "nie"             => mask_nie(&s),
+            "nin"             => mask_nin(&s),
+            "personalausweis" => mask_personalausweis(&s),
+            "us_passport"     => mask_us_passport(&s),
+            "curp"            => mask_curp(&s),
+            "rut"             => mask_rut_consistent(&s, hasher),
+            "cpf"             => mask_cpf_consistent(&s, hasher),
+            "ssn"             => mask_ssn_consistent(&s, hasher),
+            "arg_dni"         => mask_arg_dni_consistent(&s, hasher),
+            "co_cc"           => mask_co_cc_consistent(&s, hasher),
+            "co_nit"          => mask_co_nit_consistent(&s, hasher),
+            "ec_cedula"       => mask_ec_cedula_consistent(&s, hasher),
+            "credit_card"     => mask_card_consistent(&s, hasher),
+            "npi"             => mask_npi_consistent(&s, hasher),
+            "mbi"             => mask_mbi(&s),
+            "nhs"             => mask_nhs_consistent(&s, hasher),
+            "pe_dni"          => mask_pe_dni_consistent(&s, hasher),
             _                 => s,
         };
     }

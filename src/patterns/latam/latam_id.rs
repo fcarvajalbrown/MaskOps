@@ -364,3 +364,100 @@ pub fn mask_co_nit_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> Str
         })
         .into_owned()
 }
+
+// ── Consistent (HMAC-SHA256) variants ────────────────────────────────────────
+
+/// Masks the digit body of a valid Chilean RUT using HMAC-SHA256 consistent pseudonymization.
+///
+/// Check digit preserved. Separators stripped. Not reversible without salt.
+pub fn mask_rut_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+    RUT_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            let rut = &caps[0];
+            if !valid_rut(rut) {
+                return rut.to_string();
+            }
+            let clean: String = rut.chars().filter(|c| c.is_alphanumeric()).collect();
+            let body = &clean[..clean.len() - 1];
+            let dv   = &clean[clean.len() - 1..];
+            match hasher.encrypt(body) {
+                Ok(hashed) => format!("{}-{}", hashed, dv),
+                Err(_)     => rut.to_string(),
+            }
+        })
+        .into_owned()
+}
+
+/// Masks the 11 digits of a valid Brazilian CPF using HMAC-SHA256 consistent pseudonymization.
+///
+/// All digits hashed as a unit. Separators stripped. Not reversible without salt.
+pub fn mask_cpf_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+    CPF_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            let cpf = &caps[0];
+            if !valid_cpf(cpf) {
+                return cpf.to_string();
+            }
+            let digits: String = cpf.chars().filter(|c| c.is_ascii_digit()).collect();
+            match hasher.encrypt(&digits) {
+                Ok(hashed) => hashed,
+                Err(_)     => cpf.to_string(),
+            }
+        })
+        .into_owned()
+}
+
+/// Masks an Argentine DNI using HMAC-SHA256 consistent pseudonymization on the digit body.
+///
+/// Separators stripped. Not reversible without salt.
+pub fn mask_arg_dni_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+    ARG_DNI_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            let m = caps.get(0).unwrap();
+            if followed_by_id_suffix(s, m.end()) {
+                return m.as_str().to_string();
+            }
+            let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
+            match hasher.encrypt(&digits) {
+                Ok(hashed) => hashed,
+                Err(_)     => m.as_str().to_string(),
+            }
+        })
+        .into_owned()
+}
+
+/// Masks a Colombian CC using HMAC-SHA256 consistent pseudonymization on the digit body.
+///
+/// Separators stripped. Not reversible without salt.
+pub fn mask_co_cc_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+    CO_CC_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            let m = caps.get(0).unwrap();
+            if followed_by_id_suffix(s, m.end()) {
+                return m.as_str().to_string();
+            }
+            let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
+            match hasher.encrypt(&digits) {
+                Ok(hashed) => hashed,
+                Err(_)     => m.as_str().to_string(),
+            }
+        })
+        .into_owned()
+}
+
+/// Masks a valid Colombian NIT using HMAC-SHA256 consistent pseudonymization on the 9-digit body.
+///
+/// Check digit and dash preserved. Not reversible without salt.
+pub fn mask_co_nit_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+    CO_NIT_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            if !valid_nit(&caps[1], &caps[2]) {
+                return caps[0].to_string();
+            }
+            match hasher.encrypt(&caps[1]) {
+                Ok(hashed) => format!("{}-{}", hashed, &caps[2]),
+                Err(_)     => caps[0].to_string(),
+            }
+        })
+        .into_owned()
+}

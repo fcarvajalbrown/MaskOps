@@ -11,8 +11,10 @@ use pyo3::types::PyModuleMethods;
 use pyo3_polars::derive::polars_expr;
 use pyo3_polars::export::polars_core::prelude::*;
 use patterns::{mask_all, mask_all_fpe, contains_any_pii,
-               mask_all_selected, mask_all_selected_fpe, contains_any_selected};
+               mask_all_selected, mask_all_selected_fpe, contains_any_selected,
+               mask_all_consistent, mask_all_selected_consistent};
 use patterns::{Ff3Cipher, KEY_LEN, TWEAK_LEN};
+use patterns::ConsistentHasher;
 pub use patterns::fpe::Ff3Cipher as MaskopsFpe;
 
 // ---------------------------------------------------------------------------
@@ -97,6 +99,32 @@ fn mask_pii_fpe(inputs: &[Series]) -> PolarsResult<Series> {
         ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_selected_fpe(s, &patterns, &cipher))))
     } else {
         ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_fpe(s, &cipher))))
+    };
+    Ok(out.into_series())
+}
+
+// ---------------------------------------------------------------------------
+// Expression: mask_pii_consistent
+// ---------------------------------------------------------------------------
+/// Polars expression: masks digit PII with HMAC-SHA256 consistent pseudonymization.
+/// Non-digit PII (IBAN, VAT, email, IP, EU IDs) is still asterisked.
+///
+/// inputs[0]: Utf8 column to mask
+/// inputs[1]: String scalar — salt for HMAC-SHA256
+/// inputs[2] (optional): comma-separated pattern names
+#[polars_expr(output_type=String)]
+fn mask_pii_consistent(inputs: &[Series]) -> PolarsResult<Series> {
+    let ca = inputs[0].str()?;
+    let salt = inputs[1].str()?
+        .get(0)
+        .ok_or_else(|| PolarsError::ComputeError("mask_pii_consistent: missing salt".into()))?;
+    let hasher = ConsistentHasher::new(salt);
+    let out: StringChunked = if inputs.len() > 2 {
+        let pat_str = inputs[2].str()?.get(0).unwrap_or("");
+        let patterns: Vec<&str> = pat_str.split(',').filter(|s| !s.is_empty()).collect();
+        ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_selected_consistent(s, &patterns, &hasher))))
+    } else {
+        ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_consistent(s, &hasher))))
     };
     Ok(out.into_series())
 }

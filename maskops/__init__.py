@@ -33,12 +33,14 @@ if TYPE_CHECKING:
 _LIB = Path(__file__).parent
 
 
-def mask_pii(expr: IntoExpr, patterns: list = None) -> pl.Expr:
+def mask_pii(
+    expr: IntoExpr,
+    patterns: list = None,
+    mode: str = "asterisk",
+    salt: str = None,
+) -> pl.Expr:
     """
     Mask detected PII in a String column.
-
-    Replaces matched PII with asterisks. Pass ``patterns`` to limit masking to
-    specific PII families; omit it (or pass ``None``) to mask everything.
 
     Parameters
     ----------
@@ -49,13 +51,34 @@ def mask_pii(expr: IntoExpr, patterns: list = None) -> pl.Expr:
         ``email``, ``phone``, ``ip``, ``iban``, ``vat``, ``dni``, ``nie``,
         ``nin``, ``personalausweis``, ``us_passport``, ``curp``, ``rut``,
         ``cpf``, ``ssn``, ``arg_dni``, ``co_cc``, ``co_nit``, ``ec_cedula``,
-        ``credit_card``. Unknown names are silently ignored.
+        ``credit_card``, ``npi``, ``mbi``, ``nhs``, ``pe_dni``.
+    mode : str
+        Masking mode. ``"asterisk"`` (default): irreversible redaction.
+        ``"consistent"``: deterministic HMAC-SHA256 pseudonymization — requires ``salt``.
+    salt : str | None
+        Required when ``mode="consistent"``. Secret salt for HMAC-SHA256.
+        Must be kept separate from the data (same GDPR key-separation rule as FPE).
 
     Examples
     --------
     >>> df.with_columns(maskops.mask_pii("col"))
     >>> df.with_columns(maskops.mask_pii("col", patterns=["email", "ssn"]))
+    >>> df.with_columns(maskops.mask_pii("col", mode="consistent", salt="my-secret"))
     """
+    if mode == "consistent":
+        if salt is None:
+            raise ValueError("mask_pii: mode='consistent' requires a salt")
+        col_expr = pl.col(expr) if isinstance(expr, str) else expr
+        args = [col_expr, pl.lit(salt)]
+        if patterns is not None:
+            args.append(pl.lit(",".join(patterns)))
+        return register_plugin_function(
+            plugin_path=_LIB,
+            function_name="mask_pii_consistent",
+            args=args,
+            is_elementwise=True,
+        )
+    # default: asterisk
     args = [pl.col(expr) if isinstance(expr, str) else expr]
     if patterns is not None:
         args.append(pl.lit(",".join(patterns)))

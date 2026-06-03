@@ -51,6 +51,23 @@ pub fn mask_npi(s: &str) -> String {
         .into_owned()
 }
 
+/// Masks a valid NPI using HMAC-SHA256 consistent pseudonymization on all 10 digits.
+///
+/// Not reversible without salt.
+pub fn mask_npi_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+    NPI_RE
+        .replace_all(s, |caps: &regex::Captures| {
+            if !valid_npi(&caps[0]) {
+                return caps[0].to_string();
+            }
+            match hasher.encrypt(&caps[0]) {
+                Ok(hashed) => hashed,
+                Err(_)     => caps[0].to_string(),
+            }
+        })
+        .into_owned()
+}
+
 /// Masks a valid NPI using FF3-1 FPE on all 10 digits.
 ///
 /// Reversible with the same key and tweak.
