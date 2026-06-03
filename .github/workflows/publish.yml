@@ -92,4 +92,4 @@ jobs:
       - name: Publish to PyPI
         run: |
           pip install twine
-          twine upload dist/* --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
+          twine upload dist/* --username __token__ --password ${{ secrets.PYPI_API_TOKEN }} --skip-existing
