@@ -19,6 +19,12 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+      - name: Auto-merge release PR
+        if: ${{ steps.release.outputs.pr }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge --merge --delete-branch "${{ steps.release.outputs.pr }}"
+
       # After a release PR is merged and the tag is created,
       # create a GitHub Release with auto-generated notes.
       - name: Create GitHub Release
