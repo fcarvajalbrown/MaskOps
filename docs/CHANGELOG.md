@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.1](https://github.com/fcarvajalbrown/MaskOps/compare/v0.5.0...v0.5.1) (2026-06-03)
+
+
+### Documentation
+
+* mark v0.2–v0.7 complete in ROADMAP, update current version ([b9eadda](https://github.com/fcarvajalbrown/MaskOps/commit/b9eaddad03b6726e5dc3f37a214ff27c81549886))
+
 ## [0.5.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.4.0...v0.5.0) (2026-06-03)
 
 
