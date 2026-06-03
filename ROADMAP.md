@@ -17,7 +17,7 @@ Goal: API stability + complete coverage across all major global ID families.
 - [x] **v0.5** — LatAm depth: Argentine DNI · Colombian CC/NIT · IPv4 range fix
 - [x] **v0.6** — Configurable pattern selection: `mask_pii("col", patterns=["email", "ssn"])` · Ecuadorian cédula
 - [x] **v0.7** — Healthcare: US NPI, Medicare Beneficiary ID, NHS number (UK) · Peruvian DNI
-- [ ] **v0.8** — Consistent masking: deterministic hash-based pseudonymization (same input → same output, no FPE key required)
+- [x] **v0.8** — Consistent masking: deterministic hash-based pseudonymization (same input → same output, no FPE key required)
 - [ ] **v0.9** — EU depth: French NIR (INSEE), Italian codice fiscale · Uruguayan cédula · APAC start: Canadian SIN, Australian TFN
 - [ ] **v1.0** — API stability guarantee · CLI tool (`maskops run`) · GitHub Pages docs site · PR to official Polars plugins page
 

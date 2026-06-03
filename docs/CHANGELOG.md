@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — v0.8
+
+- `mask_pii(mode="consistent", salt=...)`: HMAC-SHA256 deterministic pseudonymization for digit PII
+
 ## [0.5.1](https://github.com/fcarvajalbrown/MaskOps/compare/v0.5.0...v0.5.1) (2026-06-03)
 
 
