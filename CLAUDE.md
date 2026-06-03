@@ -12,6 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Never force-push** without telling the user and waiting for confirmation.
 
+**Creating `v*` tags is a production action** — it triggers the PyPI publish workflow. Treat it the same as a deployment: require explicit user approval before creating any tag that matches `v*`. "Proceed" or "go ahead" in context counts as approval.
+
 **One commit per logical change** — no layer-split commits.
 
 **"Add to AGENTS.md"** means write to that file locally and stop — do not commit or push unless explicitly asked.
