@@ -7,7 +7,7 @@ name = "maskops"
 version = "0.1.5"
 description = "High-speed PII masking as a Polars plugin — powered by Rust"
 readme = "README.md"
-license = { text = "GPL-3.0-or-later" }
+license = { text = "MPL-2.0" }
 requires-python = ">=3.9"
 keywords = [
     "polars", "polars-plugin", "polars-extension",
@@ -34,7 +34,7 @@ classifiers = [
     "Intended Audience :: Financial and Insurance Industry",
     "Intended Audience :: Healthcare Industry",
     "Operating System :: OS Independent",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
 ]
 dependencies = ["polars>=0.46"]
 
