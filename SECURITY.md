@@ -4,7 +4,7 @@
 
 Please **do not open a public GitHub issue** for security vulnerabilities.
 
-Email **felipe.carvajal@externos-cl.cencosud.com** with:
+Email **fcarvajalbrown@protonmail.com** with:
 - A description of the vulnerability
 - Steps to reproduce
 - Potential impact
