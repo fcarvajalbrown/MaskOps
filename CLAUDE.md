@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Always work sequentially** — one tool call at a time, never parallel, even for independent steps.
 
+**Skip brainstorming for already-specced work** — if the feature has a roadmap entry, a design doc in `docs/superpowers/specs/`, or is described in detail anywhere in the repo, do not invoke the brainstorming skill. Go straight to writing-plans or implementation.
+
 **Never assume** — if any detail is unclear, ask before implementing.
 
 **Never force-push** without telling the user and waiting for confirmation.

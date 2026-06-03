@@ -21,6 +21,7 @@ use crate::patterns::latam::latam_id::{
     mask_rut_fpe, mask_cpf_fpe,
 };
 use crate::patterns::financial::credit_card::{mask_card, contains_card, mask_card_fpe};
+use crate::patterns::us::{mask_ssn, contains_ssn, mask_ssn_fpe, mask_us_passport, contains_us_passport};
 pub use crate::patterns::fpe::{Ff3Cipher, KEY_LEN, TWEAK_LEN};
 
 // ---------------------------------------------------------------------------
@@ -42,6 +43,7 @@ pub fn mask_non_digit(value: &str) -> String {
     let s = mask_nie(&s);
     let s = mask_nin(&s);
     let s = mask_personalausweis(&s);
+    let s = mask_us_passport(&s);
     s
 }
 
@@ -56,6 +58,7 @@ pub fn mask_digit(value: &str) -> String {
     let s = mask_rut(&s);
     let s = mask_cpf(&s);
     let s = mask_card(&s);
+    let s = mask_ssn(&s);
     s
 }
 
@@ -68,6 +71,7 @@ pub fn mask_digit_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     let s = mask_rut_fpe(&s, cipher);
     let s = mask_cpf_fpe(&s, cipher);
     let s = mask_card_fpe(&s, cipher);
+    let s = mask_ssn_fpe(&s, cipher);
     s
 }
 
@@ -108,4 +112,6 @@ pub fn contains_any_pii(value: &str) -> bool {
         || contains_nie(value)
         || contains_nin(value)
         || contains_personalausweis(value)
+        || contains_ssn(value)
+        || contains_us_passport(value)
 }

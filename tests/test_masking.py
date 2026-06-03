@@ -824,3 +824,115 @@ class TestFpeFixtures:
                 result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
                 assert "*" not in result, \
                     f"Asterisk found in FPE output for {field}: {result}"
+
+
+# ---------------------------------------------------------------------------
+# SSN
+# ---------------------------------------------------------------------------
+
+class TestMaskSSN:
+    def test_valid_ssn_masked(self):
+        df = pl.DataFrame({"col": ["123-45-6789"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == "***-**-****"
+
+    def test_ssn_in_sentence(self):
+        df = pl.DataFrame({"col": ["SSN: 123-45-6789 on file"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "123-45-6789" not in result
+        assert "SSN:" in result
+        assert "on file" in result
+
+    def test_invalid_area_000_untouched(self):
+        original = "000-45-6789"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_invalid_area_666_untouched(self):
+        original = "666-45-6789"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_itin_area_untouched(self):
+        original = "900-45-6789"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_invalid_group_00_untouched(self):
+        original = "123-00-6789"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_invalid_serial_0000_untouched(self):
+        original = "123-45-0000"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_woolworth_wallet_untouched(self):
+        original = "078-05-1120"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_known_invalid_219_untouched(self):
+        original = "219-09-9999"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_contains_pii_detects_ssn(self):
+        df = pl.DataFrame({"col": ["123-45-6789", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_ssn_fpe_preserves_format(self):
+        df = pl.DataFrame({"col": ["123-45-6789"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        parts = result.split("-")
+        assert len(parts) == 3
+        assert len(parts[0]) == 3 and parts[0].isdigit()
+        assert len(parts[1]) == 2 and parts[1].isdigit()
+        assert len(parts[2]) == 4 and parts[2].isdigit()
+
+    def test_ssn_fpe_differs_from_plaintext(self):
+        df = pl.DataFrame({"col": ["123-45-6789"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert result != "123-45-6789"
+
+    def test_ssn_fpe_no_asterisks(self):
+        df = pl.DataFrame({"col": ["123-45-6789"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert "*" not in result
+
+
+# ---------------------------------------------------------------------------
+# US passport
+# ---------------------------------------------------------------------------
+
+class TestMaskUSPassport:
+    def test_valid_passport_masked(self):
+        df = pl.DataFrame({"col": ["A12345678"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == "*********"
+
+    def test_passport_in_sentence(self):
+        df = pl.DataFrame({"col": ["Passport: A12345678 issued 2020"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "A12345678" not in result
+        assert "Passport:" in result
+        assert "issued 2020" in result
+
+    def test_contains_pii_detects_passport(self):
+        df = pl.DataFrame({"col": ["A12345678", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_passport_asterisked_in_fpe_mode(self):
+        df = pl.DataFrame({"col": ["A12345678"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert result == "*********"
