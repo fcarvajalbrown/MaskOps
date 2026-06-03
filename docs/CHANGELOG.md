@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.3.0...v0.4.0) (2026-06-03)
+
+
+### Features
+
+* **api:** add patterns= argument to mask_pii, contains_pii, mask_pii_fpe (v0.6.0) ([b4efc2d](https://github.com/fcarvajalbrown/MaskOps/commit/b4efc2d8d59cee8da7f9ba17cb24c20435735eb4))
+
 ## [0.6.0] — 2026-06-03
 
 ### Added
