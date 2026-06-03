@@ -21,33 +21,50 @@ jobs:
           manifest-file: .release-please-manifest.json
           skip-github-release: true
 
-      # Merge the release PR, then re-trigger this workflow so release-please
-      # can detect the merged PR, create the tag, and set release_created=true.
-      # (GITHUB_TOKEN merges don't auto-trigger push workflows — we re-trigger manually.)
-      - name: Auto-merge release PR
+      # Merge, tag, release, and mark the PR as tagged — all in one step.
+      # GITHUB_TOKEN merges don't re-trigger push workflows, so we handle
+      # everything here rather than relying on a second workflow run.
+      - name: Auto-merge, tag, and release
         if: ${{ steps.release.outputs.pr }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_NUMBER=$(echo '${{ steps.release.outputs.pr }}' | jq -r '.number')
-          gh pr merge --merge --delete-branch --repo "${{ github.repository }}" "$PR_NUMBER"
-          gh workflow run release-please.yml --repo "${{ github.repository }}"
+          PR_JSON='${{ steps.release.outputs.pr }}'
+          PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number')
+          VERSION=$(echo "$PR_JSON" | jq -r '.title' | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          TAG="v${VERSION}"
 
-      # Runs on the re-triggered workflow_dispatch after the PR is merged.
-      # release-please creates the tag; we create the GitHub Release here.
-      - name: Create GitHub Release
-        if: ${{ steps.release.outputs.release_created }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION=${{ steps.release.outputs.version }}
-          gh release create "v${VERSION}" \
-            --repo "${{ github.repository }}" \
-            --title "v${VERSION}" \
-            --notes "## Install
+          # Merge and delete the release branch
+          gh pr merge --merge --delete-branch --repo "${{ github.repository }}" "$PR_NUMBER"
+
+          # Get the merge commit SHA
+          MERGE_SHA=$(gh api "repos/${{ github.repository }}/git/ref/heads/main" --jq '.object.sha')
+
+          # Create the tag (skip if it already exists)
+          if ! gh api "repos/${{ github.repository }}/git/ref/tags/${TAG}" --silent 2>/dev/null; then
+            gh api "repos/${{ github.repository }}/git/refs" \
+              --method POST \
+              -f ref="refs/tags/${TAG}" \
+              -f sha="${MERGE_SHA}"
+          fi
+
+          # Create the GitHub Release (skip if it already exists)
+          if ! gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --repo "${{ github.repository }}" \
+              --title "$TAG" \
+              --target "${MERGE_SHA}" \
+              --notes "## Install
 
           \`\`\`bash
           pip install maskops==${VERSION}
           \`\`\`
 
           See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/docs/CHANGELOG.md) for details."
+          fi
+
+          # Mark the PR as tagged so release-please doesn't abort on future runs
+          gh api "repos/${{ github.repository }}/labels" --method POST \
+            -f name="autorelease: tagged" -f color="ededed" 2>/dev/null || true
+          gh pr edit "$PR_NUMBER" --repo "${{ github.repository }}" \
+            --add-label "autorelease: tagged" --remove-label "autorelease: pending" 2>/dev/null || true
