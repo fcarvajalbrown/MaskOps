@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Rules
 
+**Always work sequentially** — one tool call at a time, never parallel, even for independent steps.
+
 **Never assume** — if any detail is unclear, ask before implementing.
 
 **Never force-push** without telling the user and waiting for confirmation.
