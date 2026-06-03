@@ -1162,9 +1162,129 @@ class TestPatternSelection:
         assert "4111111111111111" not in result
         assert "+56912345678" in result  # phone untouched
 
+    def test_pattern_npi(self):
+        df = pl.DataFrame({"col": ["NPI: 1234567893 email: x@x.com"]})
+        result = df.with_columns(maskops.mask_pii("col", patterns=["npi"]))["col"][0]
+        assert "1234567893" not in result
+        assert "x@x.com" in result
+
     def test_backward_compatible_no_patterns(self):
         df = pl.DataFrame({"col": ["john@example.com"]})
         with_none = df.with_columns(maskops.mask_pii("col"))["col"][0]
         with_explicit = df.with_columns(maskops.mask_pii("col", patterns=None))["col"][0]
         assert with_none == with_explicit
         assert "john@example.com" not in with_none
+
+
+# ---------------------------------------------------------------------------
+# Healthcare: NPI
+# ---------------------------------------------------------------------------
+
+class TestMaskNPI:
+    # 1234567893 — valid NPI (Luhn check with HIPAA prefix 24)
+    def test_valid_npi_masked(self):
+        df = pl.DataFrame({"col": ["NPI: 1234567893"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "1234567893" not in result
+        assert "**********" in result
+
+    def test_invalid_npi_untouched(self):
+        original = "1234567890"  # wrong check digit (would need 3 to be valid)
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_contains_pii_detects_npi(self):
+        df = pl.DataFrame({"col": ["1234567893", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_npi_fpe_no_asterisks(self):
+        df = pl.DataFrame({"col": ["1234567893"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert "*" not in result
+        assert result != "1234567893"
+
+
+# ---------------------------------------------------------------------------
+# Healthcare: MBI
+# ---------------------------------------------------------------------------
+
+class TestMaskMBI:
+    # 1EG4TE5MK72 — well-known CMS example MBI
+    def test_valid_mbi_masked(self):
+        df = pl.DataFrame({"col": ["MBI: 1EG4TE5MK72"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "1EG4TE5MK72" not in result
+        assert "***********" in result
+
+    def test_contains_pii_detects_mbi(self):
+        df = pl.DataFrame({"col": ["1EG4TE5MK72", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_mbi_asterisked_in_fpe_mode(self):
+        df = pl.DataFrame({"col": ["1EG4TE5MK72"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert result == "***********"
+
+
+# ---------------------------------------------------------------------------
+# Healthcare: NHS
+# ---------------------------------------------------------------------------
+
+class TestMaskNHS:
+    # 9434765919 — valid NHS number
+    def test_valid_nhs_masked(self):
+        df = pl.DataFrame({"col": ["NHS: 943 476 5919"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "943" not in result
+        assert "476" not in result
+        assert "*" in result
+
+    def test_compact_nhs_masked(self):
+        df = pl.DataFrame({"col": ["9434765919"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "9434765919" not in result
+
+    def test_invalid_nhs_untouched(self):
+        # Use spaced format so NPI regex (requires 10 consecutive digits) won't fire.
+        # 999 999 9990: check digit should be 9, not 0 → invalid NHS.
+        original = "999 999 9990"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_contains_pii_detects_nhs(self):
+        df = pl.DataFrame({"col": ["9434765919", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_nhs_fpe_no_asterisks(self):
+        df = pl.DataFrame({"col": ["9434765919"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert "*" not in result
+        assert result != "9434765919"
+
+
+# ---------------------------------------------------------------------------
+# LatAm: Peruvian DNI
+# ---------------------------------------------------------------------------
+
+class TestMaskPeDNI:
+    def test_pe_dni_masked(self):
+        df = pl.DataFrame({"col": ["DNI: 12345678"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "12345678" not in result
+        assert "********" in result
+
+    def test_contains_pii_detects_pe_dni(self):
+        df = pl.DataFrame({"col": ["12345678", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_pe_dni_fpe_no_asterisks(self):
+        df = pl.DataFrame({"col": ["12345678"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert "*" not in result
+        assert result != "12345678"

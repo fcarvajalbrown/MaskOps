@@ -16,7 +16,13 @@ use crate::patterns::eu::european_id::{
 use crate::patterns::contact::email::{mask_email, contains_email};
 use crate::patterns::contact::phone::{mask_phone, contains_phone, mask_phone_fpe};
 use crate::patterns::contact::ip::{mask_ip, contains_ip};
-use crate::patterns::latam::{contains_ec_cedula, mask_ec_cedula, mask_ec_cedula_fpe};
+use crate::patterns::latam::{contains_ec_cedula, mask_ec_cedula, mask_ec_cedula_fpe,
+                             contains_pe_dni, mask_pe_dni, mask_pe_dni_fpe};
+use crate::patterns::healthcare::{
+    contains_npi, mask_npi, mask_npi_fpe,
+    contains_mbi, mask_mbi,
+    contains_nhs, mask_nhs, mask_nhs_fpe,
+};
 use crate::patterns::latam::latam_id::{
     mask_rut, contains_rut, mask_cpf, contains_cpf, mask_curp, contains_curp,
     mask_rut_fpe, mask_cpf_fpe,
@@ -48,6 +54,7 @@ pub fn mask_non_digit(value: &str) -> String {
     let s = mask_nin(&s);
     let s = mask_personalausweis(&s);
     let s = mask_us_passport(&s);
+    let s = mask_mbi(&s);
     s
 }
 
@@ -67,6 +74,9 @@ pub fn mask_digit(value: &str) -> String {
     let s = mask_co_cc(&s);
     let s = mask_co_nit(&s);
     let s = mask_ec_cedula(&s);
+    let s = mask_pe_dni(&s);
+    let s = mask_npi(&s);
+    let s = mask_nhs(&s);
     s
 }
 
@@ -84,6 +94,9 @@ pub fn mask_digit_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     let s = mask_co_cc_fpe(&s, cipher);
     let s = mask_co_nit_fpe(&s, cipher);
     let s = mask_ec_cedula_fpe(&s, cipher);
+    let s = mask_pe_dni_fpe(&s, cipher);
+    let s = mask_npi_fpe(&s, cipher);
+    let s = mask_nhs_fpe(&s, cipher);
     s
 }
 
@@ -136,6 +149,10 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
             "co_nit"          => mask_co_nit(&s),
             "ec_cedula"       => mask_ec_cedula(&s),
             "credit_card"     => mask_card(&s),
+            "npi"             => mask_npi(&s),
+            "mbi"             => mask_mbi(&s),
+            "nhs"             => mask_nhs(&s),
+            "pe_dni"          => mask_pe_dni(&s),
             _                 => s,
         };
     }
@@ -166,6 +183,10 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &Ff3Cipher)
             "co_nit"          => mask_co_nit_fpe(&s, cipher),
             "ec_cedula"       => mask_ec_cedula_fpe(&s, cipher),
             "credit_card"     => mask_card_fpe(&s, cipher),
+            "npi"             => mask_npi_fpe(&s, cipher),
+            "mbi"             => mask_mbi(&s),  // alphanumeric — asterisk only
+            "nhs"             => mask_nhs_fpe(&s, cipher),
+            "pe_dni"          => mask_pe_dni_fpe(&s, cipher),
             _                 => s,
         };
     }
@@ -194,6 +215,10 @@ pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
         "co_nit"          => contains_co_nit(value),
         "ec_cedula"       => contains_ec_cedula(value),
         "credit_card"     => contains_card(value),
+        "npi"             => contains_npi(value),
+        "mbi"             => contains_mbi(value),
+        "nhs"             => contains_nhs(value),
+        "pe_dni"          => contains_pe_dni(value),
         _                 => false,
     })
 }
@@ -219,4 +244,8 @@ pub fn contains_any_pii(value: &str) -> bool {
         || contains_co_cc(value)
         || contains_co_nit(value)
         || contains_ec_cedula(value)
+        || contains_pe_dni(value)
+        || contains_npi(value)
+        || contains_mbi(value)
+        || contains_nhs(value)
 }

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.0] — 2026-06-03
+
+### Added
+- US NPI (National Provider Identifier): 10-digit HIPAA Luhn-validated; asterisk and FPE masking.
+- Medicare Beneficiary Identifier (MBI): 11-char CMS format; always asterisked.
+- NHS number (UK): 10-digit Modulus 11 validated; asterisk and FPE masking.
+- Peruvian DNI: 8-digit compact format; asterisk and FPE masking.
+- All four patterns available via `patterns=` selector.
+
 ## [0.6.0] — 2026-06-03
 
 ### Added
