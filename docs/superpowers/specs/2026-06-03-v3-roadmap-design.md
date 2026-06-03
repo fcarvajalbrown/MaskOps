@@ -62,14 +62,15 @@ No API change. Zero breaking changes.
 
 ---
 
-### v0.5.0 — Coverage: EU depth
+### v0.5.0 — Coverage: LatAm depth (LATAM commercial priority)
 
-- French NIR (INSEE social security number)
-- Italian codice fiscale
+- Argentine DNI — 8 digits (reform bill in Congress makes this urgent)
+- Colombian cédula de ciudadanía (CC) — 6–10 digits
+- Colombian NIT (Número de Identificación Tributaria) — 9 digits + check digit
 
 ---
 
-### v0.6.0 — Infra: Configurable pattern selection (enterprise building block 1)
+### v0.6.0 — Infra: Configurable pattern selection + Ecuadorian cédula
 
 First cut of per-call pattern selection:
 
@@ -81,13 +82,16 @@ maskops.mask_pii("col", patterns=["email", "ssn", "credit_card"])
 - Pattern names match the module folder structure
 - `contains_pii` gains the same `patterns=` argument
 
+**Also:** Ecuadorian cédula de identidad — 10-digit Módulo 10 validated (SPDP first enforcement actions in 2024).
+
 ---
 
-### v0.7.0 — Coverage: Healthcare identifiers
+### v0.7.0 — Coverage: Healthcare identifiers + Peruvian DNI
 
 - US NPI (National Provider Identifier) — 10-digit Luhn-validated
 - Medicare Beneficiary Identifier (MBI) — 11-character alphanumeric
 - NHS number (UK) — 10-digit Modulus 11 validated
+- Peruvian DNI — 8 digits
 
 ---
 
@@ -101,20 +105,24 @@ maskops.mask_pii("col", mode="consistent", salt="my-secret-salt")
 
 - Backed by HMAC-SHA256 truncated to match output format
 - Not reversible (unlike FPE) — one-way pseudonymization
+- Only applies to digit-based PII; non-digit PII is always asterisked
 
 ---
 
-### v0.9.0 — Coverage: LatAm depth + APAC start
+### v0.9.0 — Coverage: EU depth + Uruguayan cédula + APAC start
 
-- Argentine DNI
+- French NIR (INSEE social security number)
+- Italian codice fiscale
+- Uruguayan cédula de identidad — 7–8 digits (EU adequacy bridge jurisdiction)
 - Canadian SIN (Social Insurance Number)
 - Australian TFN (Tax File Number)
 
 ---
 
-### v1.0.0 — Milestone: API stability + documentation + ecosystem
+### v1.0.0 — Milestone: API stability + CLI + documentation + ecosystem
 
 - API stability guarantee: no breaking changes without a major version bump from this point
+- **CLI tool:** `maskops run config.toml input.parquet output.parquet` — municipalities and non-Python users need this
 - GitHub Pages documentation site live
 - PR submitted to official Polars plugins page (`docs.pola.rs/user-guide/plugins/`)
 - 20 GitHub topics applied to the repo (per discoverability research)
@@ -123,13 +131,30 @@ maskops.mask_pii("col", mode="consistent", salt="my-secret-salt")
 
 ## Phase 2 — Enterprise Building Blocks (v1.1.0 → v2.0.0)
 
-### v1.1.0 — Coverage: EU depth
+### v1.1.0 — Infra: Policy files (pairs with v1.0 CLI)
+
+YAML/TOML config declaring masking rules per column, loaded once at pipeline start:
+
+```yaml
+columns:
+  notes:
+    patterns: [email, phone, credit_card]
+    mode: asterisk
+  customer_ref:
+    patterns: [ssn, rut]
+    mode: consistent
+    salt: ${MASK_SALT}
+```
+
+Moved from v1.8.0 — the CLI at v1.0 is only useful once policy files exist.
+
+### v1.2.0 — Coverage: EU depth
 
 - Polish PESEL
 - Dutch BSN (Burgerservicenummer)
 - Swedish personnummer
 
-### v1.2.0 — Infra: `extract_pii` expression (enterprise building block 3)
+### v1.3.0 — Infra: `extract_pii` expression (enterprise building block 3)
 
 Returns a struct column with one boolean/string field per PII family:
 
@@ -139,11 +164,6 @@ df.with_columns(maskops.extract_pii("notes"))
 ```
 
 Enables downstream routing, reporting, and selective masking.
-
-### v1.3.0 — Coverage: LatAm depth
-
-- Colombian cédula de ciudadanía (CC) and NIT
-- Peruvian DNI
 
 ### v1.4.0 — Infra: Multi-column referential integrity
 
@@ -168,22 +188,12 @@ Returns the masked value alongside a match-count struct per PII family. Enables 
 - South African ID number — 13-digit with check digit
 - Israeli ID number (Mispar Zehut) — 9-digit Luhn-validated
 
-### v1.8.0 — Infra: Policy files
+### v1.8.0 — Infra: FPE key management helpers
 
-YAML/TOML config declaring masking rules per column, loaded once at pipeline start:
-
-```yaml
-columns:
-  notes:
-    patterns: [email, phone, credit_card]
-    mode: asterisk
-  customer_ref:
-    patterns: [ssn]
-    mode: consistent
-    salt: ${MASK_SALT}
-```
-
-Eliminates per-call configuration in large pipelines.
+- Key rotation utilities
+- Tweak derivation helpers
+- Key validation (length, entropy check)
+- Moved from v2.1.0 — critical for air-gapped enterprise deployments where key management is manual
 
 ### v1.9.0 — Coverage: US depth + dates
 
@@ -192,17 +202,15 @@ Eliminates per-call configuration in large pipelines.
 
 ### v2.0.0 — Milestone: Enterprise release
 
-Consolidation release — no new coverage. Unifies the building blocks from 0.6.0, 0.8.0, 1.2.0, 1.4.0, 1.6.0, 1.8.0 into a cohesive, documented enterprise API. Includes a migration guide for users upgrading from pre-1.0.
+Consolidation release — no new coverage. Unifies the building blocks from 0.6.0, 0.8.0, 1.3.0, 1.4.0, 1.6.0, 1.1.0 into a cohesive, documented enterprise API. Includes a migration guide for users upgrading from pre-1.0.
 
 ---
 
 ## Phase 3 — Ecosystem Maturity (v2.1.0 → v3.0.0)
 
-### v2.1.0 — Infra: FPE key management helpers
+### v2.1.0 — Infra: Python typing stubs
 
-- Key rotation utilities
-- Tweak derivation helpers
-- Key validation (length, entropy check)
+`.pyi` stubs for all public expressions — full mypy and pyright support.
 
 ### v2.2.0 — Ecosystem: Documentation site
 
