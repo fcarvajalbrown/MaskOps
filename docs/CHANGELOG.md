@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — v1.0
+
+- `maskops run <config.toml> <input.parquet> <output.parquet>` — CLI for pipeline use without writing Python
+
 ## [Unreleased] — v0.9
 
 - French NIR (INSEE social security number): detection + asterisk masking
