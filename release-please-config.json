@@ -1,0 +1,19 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "changelog-path": "docs/CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.package.version"
+        },
+        {
+          "type": "generic",
+          "path": "src/lib.rs"
+        }
+      ]
+    }
+  }
+}

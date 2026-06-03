@@ -1,0 +1,37 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      # After a release PR is merged and the tag is created,
+      # create a GitHub Release with auto-generated notes.
+      - name: Create GitHub Release
+        if: ${{ steps.release.outputs.release_created }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release.outputs.tag_name }}
+          generate_release_notes: true
+          body: |
+            ## Install
+
+            ```bash
+            pip install maskops==${{ steps.release.outputs.version }}
+            ```
+
+            See [CHANGELOG](https://github.com/fcarvajalbrown/MaskOps/blob/main/docs/CHANGELOG.md) for details.
