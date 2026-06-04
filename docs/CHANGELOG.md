@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.12.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.11.0...v0.12.0) (2026-06-04)
+
+
+### Features
+
+* **skills:** add /kimi-optimize skill for pre-PR Rust performance review ([8537c79](https://github.com/fcarvajalbrown/MaskOps/commit/8537c79bedd89e64fcee2d71e5aa43a61770a81b))
+* **skills:** add /kimi-qa skill for on-demand codebase Q&A via Kimi ([c407402](https://github.com/fcarvajalbrown/MaskOps/commit/c4074027da5213daae77d892a0bfdcb1fa024c14))
+* **skills:** add /kimi-security skill for pre-PR GDPR and security review ([e7366ab](https://github.com/fcarvajalbrown/MaskOps/commit/e7366ab0790b66034620b8f0faf740d3c94fad71))
+
 ## [0.11.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.10.0...v0.11.0) (2026-06-04)
 
 
