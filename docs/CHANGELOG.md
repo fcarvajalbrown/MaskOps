@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Features
+
+- Add Polish PESEL detection and masking (asterisk, FPE, consistent; UODO/GDPR Art. 4(1))
+- Add Dutch BSN detection and masking (asterisk, FPE, consistent; Dutch AVG/GDPR)
+- Add Swedish personnummer detection and masking (asterisk, FPE, consistent; Dataskyddslagen)
+
 ## [0.10.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.9.0...v0.10.0) (2026-06-04)
 
 
