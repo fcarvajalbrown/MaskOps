@@ -1,0 +1,40 @@
+{
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"continue\":false,\"stopReason\":\"Force push blocked — tell me first and wait for explicit confirmation.\"}'",
+            "if": "Bash(git push --force*)"
+          },
+          {
+            "type": "command",
+            "command": "echo '{\"continue\":false,\"stopReason\":\"Force push blocked — tell me first and wait for explicit confirmation.\"}'",
+            "if": "Bash(git push -f*)"
+          },
+          {
+            "type": "command",
+            "command": "echo '{\"continue\":false,\"stopReason\":\"v* tags trigger PyPI publish — production action. Confirm the tag name explicitly before I proceed.\"}'",
+            "if": "Bash(git tag v*)"
+          },
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\":\"Reminder: have you asked me to run /kimi-security and /kimi-optimize for this change?\"}'",
+            "if": "Bash(git push*)"
+          },
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\":\"Reminder: have you asked me to run /kimi-security and /kimi-optimize for this change?\"}'",
+            "if": "Bash(git commit*)"
+          }
+        ]
+      }
+    ]
+  }
+}
