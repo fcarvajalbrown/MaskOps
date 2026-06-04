@@ -17,6 +17,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 * add CLI entry to changelog ([1e765c6](https://github.com/fcarvajalbrown/MaskOps/commit/1e765c6389d6faabddd9635526caa02bafd0037d))
 * mark v0.9 complete, add coverage changelog entries ([a51ebe1](https://github.com/fcarvajalbrown/MaskOps/commit/a51ebe129d8dc739cfb578f252b8e4b4ce2b2f5c))
 
+## [Unreleased] — v1.1
+
+- `maskops.load_policy(path)`: load YAML or TOML policy files as a Python API
+- Policy files support env var interpolation (`${VAR_NAME}`) in any string value
+- CLI now accepts YAML policy files and TOML dict-format (`[columns.name]`) configs
+
 ## [Unreleased] — v1.0
 
 - `maskops run <config.toml> <input.parquet> <output.parquet>` — CLI for pipeline use without writing Python
