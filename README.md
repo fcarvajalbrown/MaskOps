@@ -5,6 +5,7 @@
 <p align="center">
   <a href="https://github.com/fcarvajalbrown/MaskOps/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/fcarvajalbrown/MaskOps/ci.yml?style=flat-square&label=CI&color=3DDB81" alt="CI"/></a>
   <a href="https://pypi.org/project/maskops/"><img src="https://img.shields.io/pypi/v/maskops?style=flat-square&color=3DDB81&logo=pypi&logoColor=white" alt="PyPI"/></a>
+  <a href="https://pypi.org/project/maskops/"><img src="https://img.shields.io/pypi/dm/maskops?style=flat-square&color=3DDB81" alt="Downloads"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3DDB81?style=flat-square" alt="License: MPL-2.0"/></a>
 </p>
 
@@ -87,6 +88,8 @@ Each PII type is its own module: adding a new pattern = new file + one line in `
 ```bash
 pip install maskops
 ```
+
+> **v1.0.0+ API stability guarantee** — no breaking changes to `mask_pii`, `contains_pii`, or `mask_pii_fpe` signatures without a major version bump.
 
 ## Usage
 
