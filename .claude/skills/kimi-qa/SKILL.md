@@ -35,7 +35,7 @@ Write the filled brief to `/tmp/kimi_qa_brief.md`.
 Run this command:
 
 ```
-kimi --print --quiet -f /tmp/kimi_qa_brief.md --prompt "Answer the question in the attached file."
+kimi --quiet -p "$(cat /tmp/kimi_qa_brief.md)"
 ```
 
 ### 4. Verify symbols

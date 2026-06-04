@@ -25,7 +25,7 @@ Write the filled brief to `/tmp/kimi_security_brief.md`.
 Run this command:
 
 ```
-kimi --print --quiet -f /tmp/kimi_security_brief.md --prompt "Execute the security and GDPR compliance review in the attached file. Return findings only."
+kimi --quiet -p "$(cat /tmp/kimi_security_brief.md)"
 ```
 
 ### 4. Validate findings

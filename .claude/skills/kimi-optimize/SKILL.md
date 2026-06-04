@@ -25,7 +25,7 @@ Write the filled brief to `/tmp/kimi_optimize_brief.md`.
 Run this command:
 
 ```
-kimi --print --quiet -f /tmp/kimi_optimize_brief.md --prompt "Execute the Rust performance review in the attached file. Return optimization suggestions only."
+kimi --quiet -p "$(cat /tmp/kimi_optimize_brief.md)"
 ```
 
 ### 3. Filter suggestions
