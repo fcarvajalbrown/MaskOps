@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.10.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.9.0...v0.10.0) (2026-06-04)
+
+
+### Features
+
+* **cli:** delegate to load_policy(), add YAML and TOML dict format support ([aaf23ae](https://github.com/fcarvajalbrown/MaskOps/commit/aaf23ae93a0fb8abf99e36d12fe49481d08cbd32))
+* **policy:** add load_policy() with YAML support and env var interpolation ([cb2b8c5](https://github.com/fcarvajalbrown/MaskOps/commit/cb2b8c5186b897373759a2ea2be4be4d200c1c81))
+* **policy:** add Policy class with apply() method ([1ad2d2b](https://github.com/fcarvajalbrown/MaskOps/commit/1ad2d2bb2e5b4fc9369bd8559ecc9ca67f64eb6c))
+
+
+### Bug Fixes
+
+* **publish:** use plain string for license field to fix twine metadata error ([c806eb9](https://github.com/fcarvajalbrown/MaskOps/commit/c806eb9a724b737013b5fee6abb874bdbf2f1c39))
+
 ## [0.7.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.6.0...v0.7.0) (2026-06-03)
 
 
