@@ -1749,3 +1749,62 @@ class TestMaskPESEL:
     def test_null_passthrough(self):
         df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
         assert df.with_columns(maskops.mask_pii("col"))["col"][0] is None
+
+
+class TestMaskBSN:
+    """Dutch BSN (Burgerservicenummer, 9 digits, 11-proof)."""
+
+    VALID   = "123456782"   # sum=154=11*14 (elfproef)
+    INVALID = "123456789"   # sum=147, not divisible by 11
+
+    def _mask(self, value, **kwargs):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.mask_pii("col", **kwargs))["col"][0]
+
+    def _contains(self, value):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.contains_pii("col"))["col"][0]
+
+    def test_detects_valid_bsn(self):
+        assert self._contains(self.VALID)
+
+    def test_does_not_detect_invalid_check(self):
+        assert not self._contains(self.INVALID)
+
+    def test_asterisk_mask(self):
+        out = self._mask(self.VALID)
+        assert out == "*" * 9
+
+    def test_invalid_not_masked(self):
+        assert self._mask(self.INVALID) == self.INVALID
+
+    def test_in_sentence(self):
+        text = f"BSN: {self.VALID} (burger)"
+        out = self._mask(text)
+        assert self.VALID not in out
+        assert "*" * 9 in out
+
+    def test_fpe_preserves_length(self):
+        key = b"\x00" * 32
+        tweak = b"\x00" * 7
+        df = pl.DataFrame({"col": [self.VALID]})
+        out = df.with_columns(maskops.mask_pii_fpe("col", key, tweak))["col"][0]
+        assert out != self.VALID
+        assert re.fullmatch(r"\d{9}", out), f"format broken: {out}"
+
+    def test_consistent_deterministic(self):
+        out1 = self._mask(self.VALID, mode="consistent", salt="s")
+        out2 = self._mask(self.VALID, mode="consistent", salt="s")
+        assert out1 == out2
+
+    def test_consistent_not_original(self):
+        assert self._mask(self.VALID, mode="consistent", salt="s") != self.VALID
+
+    def test_patterns_filter(self):
+        df = pl.DataFrame({"col": [self.VALID]})
+        out = df.with_columns(maskops.mask_pii("col", patterns=["bsn"]))["col"][0]
+        assert out == "*" * 9
+
+    def test_null_passthrough(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        assert df.with_columns(maskops.mask_pii("col"))["col"][0] is None

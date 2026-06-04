@@ -4,3 +4,4 @@ pub mod european_id;
 pub mod nir;
 pub mod codice_fiscale;
 pub mod pesel;
+pub mod bsn;
