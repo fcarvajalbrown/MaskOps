@@ -1808,3 +1808,72 @@ class TestMaskBSN:
     def test_null_passthrough(self):
         df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
         assert df.with_columns(maskops.mask_pii("col"))["col"][0] is None
+
+
+class TestMaskPersonnummer:
+    """Swedish personnummer (YYMMDD-NNNN format, Luhn on 10 digits)."""
+
+    VALID_SHORT = "811228-9874"    # digits 8112289874, Luhn sum=50
+    VALID_LONG  = "19811228-9874"  # long form, same 10-digit Luhn
+    INVALID     = "811228-9873"    # Luhn sum=49
+
+    def _mask(self, value, **kwargs):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.mask_pii("col", **kwargs))["col"][0]
+
+    def _contains(self, value):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.contains_pii("col"))["col"][0]
+
+    def test_detects_valid_short(self):
+        assert self._contains(self.VALID_SHORT)
+
+    def test_detects_valid_long(self):
+        assert self._contains(self.VALID_LONG)
+
+    def test_does_not_detect_invalid(self):
+        assert not self._contains(self.INVALID)
+
+    def test_asterisk_mask_short(self):
+        out = self._mask(self.VALID_SHORT)
+        assert self.VALID_SHORT not in out
+        assert re.fullmatch(r"\*{6}-\*{4}", out), f"format broken: {out}"
+
+    def test_asterisk_mask_long(self):
+        out = self._mask(self.VALID_LONG)
+        assert self.VALID_LONG not in out
+        assert re.fullmatch(r"\*{8}-\*{4}", out), f"format broken: {out}"
+
+    def test_invalid_not_masked(self):
+        assert self._mask(self.INVALID) == self.INVALID
+
+    def test_in_sentence(self):
+        text = f"Personnummer: {self.VALID_SHORT}, konfidentiellt"
+        out = self._mask(text)
+        assert self.VALID_SHORT not in out
+
+    def test_fpe_preserves_format_short(self):
+        key = b"\x00" * 32
+        tweak = b"\x00" * 7
+        df = pl.DataFrame({"col": [self.VALID_SHORT]})
+        out = df.with_columns(maskops.mask_pii_fpe("col", key, tweak))["col"][0]
+        assert out != self.VALID_SHORT
+        assert re.fullmatch(r"\d{6}-\d{4}", out), f"format broken: {out}"
+
+    def test_consistent_deterministic(self):
+        out1 = self._mask(self.VALID_SHORT, mode="consistent", salt="s")
+        out2 = self._mask(self.VALID_SHORT, mode="consistent", salt="s")
+        assert out1 == out2
+
+    def test_consistent_not_original(self):
+        assert self._mask(self.VALID_SHORT, mode="consistent", salt="s") != self.VALID_SHORT
+
+    def test_patterns_filter(self):
+        df = pl.DataFrame({"col": [self.VALID_SHORT]})
+        out = df.with_columns(maskops.mask_pii("col", patterns=["personnummer"]))["col"][0]
+        assert self.VALID_SHORT not in out
+        assert "-" in out
+
+    def test_null_passthrough(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        assert df.with_columns(maskops.mask_pii("col"))["col"][0] is None
