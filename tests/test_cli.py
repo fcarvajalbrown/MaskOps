@@ -169,3 +169,53 @@ class TestCliRun:
         rc, stdout, _ = _run_cli("run", "--help")
         assert rc == 0
         assert "config" in stdout
+
+
+class TestCliRunYAML:
+    def test_run_yaml_policy_asterisk(self, tmp_path):
+        config = tmp_path / "policy.yaml"
+        config.write_text(
+            "columns:\n"
+            "  notes:\n"
+            "    patterns: [email]\n"
+            "    mode: asterisk\n"
+        )
+        df = pl.DataFrame({"notes": ["contact: user@example.com"]})
+        input_path = _write_parquet(tmp_path, df)
+        output_path = tmp_path / "out.parquet"
+        rc, out, err = _run_cli("run", str(config), str(input_path), str(output_path))
+        assert rc == 0, err
+        result = pl.read_parquet(output_path)
+        assert "user@example.com" not in result["notes"][0]
+
+    def test_run_yaml_policy_env_var(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("CLI_SALT", "test-salt")
+        config = tmp_path / "policy.yaml"
+        config.write_text(
+            "columns:\n"
+            "  col:\n"
+            "    mode: consistent\n"
+            "    salt: ${CLI_SALT}\n"
+        )
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        input_path = _write_parquet(tmp_path, df)
+        output_path = tmp_path / "out.parquet"
+        rc, out, err = _run_cli("run", str(config), str(input_path), str(output_path))
+        assert rc == 0, err
+        result = pl.read_parquet(output_path)
+        assert result["col"][0] != "4111111111111111"
+
+    def test_run_toml_dict_format(self, tmp_path):
+        config = tmp_path / "policy.toml"
+        config.write_text(
+            "[columns.notes]\n"
+            'patterns = ["email"]\n'
+            'mode = "asterisk"\n'
+        )
+        df = pl.DataFrame({"notes": ["user@example.com"]})
+        input_path = _write_parquet(tmp_path, df)
+        output_path = tmp_path / "out.parquet"
+        rc, out, err = _run_cli("run", str(config), str(input_path), str(output_path))
+        assert rc == 0, err
+        result = pl.read_parquet(output_path)
+        assert "user@example.com" not in result["notes"][0]
