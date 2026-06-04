@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.12.2](https://github.com/fcarvajalbrown/MaskOps/compare/v0.12.1...v0.12.2) (2026-06-04)
+
+
+### Documentation
+
+* add monthly downloads badge and v1.0.0 API stability guarantee ([9d2551a](https://github.com/fcarvajalbrown/MaskOps/commit/9d2551ae5cce3ac5a28ff6c642753c88d37a2c55))
+* mark v1.0 complete in roadmap ([f56b364](https://github.com/fcarvajalbrown/MaskOps/commit/f56b364d5eb5e36367119aae15bf4f6fd1b03f09))
+
 ## [0.12.1](https://github.com/fcarvajalbrown/MaskOps/compare/v0.12.0...v0.12.1) (2026-06-04)
 
 
