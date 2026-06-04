@@ -133,3 +133,62 @@ class TestLoadPolicyYAML:
     def test_load_yaml_file_not_found(self, tmp_path):
         with pytest.raises(FileNotFoundError):
             maskops.load_policy(tmp_path / "missing.yaml")
+
+
+class TestLoadPolicyTOML:
+    def test_load_toml_dict_format_asterisk(self, tmp_path):
+        p = tmp_path / "policy.toml"
+        p.write_text(
+            "[columns.notes]\n"
+            'patterns = ["email"]\n'
+            'mode = "asterisk"\n'
+        )
+        policy = maskops.load_policy(p)
+        df = pl.DataFrame({"notes": ["user@example.com"]})
+        result = policy.apply(df)
+        assert "user@example.com" not in result["notes"][0]
+
+    def test_load_toml_dict_format_consistent(self, tmp_path):
+        p = tmp_path / "policy.toml"
+        p.write_text(
+            "[columns.col]\n"
+            'mode = "consistent"\n'
+            'salt = "mysecret"\n'
+        )
+        policy = maskops.load_policy(p)
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        r1 = policy.apply(df)
+        r2 = policy.apply(df)
+        assert r1["col"][0] == r2["col"][0]
+
+    def test_load_toml_env_var_interpolation(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("SALT_VAR", "env-salt")
+        p = tmp_path / "policy.toml"
+        p.write_text(
+            "[columns.col]\n"
+            'mode = "consistent"\n'
+            'salt = "${SALT_VAR}"\n'
+        )
+        policy = maskops.load_policy(p)
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        result = policy.apply(df)
+        assert result["col"][0] != "4111111111111111"
+
+    def test_load_toml_array_format_backward_compat(self, tmp_path):
+        p = tmp_path / "policy.toml"
+        p.write_text(
+            "[[columns]]\n"
+            'name = "notes"\n'
+            'patterns = ["email"]\n'
+            'mode = "asterisk"\n'
+        )
+        policy = maskops.load_policy(p)
+        df = pl.DataFrame({"notes": ["user@example.com"]})
+        result = policy.apply(df)
+        assert "user@example.com" not in result["notes"][0]
+
+    def test_load_toml_unsupported_extension_raises(self, tmp_path):
+        p = tmp_path / "policy.json"
+        p.write_text("{}")
+        with pytest.raises(ValueError, match="unsupported"):
+            maskops.load_policy(p)
