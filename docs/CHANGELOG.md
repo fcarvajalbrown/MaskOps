@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.12.1](https://github.com/fcarvajalbrown/MaskOps/compare/v0.12.0...v0.12.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **skills:** correct kimi CLI invocation flag (-f → --quiet -p) ([f66024d](https://github.com/fcarvajalbrown/MaskOps/commit/f66024d3c6b5dbb32a65c3f465323a46546d71a2))
+
 ## [0.12.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.11.0...v0.12.0) (2026-06-04)
 
 
