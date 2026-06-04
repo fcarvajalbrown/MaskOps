@@ -160,3 +160,8 @@ def mask_pii_fpe(expr: IntoExpr, key: bytes, tweak: bytes, patterns: list = None
         args=args,
         is_elementwise=True,
     )
+
+
+from maskops._policy import load_policy  # noqa: E402
+
+__all__ = ["mask_pii", "contains_pii", "mask_pii_fpe", "load_policy"]

@@ -60,3 +60,76 @@ class TestPolicyApply:
         df = pl.DataFrame({"col": ["user@example.com"]})
         result = policy.apply(df)
         assert result["col"][0] == "user@example.com"
+
+
+class TestLoadPolicyYAML:
+    def test_load_yaml_asterisk(self, tmp_path):
+        p = tmp_path / "policy.yaml"
+        p.write_text(
+            "columns:\n"
+            "  notes:\n"
+            "    patterns: [email]\n"
+            "    mode: asterisk\n"
+        )
+        policy = maskops.load_policy(p)
+        df = pl.DataFrame({"notes": ["user@example.com"]})
+        result = policy.apply(df)
+        assert "user@example.com" not in result["notes"][0]
+
+    def test_load_yml_extension(self, tmp_path):
+        p = tmp_path / "policy.yml"
+        p.write_text("columns:\n  col:\n    mode: asterisk\n")
+        policy = maskops.load_policy(p)
+        assert isinstance(policy, Policy)
+
+    def test_load_yaml_consistent_with_literal_salt(self, tmp_path):
+        p = tmp_path / "policy.yaml"
+        p.write_text(
+            "columns:\n"
+            "  col:\n"
+            "    mode: consistent\n"
+            "    salt: mysecret\n"
+        )
+        policy = maskops.load_policy(p)
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        r1 = policy.apply(df)
+        r2 = policy.apply(df)
+        assert r1["col"][0] == r2["col"][0]
+
+    def test_load_yaml_env_var_interpolation(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("MASK_SALT", "env-salt-value")
+        p = tmp_path / "policy.yaml"
+        p.write_text(
+            "columns:\n"
+            "  col:\n"
+            "    mode: consistent\n"
+            "    salt: ${MASK_SALT}\n"
+        )
+        policy = maskops.load_policy(p)
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        result = policy.apply(df)
+        assert result["col"][0] != "4111111111111111"
+
+    def test_load_yaml_missing_env_var_raises(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("UNDEFINED_VAR", raising=False)
+        p = tmp_path / "policy.yaml"
+        p.write_text(
+            "columns:\n"
+            "  col:\n"
+            "    mode: consistent\n"
+            "    salt: ${UNDEFINED_VAR}\n"
+        )
+        with pytest.raises(KeyError, match="UNDEFINED_VAR"):
+            maskops.load_policy(p)
+
+    def test_load_yaml_no_patterns_applies_all(self, tmp_path):
+        p = tmp_path / "policy.yaml"
+        p.write_text("columns:\n  col:\n    mode: asterisk\n")
+        policy = maskops.load_policy(p)
+        df = pl.DataFrame({"col": ["user@example.com"]})
+        result = policy.apply(df)
+        assert "user@example.com" not in result["col"][0]
+
+    def test_load_yaml_file_not_found(self, tmp_path):
+        with pytest.raises(FileNotFoundError):
+            maskops.load_policy(tmp_path / "missing.yaml")
