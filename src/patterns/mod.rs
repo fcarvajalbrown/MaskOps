@@ -17,6 +17,7 @@ use crate::patterns::eu::european_id::{
 };
 use crate::patterns::eu::nir::{mask_nir, contains_nir};
 use crate::patterns::eu::codice_fiscale::{mask_cf, contains_cf};
+use crate::patterns::eu::pesel::{mask_pesel, contains_pesel, mask_pesel_fpe, mask_pesel_consistent};
 use crate::patterns::latam::{contains_uy_ci, mask_uy_ci, mask_uy_ci_fpe, mask_uy_ci_consistent};
 use crate::patterns::apac::{
     contains_sin, mask_sin, mask_sin_fpe, mask_sin_consistent,
@@ -101,6 +102,7 @@ pub fn mask_digit(value: &str) -> String {
     let s = mask_uy_ci(&s);
     let s = mask_sin(&s);
     let s = mask_tfn(&s);
+    let s = mask_pesel(&s);
     s
 }
 
@@ -124,6 +126,7 @@ pub fn mask_digit_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     let s = mask_uy_ci_fpe(&s, cipher);
     let s = mask_sin_fpe(&s, cipher);
     let s = mask_tfn_fpe(&s, cipher);
+    let s = mask_pesel_fpe(&s, cipher);
     s
 }
 
@@ -168,6 +171,7 @@ pub fn mask_digit_consistent(value: &str, hasher: &ConsistentHasher) -> String {
     let s = mask_uy_ci_consistent(&s, hasher);
     let s = mask_sin_consistent(&s, hasher);
     let s = mask_tfn_consistent(&s, hasher);
+    let s = mask_pesel_consistent(&s, hasher);
     s
 }
 
@@ -215,6 +219,7 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
             "uy_ci"           => mask_uy_ci(&s),
             "sin"             => mask_sin(&s),
             "tfn"             => mask_tfn(&s),
+            "pesel"           => mask_pesel(&s),
             _                 => s,
         };
     }
@@ -254,6 +259,7 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &Ff3Cipher)
             "uy_ci"           => mask_uy_ci_fpe(&s, cipher),
             "sin"             => mask_sin_fpe(&s, cipher),
             "tfn"             => mask_tfn_fpe(&s, cipher),
+            "pesel"           => mask_pesel_fpe(&s, cipher),
             _                 => s,
         };
     }
@@ -293,6 +299,7 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
             "uy_ci"           => mask_uy_ci_consistent(&s, hasher),
             "sin"             => mask_sin_consistent(&s, hasher),
             "tfn"             => mask_tfn_consistent(&s, hasher),
+            "pesel"           => mask_pesel_consistent(&s, hasher),
             _                 => s,
         };
     }
@@ -330,6 +337,7 @@ pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
         "uy_ci"           => contains_uy_ci(value),
         "sin"             => contains_sin(value),
         "tfn"             => contains_tfn(value),
+        "pesel"           => contains_pesel(value),
         _                 => false,
     })
 }
@@ -364,4 +372,5 @@ pub fn contains_any_pii(value: &str) -> bool {
         || contains_uy_ci(value)
         || contains_sin(value)
         || contains_tfn(value)
+        || contains_pesel(value)
 }

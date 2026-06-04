@@ -1690,3 +1690,62 @@ class TestMaskAustraliaTFN:
         df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result is None
+
+
+class TestMaskPESEL:
+    """Polish PESEL (11-digit national ID)."""
+
+    VALID   = "91010112346"   # check digit = 6
+    INVALID = "91010112340"   # wrong check digit
+
+    def _mask(self, value, **kwargs):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.mask_pii("col", **kwargs))["col"][0]
+
+    def _contains(self, value):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.contains_pii("col"))["col"][0]
+
+    def test_detects_valid_pesel(self):
+        assert self._contains(self.VALID)
+
+    def test_does_not_detect_invalid_check(self):
+        assert not self._contains(self.INVALID)
+
+    def test_asterisk_mask(self):
+        out = self._mask(self.VALID)
+        assert out == "*" * 11
+
+    def test_invalid_not_masked(self):
+        assert self._mask(self.INVALID) == self.INVALID
+
+    def test_in_sentence(self):
+        text = f"PESEL: {self.VALID}, proszę nie udostępniać"
+        out = self._mask(text)
+        assert self.VALID not in out
+        assert "*" * 11 in out
+
+    def test_fpe_preserves_length(self):
+        key = b"\x00" * 32
+        tweak = b"\x00" * 7
+        df = pl.DataFrame({"col": [self.VALID]})
+        out = df.with_columns(maskops.mask_pii_fpe("col", key, tweak))["col"][0]
+        assert out != self.VALID
+        assert re.fullmatch(r"\d{11}", out), f"format broken: {out}"
+
+    def test_consistent_deterministic(self):
+        out1 = self._mask(self.VALID, mode="consistent", salt="s")
+        out2 = self._mask(self.VALID, mode="consistent", salt="s")
+        assert out1 == out2
+
+    def test_consistent_not_original(self):
+        assert self._mask(self.VALID, mode="consistent", salt="s") != self.VALID
+
+    def test_patterns_filter(self):
+        df = pl.DataFrame({"col": [self.VALID]})
+        out = df.with_columns(maskops.mask_pii("col", patterns=["pesel"]))["col"][0]
+        assert out == "*" * 11
+
+    def test_null_passthrough(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        assert df.with_columns(maskops.mask_pii("col"))["col"][0] is None
