@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.12.3](https://github.com/fcarvajalbrown/MaskOps/compare/v0.12.2...v0.12.3) (2026-06-04)
+
+
+### Bug Fixes
+
+* use inline table for license to avoid PEP 639 license-file metadata header ([869fe09](https://github.com/fcarvajalbrown/MaskOps/commit/869fe091e398595ecbd4419a5770444096a12efe))
+
+
+### Documentation
+
+* add v2 migration guide ([e6c0530](https://github.com/fcarvajalbrown/MaskOps/commit/e6c05302f9d73b4e16940b7db54b1b1783c59372))
+
 ## [0.12.2](https://github.com/fcarvajalbrown/MaskOps/compare/v0.12.1...v0.12.2) (2026-06-04)
 
 
