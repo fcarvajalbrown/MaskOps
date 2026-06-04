@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.11.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.10.0...v0.11.0) (2026-06-04)
+
+
+### Features
+
+* **eu:** add Dutch BSN detection and masking ([6fe53e5](https://github.com/fcarvajalbrown/MaskOps/commit/6fe53e529e3e9503afb6ec231626f319d804d539))
+* **eu:** add Polish PESEL detection and masking ([d3e94fd](https://github.com/fcarvajalbrown/MaskOps/commit/d3e94fda09a16c91c962ece796ce648b161aeb0b))
+* **eu:** add Swedish personnummer detection and masking ([8d3a361](https://github.com/fcarvajalbrown/MaskOps/commit/8d3a361a936295e2e1f05e17cb1a3cf777bc554c))
+
+
+### Documentation
+
+* **changelog:** add v1.2.0 EU depth entries ([9702710](https://github.com/fcarvajalbrown/MaskOps/commit/970271040ccb796f6d175a0cec20a22628191609))
+
 ## [Unreleased]
 
 ### Features
