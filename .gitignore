@@ -12,3 +12,8 @@ coverage.xml
 .kimi/
 *.so
 *.pyd
+
+# Editor / agent artifacts
+opencode.json
+docs/superpowers/
+.claude/claude-security-guidance.md
