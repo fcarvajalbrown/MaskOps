@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.13.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.12.3...v0.13.0) (2026-06-06)
+
+
+### Features
+
+* **pages:** add sitemap, robots.txt, schema.org, og/twitter tags, icon png ([218ac4b](https://github.com/fcarvajalbrown/MaskOps/commit/218ac4b984c92f9f5733bb47b8448de20ec2c31e))
+
+
+### Documentation
+
+* **readme:** restructure for seo and update stale refs ([75fcf28](https://github.com/fcarvajalbrown/MaskOps/commit/75fcf284fe75c2d0abe93414e2c7b844b6ae77ee))
+
 ## [0.12.3](https://github.com/fcarvajalbrown/MaskOps/compare/v0.12.2...v0.12.3) (2026-06-04)
 
 
