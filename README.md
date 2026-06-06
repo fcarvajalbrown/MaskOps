@@ -7,37 +7,116 @@
   <a href="https://pypi.org/project/maskops/"><img src="https://img.shields.io/pypi/v/maskops?style=flat-square&color=3DDB81&logo=pypi&logoColor=white" alt="PyPI"/></a>
   <a href="https://pypi.org/project/maskops/"><img src="https://img.shields.io/pypi/dm/maskops?style=flat-square&color=3DDB81" alt="Downloads"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-3DDB81?style=flat-square" alt="License: MPL-2.0"/></a>
+  <a href="https://fcarvajalbrown.github.io/MaskOps/"><img src="https://img.shields.io/badge/docs-maskops-3DDB81?style=flat-square" alt="Docs"/></a>
 </p>
 
-> High-speed PII masking as a native Polars plugin — powered by Rust.
+> High-speed PII masking for Polars — powered by Rust. GDPR-compliant asterisk masking and FF3-1 format-preserving encryption for EU and Latin American PII.
 
 **MaskOps** extends Polars with zero-overhead PII detection and masking expressions.
 No NLP models. No intermediate files. Just regex + Rust running directly on Arrow buffers.
 
+## Contents
+
+- [Documentation](#documentation)
+- [Install](#install)
+- [Usage](#usage)
+- [Supported patterns](#supported-patterns-v0122)
+- [How It Works](#how-it-works)
+- [Architecture](#architecture)
+- [When to use MaskOps](#when-to-use-maskops)
+- [Benchmarks](#benchmarks)
+- [Build from source](#build-from-source)
+- [Key dependency versions](#key-dependency-versions)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+## Documentation
+
+Full docs, regulatory coverage, and pricing plans: **[fcarvajalbrown.github.io/MaskOps](https://fcarvajalbrown.github.io/MaskOps/)**
+
+MaskOps is also listed in [awesome-polars](https://github.com/ddotta/awesome-polars#polars-plugins) under Security / Privacy.
+
+## Install
+
+```bash
+pip install maskops
+```
+
+> **v1.0.0+ API stability guarantee** — no breaking changes to `mask_pii`, `contains_pii`, or `mask_pii_fpe` signatures without a major version bump.
+
+## Usage
+
+```python
+import polars as pl
+import maskops
+
+df = pl.read_csv("payments.csv")
+
+# Mask all PII in a column
+df.with_columns(maskops.mask_pii("notes"))
+
+# Filter rows that contain PII
+df.filter(maskops.contains_pii("free_text"))
+```
+
+## Supported patterns (v0.12.3)
+
+| Pattern | Example input | Masked output |
+|---------|--------------|---------------|
+| IBAN    | `DE89370400440532013000` | `DE89******************` |
+| EU VAT  | `DE123456789` | `DE*********` |
+| Email   | `john.doe@example.com` | `********@example.com` |
+| Phone   | `+14155552671` | `+1**********` |
+| IP Address | `192.168.1.100` | `192.168.*.*` |
+| RUT (Chile) | `76.354.771-K` | `**********-K` |
+| CPF (Brazil) | `529.982.247-25` | `*********-25` |
+| CURP (Mexico) | `BADD110313HCMLNS09` | `******************` |
+| DNI (Spain) | `12345678Z` | `********Z` |
+| NIE (Spain) | `X1234567L` | `********L` |
+| NIN (UK) | `AB 12 34 56 C` | `*********** C` |
+| Personalausweis (Germany) | `T220001293` | `**********` |
+| Credit Card (Visa/MC/Amex/Discover/Maestro) | `4111111111111111` | `411111******1111` |
+
+Tested against 8 EU locales: DE, FR, ES, IT, NL, PL, PT, SE.
+Email and phone follow RFC 5322 and E.164 respectively.
+RUT and CPF include Módulo 11 check digit validation.
+DNI and NIE include modulo 23 check letter validation.
+Credit cards include Luhn validation — format-only matches are rejected.
+Personalausweis: weighted-sum check digit (weights [7,3,1] cyclic, mod 10). NIN: HMRC-excluded prefix validation (BG, GB, KN, NK, NT, TN, ZZ rejected).
+
 ## How It Works
 
 ```mermaid
-flowchart LR
-    A[🐍 Python\nPolars DataFrame] -->|mask_pii\ncontains_pii\nmask_pii_fpe| B[Polars\nExpression Engine]
-    B -->|Arrow buffer\nzero-copy| C[🦀 Rust Core\nmaskops]
+flowchart TD
+    IN["Python · Polars DataFrame"]
 
-    C --> D[Asterisk\nMasking]
-    C --> E[FF3-1 FPE\nPseudonymisation]
+    subgraph API ["  Polars Expression API  "]
+        direction LR
+        MP["mask_pii"]
+        CP["contains_pii"]
+        FP["mask_pii_fpe"]
+    end
 
-    D -->|IBAN / VAT / Email| F[Masked Series]
-    D -->|IP / EU IDs / CURP| F
-    D -->|Cards / Phone / RUT / CPF| F
+    RUST["Rust Core — Arrow buffers · zero-copy"]
 
-    E -->|Cards / Phone\nRUT / CPF| F
+    subgraph MODES ["  Masking modes  "]
+        direction LR
+        AST["Asterisk\nirreversible"]
+        ENC["FF3-1 FPE\npseudonymization"]
+    end
 
-    F -->|back to Python| A
+    OUT["Masked Polars Series"]
 
-    style A fill:#306998,color:#fff
-    style C fill:#CE422B,color:#fff
-    style B fill:#2E2E2E,color:#fff
-    style D fill:#1565C0,color:#fff
-    style E fill:#6A1B9A,color:#fff
-    style F fill:#2E7D32,color:#fff
+    IN --> API --> RUST --> MODES --> OUT
+
+    style IN   fill:#0d1117,stroke:#3DDB81,color:#e6edf3
+    style RUST fill:#0d1117,stroke:#CE422B,color:#e6edf3
+    style OUT  fill:#0d1117,stroke:#3DDB81,color:#e6edf3
+    style AST  fill:#0d1117,stroke:#4e8adb,color:#e6edf3
+    style ENC  fill:#0d1117,stroke:#9f6fcf,color:#e6edf3
+    style MP   fill:#0d1117,stroke:#3c4450,color:#8b949e
+    style CP   fill:#0d1117,stroke:#3c4450,color:#8b949e
+    style FP   fill:#0d1117,stroke:#3c4450,color:#8b949e
 ```
 
 No Python objects created per row. No NLP model loaded. No intermediate files.
@@ -75,7 +154,7 @@ maskops/
 ├── benchmarks/
 │   └── benchmark.py         # Per-family throughput benchmarks (1M rows)
 └── tests/
-    ├── test_masking.py      # pytest suite (97 tests)
+    ├── test_masking.py      # pytest suite (246 tests)
     ├── generate_fixtures.py # Faker-based test data generator (5 fixture files)
     └── fixtures/            # Generated CSVs (gitignored)
 ```
@@ -83,105 +162,17 @@ maskops/
 The Rust layer operates directly on Arrow buffers — zero Python object overhead per row.
 Each PII type is its own module: adding a new pattern = new file + one line in `mod.rs`.
 
-## Install
+## When to use MaskOps
 
-```bash
-pip install maskops
-```
+| Situation | Recommended tool |
+|-----------|-----------------|
+| Structured data with schema-defined PII columns (CSV, Parquet, database exports) | **MaskOps** |
+| Unstructured free text — need NER for names, places, organisations | Presidio |
+| Both structured columns + free-text fields in the same pipeline | MaskOps + Presidio |
+| Reversible pseudonymization required (GDPR Art. 4(5)) | **MaskOps** (`mask_pii_fpe`) |
+| Air-gapped or offline environment | **MaskOps** — no network calls, ever |
 
-> **v1.0.0+ API stability guarantee** — no breaking changes to `mask_pii`, `contains_pii`, or `mask_pii_fpe` signatures without a major version bump.
-
-## Usage
-
-```python
-import polars as pl
-import maskops
-
-df = pl.read_csv("payments.csv")
-
-# Mask all PII in a column
-df.with_columns(maskops.mask_pii("notes"))
-
-# Filter rows that contain PII
-df.filter(maskops.contains_pii("free_text"))
-```
-
-## Supported patterns (v0.2.0)
-
-| Pattern | Example input | Masked output |
-|---------|--------------|---------------|
-| IBAN    | `DE89370400440532013000` | `DE89******************` |
-| EU VAT  | `DE123456789` | `DE*********` |
-| Email   | `john.doe@example.com` | `********@example.com` |
-| Phone   | `+14155552671` | `+1**********` |
-| IP Address | `192.168.1.100` | `192.168.*.*` |
-| RUT (Chile) | `76.354.771-K` | `**********-K` |
-| CPF (Brazil) | `529.982.247-25` | `*********-25` |
-| CURP (Mexico) | `BADD110313HCMLNS09` | `******************` |
-| DNI (Spain) | `12345678Z` | `********Z` |
-| NIE (Spain) | `X1234567L` | `********L` |
-| NIN (UK) | `AB 12 34 56 C` | `*********** C` |
-| Personalausweis (Germany) | `T220001293` | `**********` |
-| Credit Card (Visa/MC/Amex/Discover/Maestro) | `4111111111111111` | `411111******1111` |
-
-Tested against 8 EU locales: DE, FR, ES, IT, NL, PL, PT, SE.
-Email and phone follow RFC 5322 and E.164 respectively.
-RUT and CPF include Módulo 11 check digit validation.
-DNI and NIE include modulo 23 check letter validation.
-Credit cards include Luhn validation — format-only matches are rejected.
-Personalausweis: weighted-sum check digit (weights [7,3,1] cyclic, mod 10). NIN: HMRC-excluded prefix validation (BG, GB, KN, NK, NT, TN, ZZ rejected).
-
-## Roadmap
-
-- [x] Email, phone patterns
-- [x] IP address patterns
-- [x] Latin American IDs (RUT, CPF, CURP)
-- [x] European IDs (DNI/NIE Spain, NIN UK, Personalausweis Germany)
-- [x] Credit cards (Visa, Mastercard, Amex, Discover, Maestro) with Luhn validation
-- [x] PyPI publish via GitHub Actions
-- [x] Check digit validation for Personalausweis (Germany) and NIN (UK)
-- [x] Format-Preserving Encryption (FPE/FF3-1) for reversible masking
-- [x] Benchmark vs Presidio
-- [ ] Parquet streaming support
-
-## Build from source
-
-### Windows (PowerShell)
-
-```powershell
-python -m venv .venv
-.venv\Scripts\activate
-pip install maturin faker polars pytest
-maturin develop --release
-python tests/generate_fixtures.py
-pytest tests/ -v
-```
-
-### Linux / macOS
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install maturin faker polars pytest
-maturin develop --release
-python tests/generate_fixtures.py
-pytest tests/ -v
-```
-
-## Key dependency versions
-
-| Package | Version |
-|---------|---------|
-| pyo3 | 0.21 |
-| pyo3-polars | 0.18 |
-| polars | 0.46 |
-| maturin | >=1.7,<2.0 |
-
-> **Note:** pyo3 must be 0.21 to match pyo3-polars 0.18. Do not bump pyo3 independently.
-
-## License
-
-[Mozilla Public License 2.0](LICENSE). Commercial use requires a separate license — see [CLA.md](CLA.md) or contact [fcarvajalbrown@gmail.com](mailto:fcarvajalbrown@gmail.com).
+`contains_pii` is useful as a pre-filter: scan cheaply first, then mask only flagged rows.
 
 ## Benchmarks
 
@@ -317,3 +308,54 @@ Python 3.11, Ubuntu, `en_core_web_lg` model. Extrapolated to 1M rows.
 
 **maskops is purpose-built for structured data pipelines where Presidio's NLP overhead is unnecessary.**
 
+## Build from source
+
+### Windows (PowerShell)
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+pip install maturin faker polars pytest
+maturin develop --release
+python tests/generate_fixtures.py
+pytest tests/ -v
+```
+
+### Linux / macOS
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install maturin faker polars pytest
+maturin develop --release
+python tests/generate_fixtures.py
+pytest tests/ -v
+```
+
+## Key dependency versions
+
+| Package | Version |
+|---------|---------|
+| pyo3 | 0.25 |
+| pyo3-polars | 0.23 |
+| polars | 0.46 |
+| maturin | >=1.7,<2.0 |
+
+> **Note:** pyo3 must be 0.25 to match pyo3-polars 0.23. Do not bump pyo3 independently.
+
+## Roadmap
+
+- [x] Email, phone patterns
+- [x] IP address patterns
+- [x] Latin American IDs (RUT, CPF, CURP)
+- [x] European IDs (DNI/NIE Spain, NIN UK, Personalausweis Germany)
+- [x] Credit cards (Visa, Mastercard, Amex, Discover, Maestro) with Luhn validation
+- [x] PyPI publish via GitHub Actions
+- [x] Check digit validation for Personalausweis (Germany) and NIN (UK)
+- [x] Format-Preserving Encryption (FPE/FF3-1) for reversible masking
+- [x] Benchmark vs Presidio
+- [ ] Parquet streaming support
+
+## License
+
+[Mozilla Public License 2.0](LICENSE). Commercial use requires a separate license — see [CLA.md](CLA.md) or contact [fcarvajalbrown@gmail.com](mailto:fcarvajalbrown@gmail.com).
