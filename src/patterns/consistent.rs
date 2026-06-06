@@ -1,7 +1,4 @@
-//! Consistent hash-based pseudonymization (one-way, deterministic).
-//!
-//! GDPR: pseudonymization (Art. 4(5)), not anonymization. Salt is a secret.
-//! Compliance: all digit PII families; HMAC-SHA256; not reversible without salt.
+
 
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
@@ -17,11 +14,11 @@ impl ConsistentHasher {
         Self { salt: salt.as_bytes().to_vec() }
     }
 
-    /// Returns a same-length deterministic digit string for the given digit input.
-    ///
-    /// HMAC-SHA256(salt, digits) → first n digits from hash bytes (each byte mod 10).
-    /// Slight statistical bias (~2.4%) is acceptable for pseudonymization.
-    /// HMAC-SHA256 yields 32 bytes; all PII digit sequences are ≤ 19 chars.
+    
+    
+    
+    
+    
     pub fn encrypt(&self, digits: &str) -> Result<String, ()> {
         let n = digits.len();
         if n == 0 {

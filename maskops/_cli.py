@@ -7,7 +7,6 @@ from pathlib import Path
 import polars as pl
 from maskops._policy import load_policy
 
-
 def cmd_run(args: argparse.Namespace) -> None:
     config_path = Path(args.config)
     input_path = Path(args.input)
@@ -30,7 +29,6 @@ def cmd_run(args: argparse.Namespace) -> None:
         print(f"error: {exc}", file=sys.stderr)
         sys.exit(1)
 
-
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="maskops",
@@ -47,7 +45,6 @@ def main() -> None:
 
     args = parser.parse_args()
     args.func(args)
-
 
 if __name__ == "__main__":
     main()

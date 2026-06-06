@@ -1,11 +1,5 @@
-//! Country code lookup table for phone number identification.
-//!
-//! Maps E.164 country code prefixes to ISO 3166-1 alpha-2 country names.
-//! Longer prefixes take priority over shorter ones (e.g. +56 before +5).
-//!
-//! To add a new country: add a new entry to COUNTRY_CODES in prefix-length order.
 
-/// Represents a matched country code.
+
 #[derive(Debug, PartialEq)]
 pub struct CountryCode {
     pub prefix: &'static str,
@@ -13,10 +7,8 @@ pub struct CountryCode {
     pub iso: &'static str,
 }
 
-/// E.164 country code table, ordered longest-prefix-first to ensure correct matching.
-/// Source: ITU-T E.164 assigned country codes.
 pub static COUNTRY_CODES: &[CountryCode] = &[
-    // 3-digit prefixes first
+    
     CountryCode { prefix: "+354", country: "Iceland",         iso: "IS" },
     CountryCode { prefix: "+353", country: "Ireland",         iso: "IE" },
     CountryCode { prefix: "+352", country: "Luxembourg",      iso: "LU" },
@@ -45,7 +37,7 @@ pub static COUNTRY_CODES: &[CountryCode] = &[
     CountryCode { prefix: "+505", country: "Nicaragua",       iso: "NI" },
     CountryCode { prefix: "+506", country: "Costa Rica",      iso: "CR" },
     CountryCode { prefix: "+507", country: "Panama",          iso: "PA" },
-    // 2-digit prefixes
+    
     CountryCode { prefix: "+56",  country: "Chile",           iso: "CL" },
     CountryCode { prefix: "+55",  country: "Brazil",          iso: "BR" },
     CountryCode { prefix: "+54",  country: "Argentina",       iso: "AR" },
@@ -69,13 +61,11 @@ pub static COUNTRY_CODES: &[CountryCode] = &[
     CountryCode { prefix: "+47",  country: "Norway",          iso: "NO" },
     CountryCode { prefix: "+41",  country: "Switzerland",     iso: "CH" },
     CountryCode { prefix: "+43",  country: "Austria",         iso: "AT" },
-    // 1-digit prefixes last
+    
     CountryCode { prefix: "+1",   country: "USA/Canada",      iso: "US" },
     CountryCode { prefix: "+7",   country: "Russia",          iso: "RU" },
 ];
 
-/// Returns the CountryCode for a given phone string, or None if unrecognized.
-/// Matches longest prefix first.
 pub fn identify_country(phone: &str) -> Option<&'static CountryCode> {
     COUNTRY_CODES.iter().find(|cc| phone.starts_with(cc.prefix))
 }

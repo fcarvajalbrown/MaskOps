@@ -29,7 +29,7 @@
 
 ## Code Style (All Languages)
 
-- Comments: 1-line only — no multi-line or block comments anywhere. Informal tone is fine if needed to fit in one line.
+- **No comments of any kind** — no `//`, `//!`, `///`, `/* */` in Rust; no `#` or docstrings in Python. Zero.
 - Bug fixes: always at the root cause — never patch test parameters or create workarounds to produce passing results.
 - Never write code just to make it compile — code must reflect real behavior.
 - Tools that ship to real institutions: correctness is non-negotiable.

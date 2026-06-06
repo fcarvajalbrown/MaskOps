@@ -1,19 +1,8 @@
-//! Uruguayan cédula de identidad (CI) detection and masking.
-//!
-//! Format: D.DDD.DDD-D (7-digit body + 1-digit check, formatted with dots and dash).
-//! Check digit: weights [2,9,8,7,6,3,4] applied to body digits; check = (10 − sum%10) % 10.
-//!
-//! Compliance: Ley 18.331 (Uruguay — Protección de Datos Personales).
-//! EU adequacy bridge jurisdiction (Uruguay has GDPR adequacy status).
-//! Digit-based PII — supports FPE and consistent masking.
-//! GDPR Art. 4(5): FPE output is pseudonymization, not anonymization.
-//! Note: only the formatted D.DDD.DDD-D pattern is matched to avoid collision
-//! with Peruvian DNI (bare 8-digit sequences).
+
 
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-/// Matches the formatted Uruguayan CI: single-digit group, then 3+3 digit groups, then check.
 static UY_CI_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"\b(\d\.\d{3}\.\d{3}-\d)\b").unwrap()
 });
@@ -34,14 +23,10 @@ fn valid_uy_ci(ci: &str) -> bool {
     (10 - (sum % 10)) % 10 == ds[7]
 }
 
-/// Returns true if the input contains a valid Uruguayan cédula (formatted form).
 pub fn contains_uy_ci(s: &str) -> bool {
     UY_CI_RE.find_iter(s).any(|m| valid_uy_ci(m.as_str()))
 }
 
-/// Masks any valid Uruguayan cédula found (full redaction).
-///
-/// Example: `1.111.111-1` → `***********`
 pub fn mask_uy_ci(s: &str) -> String {
     UY_CI_RE
         .replace_all(s, |caps: &regex::Captures| {
@@ -53,9 +38,6 @@ pub fn mask_uy_ci(s: &str) -> String {
         .into_owned()
 }
 
-/// Masks a valid Uruguayan cédula using FF3-1 FPE on the 8 digits.
-///
-/// Format preserved: D.DDD.DDD-D. Reversible with the same key and tweak.
 pub fn mask_uy_ci_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
     UY_CI_RE
         .replace_all(s, |caps: &regex::Captures| {
@@ -72,9 +54,6 @@ pub fn mask_uy_ci_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> Stri
         .into_owned()
 }
 
-/// Masks a valid Uruguayan cédula using HMAC-SHA256 consistent pseudonymization.
-///
-/// Same input → same output given the same salt. Not reversible without salt.
 pub fn mask_uy_ci_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
     UY_CI_RE
         .replace_all(s, |caps: &regex::Captures| {

@@ -35,6 +35,6 @@ maturin develop --release
 ## Guidelines
 
 - One pattern per file, one PR per pattern.
-- No block comments; 1-line max.
+- **No comments of any kind** — no `//`, `//!`, `///`, `/* */` in Rust; no `#` or docstrings in Python.
 - Bug fixes must address the root cause — no patching test parameters.
 - Commit format: `<type>(<scope>): <description>` (lowercase, present-tense imperative).

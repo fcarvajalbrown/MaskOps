@@ -1,14 +1,4 @@
-//! Polish PESEL (Powszechny Elektroniczny System Ewidencji Ludności) detection and masking.
-//!
-//! Format: 11 digits YYMMDDSSSSCC.
-//! YY=year, MM=month (century encoded: 01–12=1900s, 21–32=2000s), DD=day,
-//! SSSS=serial (last digit odd=male, even=female), C=check digit.
-//! Check: weights [1,3,7,9,1,3,7,9,1,3] on digits 0–9; check=(10−sum%10)%10.
-//!
-//! Compliance: UODO (Polish data protection authority), GDPR Art. 4(1).
-//! Digit-based PII — supports FPE and consistent masking.
-//! GDPR Art. 4(5): FPE output is pseudonymization, not anonymization.
-//! Note: CPF (Brazilian) is also 11 digits; both validations rarely pass simultaneously.
+
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -31,14 +21,10 @@ fn valid_pesel(s: &str) -> bool {
     (10 - sum % 10) % 10 == digits[10]
 }
 
-/// Returns true if the input contains a valid Polish PESEL.
 pub fn contains_pesel(s: &str) -> bool {
     PESEL_RE.find_iter(s).any(|m| valid_pesel(m.as_str()))
 }
 
-/// Masks any valid PESEL found with asterisks.
-///
-/// Example: `91010112346` → `***********`
 pub fn mask_pesel(s: &str) -> String {
     PESEL_RE
         .replace_all(s, |caps: &regex::Captures| {
@@ -50,9 +36,6 @@ pub fn mask_pesel(s: &str) -> String {
         .into_owned()
 }
 
-/// Masks a valid PESEL using FF3-1 FPE on the 11 digits.
-///
-/// Output is 11 digits. Reversible with the same key and tweak.
 pub fn mask_pesel_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
     PESEL_RE
         .replace_all(s, |caps: &regex::Captures| {
@@ -67,9 +50,6 @@ pub fn mask_pesel_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> Stri
         .into_owned()
 }
 
-/// Masks a valid PESEL using HMAC-SHA256 consistent pseudonymization.
-///
-/// Same input → same output given the same salt. Not reversible without salt.
 pub fn mask_pesel_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
     PESEL_RE
         .replace_all(s, |caps: &regex::Captures| {

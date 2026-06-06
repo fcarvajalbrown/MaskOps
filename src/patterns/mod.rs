@@ -59,15 +59,6 @@ use crate::patterns::latam::{mask_ec_cedula_consistent, mask_pe_dni_consistent};
 use crate::patterns::us::mask_ssn_consistent;
 use crate::patterns::healthcare::{mask_npi_consistent, mask_nhs_consistent};
 
-// ---------------------------------------------------------------------------
-// Non-digit PII: IBAN, VAT, Email, IP, EU IDs
-// Masked with asterisks in both asterisk and FPE modes.
-// ---------------------------------------------------------------------------
-
-/// Masks non-digit PII (IBAN, VAT, email, IP, EU IDs) with asterisks.
-///
-/// Does not touch digit-based PII (cards, phones, RUT, CPF, CURP).
-/// Called by both `mask_all` and `mask_all_fpe`.
 pub fn mask_non_digit(value: &str) -> String {
     let s = mask_iban(value);
     let s = mask_vat(&s);
@@ -85,12 +76,6 @@ pub fn mask_non_digit(value: &str) -> String {
     s
 }
 
-// ---------------------------------------------------------------------------
-// Digit PII: cards, phones, RUT, CPF
-// Two masking modes: asterisk and FPE.
-// ---------------------------------------------------------------------------
-
-/// Masks digit-based PII (cards, phones, RUT, CPF) with asterisks.
 pub fn mask_digit(value: &str) -> String {
     let s = mask_phone(value);
     let s = mask_rut(&s);
@@ -113,10 +98,6 @@ pub fn mask_digit(value: &str) -> String {
     s
 }
 
-/// Masks digit-based PII (cards, phones, RUT, CPF) with FF3-1 FPE.
-///
-/// Format is preserved — output has the same length and digit structure
-/// as the input. Reversible with the same key and tweak.
 pub fn mask_digit_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     let s = mask_phone_fpe(value, cipher);
     let s = mask_rut_fpe(&s, cipher);
@@ -139,31 +120,16 @@ pub fn mask_digit_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     s
 }
 
-// ---------------------------------------------------------------------------
-// Aggregators
-// ---------------------------------------------------------------------------
-
-/// Masks all PII with asterisks.
-///
-/// Order: non-digit PII first, then digit PII.
-/// Use `mask_all_fpe` for reversible pseudonymisation of digit PII.
 pub fn mask_all(value: &str) -> String {
     let s = mask_non_digit(value);
     mask_digit(&s)
 }
 
-/// Masks all PII — non-digit with asterisks, digit with FF3-1 FPE.
-///
-/// Non-digit PII (IBAN, VAT, email, IP, EU IDs) is still asterisked.
-/// Digit PII (cards, phones, RUT, CPF) is pseudonymised with FF3-1.
 pub fn mask_all_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     let s = mask_non_digit(value);
     mask_digit_fpe(&s, cipher)
 }
 
-/// Masks digit-based PII with HMAC-SHA256 consistent pseudonymization.
-///
-/// Same input → same output given the same salt. Not reversible without the salt.
 pub fn mask_digit_consistent(value: &str, hasher: &ConsistentHasher) -> String {
     let s = mask_phone_consistent(value, hasher);
     let s = mask_rut_consistent(&s, hasher);
@@ -186,18 +152,11 @@ pub fn mask_digit_consistent(value: &str, hasher: &ConsistentHasher) -> String {
     s
 }
 
-/// Masks all PII — non-digit with asterisks, digit with HMAC-SHA256 consistent pseudonymization.
-///
-/// Same input → same output given the same salt. Not reversible without the salt.
 pub fn mask_all_consistent(value: &str, hasher: &ConsistentHasher) -> String {
     let s = mask_non_digit(value);
     mask_digit_consistent(&s, hasher)
 }
 
-/// Masks only the selected PII patterns with asterisks.
-///
-/// Pattern names: email, phone, ip, iban, vat, dni, nie, nin, personalausweis,
-/// us_passport, curp, rut, cpf, ssn, arg_dni, co_cc, co_nit, ec_cedula, credit_card.
 pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
     let mut s = value.to_string();
     for pat in patterns {
@@ -239,7 +198,6 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
     s
 }
 
-/// Masks only the selected PII patterns — non-digit asterisked, digit FPE.
 pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &Ff3Cipher) -> String {
     let mut s = value.to_string();
     for pat in patterns {
@@ -264,11 +222,11 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &Ff3Cipher)
             "ec_cedula"       => mask_ec_cedula_fpe(&s, cipher),
             "credit_card"     => mask_card_fpe(&s, cipher),
             "npi"             => mask_npi_fpe(&s, cipher),
-            "mbi"             => mask_mbi(&s),  // alphanumeric — asterisk only
+            "mbi"             => mask_mbi(&s),  
             "nhs"             => mask_nhs_fpe(&s, cipher),
             "pe_dni"          => mask_pe_dni_fpe(&s, cipher),
-            "nir"             => mask_nir(&s),       // non-digit — asterisk only
-            "codice_fiscale"  => mask_cf(&s),        // non-digit — asterisk only
+            "nir"             => mask_nir(&s),       
+            "codice_fiscale"  => mask_cf(&s),        
             "uy_ci"           => mask_uy_ci_fpe(&s, cipher),
             "sin"             => mask_sin_fpe(&s, cipher),
             "tfn"             => mask_tfn_fpe(&s, cipher),
@@ -281,7 +239,6 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &Ff3Cipher)
     s
 }
 
-/// Masks only the selected PII patterns — non-digit asterisked, digit consistently hashed.
 pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &ConsistentHasher) -> String {
     let mut s = value.to_string();
     for pat in patterns {
@@ -309,8 +266,8 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
             "mbi"             => mask_mbi(&s),
             "nhs"             => mask_nhs_consistent(&s, hasher),
             "pe_dni"          => mask_pe_dni_consistent(&s, hasher),
-            "nir"             => mask_nir(&s),       // non-digit — asterisk only
-            "codice_fiscale"  => mask_cf(&s),        // non-digit — asterisk only
+            "nir"             => mask_nir(&s),       
+            "codice_fiscale"  => mask_cf(&s),        
             "uy_ci"           => mask_uy_ci_consistent(&s, hasher),
             "sin"             => mask_sin_consistent(&s, hasher),
             "tfn"             => mask_tfn_consistent(&s, hasher),
@@ -323,7 +280,6 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
     s
 }
 
-/// Returns true if any of the selected PII patterns is found in the string.
 pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
     patterns.iter().any(|pat| match *pat {
         "email"           => contains_email(value),
@@ -361,7 +317,6 @@ pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
     })
 }
 
-/// Returns true if any known PII pattern is found in the string.
 pub fn contains_any_pii(value: &str) -> bool {
     contains_iban(value)
         || contains_vat(value)
