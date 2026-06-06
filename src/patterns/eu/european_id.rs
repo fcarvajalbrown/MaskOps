@@ -149,3 +149,23 @@ pub fn mask_personalausweis(s: &str) -> String {
         })
         .into_owned()
 }
+
+/// Returns the first valid Spanish DNI found, or None.
+pub fn extract_dni(s: &str) -> Option<String> {
+    DNI_RE.find_iter(s).find(|m| valid_dni(m.as_str())).map(|m| m.as_str().to_string())
+}
+
+/// Returns the first valid Spanish NIE found, or None.
+pub fn extract_nie(s: &str) -> Option<String> {
+    NIE_RE.find_iter(s).find(|m| valid_nie(m.as_str())).map(|m| m.as_str().to_string())
+}
+
+/// Returns the first valid UK NIN found, or None.
+pub fn extract_nin(s: &str) -> Option<String> {
+    NIN_RE.find_iter(s).find(|m| valid_nin_prefix(m.as_str())).map(|m| m.as_str().to_string())
+}
+
+/// Returns the first valid German Personalausweis number found, or None.
+pub fn extract_personalausweis(s: &str) -> Option<String> {
+    PA_RE.find_iter(s).find(|m| valid_personalausweis(m.as_str())).map(|m| m.as_str().to_string())
+}
