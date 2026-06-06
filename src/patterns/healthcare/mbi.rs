@@ -20,6 +20,10 @@ static MBI_RE: Lazy<Regex> = Lazy::new(|| {
     ).unwrap()
 });
 
+pub fn extract_mbi(s: &str) -> Option<String> {
+    MBI_RE.find(s).map(|m| m.as_str().to_string())
+}
+
 pub fn contains_mbi(s: &str) -> bool {
     MBI_RE.is_match(s)
 }

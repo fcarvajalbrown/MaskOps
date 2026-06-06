@@ -25,6 +25,20 @@ fn valid_tfn(digits: &str) -> bool {
     sum % 11 == 0
 }
 
+pub fn extract_tfn(s: &str) -> Option<String> {
+    TFN_SPACED_RE.find_iter(s)
+        .find(|m| {
+            let d: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
+            valid_tfn(&d)
+        })
+        .map(|m| m.as_str().to_string())
+        .or_else(|| {
+            TFN_COMPACT_RE.find_iter(s)
+                .find(|m| valid_tfn(m.as_str()))
+                .map(|m| m.as_str().to_string())
+        })
+}
+
 pub fn contains_tfn(s: &str) -> bool {
     TFN_SPACED_RE.find_iter(s).any(|m| {
         let d: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
