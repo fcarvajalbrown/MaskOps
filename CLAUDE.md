@@ -16,6 +16,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **One commit per logical change** — no layer-split commits.
 
+**Every task gets its own branch** — never implement features or fixes directly on `main`. Before starting any implementation task:
+1. Create a branch: `git checkout -b <type>/<short-description>` (e.g. `feat/extract-pii`, `fix/ssn-validation`)
+2. Do the work and commit(s) on that branch
+3. Open a PR with a STAR-format description (see below)
+4. After merge: delete the branch and `git checkout main && git pull`
+
+**PR description format (STAR):**
+```
+## Situation
+<What was the context — what problem or gap existed?>
+
+## Task
+<What specifically needed to be done?>
+
+## Action
+<What was implemented, and key decisions made?>
+
+## Result
+<What changed for users — behavior, performance, API surface?>
+```
+
 **"Add to AGENTS.md"** means write to that file locally and stop — do not commit or push unless explicitly asked.
 
 ## Roadmap
