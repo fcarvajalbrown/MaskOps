@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.14.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.13.0...v0.14.0) (2026-06-06)
+
+
+### Features
+
+* **extract:** add extract_pii expression returning 31-field Struct ([#17](https://github.com/fcarvajalbrown/MaskOps/issues/17)) ([672a5c9](https://github.com/fcarvajalbrown/MaskOps/commit/672a5c91a9c3e47b71ef7fe333ece87682b1afbc))
+
 ## [0.14.0] (unreleased)
 
 ### Features
