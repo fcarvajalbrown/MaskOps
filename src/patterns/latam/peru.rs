@@ -7,6 +7,10 @@ static PE_DNI_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"\b([0-9]{8})\b").unwrap()
 });
 
+pub fn extract_pe_dni(s: &str) -> Option<String> {
+    PE_DNI_RE.find(s).map(|m| m.as_str().to_string())
+}
+
 pub fn contains_pe_dni(s: &str) -> bool {
     PE_DNI_RE.is_match(s)
 }

@@ -23,6 +23,10 @@ fn valid_uy_ci(ci: &str) -> bool {
     (10 - (sum % 10)) % 10 == ds[7]
 }
 
+pub fn extract_uy_ci(s: &str) -> Option<String> {
+    UY_CI_RE.find_iter(s).find(|m| valid_uy_ci(m.as_str())).map(|m| m.as_str().to_string())
+}
+
 pub fn contains_uy_ci(s: &str) -> bool {
     UY_CI_RE.find_iter(s).any(|m| valid_uy_ci(m.as_str()))
 }
