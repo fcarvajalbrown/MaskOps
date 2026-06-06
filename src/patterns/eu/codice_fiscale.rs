@@ -58,6 +58,10 @@ pub fn contains_cf(s: &str) -> bool {
     CF_RE.find_iter(s).any(|m| valid_cf(m.as_str()))
 }
 
+pub fn extract_cf(s: &str) -> Option<String> {
+    CF_RE.find_iter(s).find(|m| valid_cf(m.as_str())).map(|m| m.as_str().to_string())
+}
+
 pub fn mask_cf(s: &str) -> String {
     CF_RE
         .replace_all(s, |caps: &regex::Captures| {

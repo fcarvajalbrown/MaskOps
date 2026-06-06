@@ -41,6 +41,12 @@ pub fn contains_personnummer(s: &str) -> bool {
         || LONG_RE.find_iter(s).any(|m| luhn_valid(&long_digits(m.as_str())))
 }
 
+pub fn extract_personnummer(s: &str) -> Option<String> {
+    SHORT_RE.find_iter(s).find(|m| luhn_valid(&short_digits(m.as_str())))
+        .or_else(|| LONG_RE.find_iter(s).find(|m| luhn_valid(&long_digits(m.as_str()))))
+        .map(|m| m.as_str().to_string())
+}
+
 pub fn mask_personnummer(s: &str) -> String {
     let s = SHORT_RE
         .replace_all(s, |caps: &regex::Captures| {

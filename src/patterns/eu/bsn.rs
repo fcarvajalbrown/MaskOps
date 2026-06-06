@@ -22,6 +22,10 @@ pub fn contains_bsn(s: &str) -> bool {
     BSN_RE.find_iter(s).any(|m| valid_bsn(m.as_str()))
 }
 
+pub fn extract_bsn(s: &str) -> Option<String> {
+    BSN_RE.find_iter(s).find(|m| valid_bsn(m.as_str())).map(|m| m.as_str().to_string())
+}
+
 pub fn mask_bsn(s: &str) -> String {
     BSN_RE
         .replace_all(s, |caps: &regex::Captures| {
