@@ -9,44 +9,50 @@ pub mod country_codes;
 pub mod fpe;
 pub mod consistent;
 
-use crate::patterns::eu::iban::{mask_iban, contains_iban};
-use crate::patterns::eu::vat::{mask_vat, contains_vat};
+use crate::patterns::eu::iban::{mask_iban, contains_iban, extract_iban};
+use crate::patterns::eu::vat::{mask_vat, contains_vat, extract_vat};
 use crate::patterns::eu::european_id::{
-    mask_dni, contains_dni, mask_nie, contains_nie, mask_nin, contains_nin,
-    mask_personalausweis, contains_personalausweis,
+    mask_dni, contains_dni, extract_dni,
+    mask_nie, contains_nie, extract_nie,
+    mask_nin, contains_nin, extract_nin,
+    mask_personalausweis, contains_personalausweis, extract_personalausweis,
 };
-use crate::patterns::eu::nir::{mask_nir, contains_nir};
-use crate::patterns::eu::codice_fiscale::{mask_cf, contains_cf};
-use crate::patterns::eu::pesel::{mask_pesel, contains_pesel, mask_pesel_fpe, mask_pesel_consistent};
-use crate::patterns::eu::bsn::{mask_bsn, contains_bsn, mask_bsn_fpe, mask_bsn_consistent};
+use crate::patterns::eu::nir::{mask_nir, contains_nir, extract_nir};
+use crate::patterns::eu::codice_fiscale::{mask_cf, contains_cf, extract_cf};
+use crate::patterns::eu::pesel::{mask_pesel, contains_pesel, extract_pesel, mask_pesel_fpe, mask_pesel_consistent};
+use crate::patterns::eu::bsn::{mask_bsn, contains_bsn, extract_bsn, mask_bsn_fpe, mask_bsn_consistent};
 use crate::patterns::eu::personnummer::{
-    mask_personnummer, contains_personnummer,
+    mask_personnummer, contains_personnummer, extract_personnummer,
     mask_personnummer_fpe, mask_personnummer_consistent,
 };
-use crate::patterns::latam::{contains_uy_ci, mask_uy_ci, mask_uy_ci_fpe, mask_uy_ci_consistent};
-use crate::patterns::apac::{
-    contains_sin, mask_sin, mask_sin_fpe, mask_sin_consistent,
-    contains_tfn, mask_tfn, mask_tfn_fpe, mask_tfn_consistent,
-};
-use crate::patterns::contact::email::{mask_email, contains_email};
-use crate::patterns::contact::phone::{mask_phone, contains_phone, mask_phone_fpe};
-use crate::patterns::contact::ip::{mask_ip, contains_ip};
-use crate::patterns::latam::{contains_ec_cedula, mask_ec_cedula, mask_ec_cedula_fpe,
-                             contains_pe_dni, mask_pe_dni, mask_pe_dni_fpe};
-use crate::patterns::healthcare::{
-    contains_npi, mask_npi, mask_npi_fpe,
-    contains_mbi, mask_mbi,
-    contains_nhs, mask_nhs, mask_nhs_fpe,
-};
+use crate::patterns::contact::email::{mask_email, contains_email, extract_email};
+use crate::patterns::contact::phone::{mask_phone, contains_phone, extract_phone, mask_phone_fpe};
+use crate::patterns::contact::ip::{mask_ip, contains_ip, extract_ip};
+use crate::patterns::financial::credit_card::{mask_card, contains_card, extract_card, mask_card_fpe};
+use crate::patterns::us::{mask_ssn, contains_ssn, extract_ssn, mask_ssn_fpe, mask_us_passport, contains_us_passport, extract_us_passport};
 use crate::patterns::latam::latam_id::{
-    mask_rut, contains_rut, mask_cpf, contains_cpf, mask_curp, contains_curp,
+    mask_rut, contains_rut, extract_rut,
+    mask_cpf, contains_cpf, extract_cpf,
+    mask_curp, contains_curp, extract_curp,
     mask_rut_fpe, mask_cpf_fpe,
-    mask_arg_dni, contains_arg_dni, mask_arg_dni_fpe,
-    mask_co_cc, contains_co_cc, mask_co_cc_fpe,
-    mask_co_nit, contains_co_nit, mask_co_nit_fpe,
+    mask_arg_dni, contains_arg_dni, extract_arg_dni, mask_arg_dni_fpe,
+    mask_co_cc, contains_co_cc, extract_co_cc, mask_co_cc_fpe,
+    mask_co_nit, contains_co_nit, extract_co_nit, mask_co_nit_fpe,
 };
-use crate::patterns::financial::credit_card::{mask_card, contains_card, mask_card_fpe};
-use crate::patterns::us::{mask_ssn, contains_ssn, mask_ssn_fpe, mask_us_passport, contains_us_passport};
+use crate::patterns::latam::{
+    contains_ec_cedula, mask_ec_cedula, extract_ec_cedula, mask_ec_cedula_fpe,
+    contains_pe_dni, mask_pe_dni, extract_pe_dni, mask_pe_dni_fpe,
+    contains_uy_ci, mask_uy_ci, extract_uy_ci, mask_uy_ci_fpe, mask_uy_ci_consistent,
+};
+use crate::patterns::healthcare::{
+    contains_npi, mask_npi, extract_npi, mask_npi_fpe,
+    contains_mbi, mask_mbi, extract_mbi,
+    contains_nhs, mask_nhs, extract_nhs, mask_nhs_fpe,
+};
+use crate::patterns::apac::{
+    contains_sin, mask_sin, extract_sin, mask_sin_fpe, mask_sin_consistent,
+    contains_tfn, mask_tfn, extract_tfn, mask_tfn_fpe, mask_tfn_consistent,
+};
 pub use crate::patterns::fpe::{Ff3Cipher, KEY_LEN, TWEAK_LEN};
 pub use crate::patterns::consistent::ConsistentHasher;
 use crate::patterns::contact::phone::mask_phone_consistent;
@@ -349,4 +355,74 @@ pub fn contains_any_pii(value: &str) -> bool {
         || contains_pesel(value)
         || contains_bsn(value)
         || contains_personnummer(value)
+}
+
+pub struct ExtractResult {
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub ip: Option<String>,
+    pub iban: Option<String>,
+    pub vat: Option<String>,
+    pub dni: Option<String>,
+    pub nie: Option<String>,
+    pub nin: Option<String>,
+    pub personalausweis: Option<String>,
+    pub nir: Option<String>,
+    pub codice_fiscale: Option<String>,
+    pub pesel: Option<String>,
+    pub bsn: Option<String>,
+    pub personnummer: Option<String>,
+    pub credit_card: Option<String>,
+    pub ssn: Option<String>,
+    pub us_passport: Option<String>,
+    pub rut: Option<String>,
+    pub cpf: Option<String>,
+    pub curp: Option<String>,
+    pub arg_dni: Option<String>,
+    pub co_cc: Option<String>,
+    pub co_nit: Option<String>,
+    pub ec_cedula: Option<String>,
+    pub pe_dni: Option<String>,
+    pub uy_ci: Option<String>,
+    pub npi: Option<String>,
+    pub mbi: Option<String>,
+    pub nhs: Option<String>,
+    pub sin: Option<String>,
+    pub tfn: Option<String>,
+}
+
+pub fn extract_all(value: &str) -> ExtractResult {
+    ExtractResult {
+        email:          extract_email(value),
+        phone:          extract_phone(value),
+        ip:             extract_ip(value),
+        iban:           extract_iban(value),
+        vat:            extract_vat(value),
+        dni:            extract_dni(value),
+        nie:            extract_nie(value),
+        nin:            extract_nin(value),
+        personalausweis: extract_personalausweis(value),
+        nir:            extract_nir(value),
+        codice_fiscale: extract_cf(value),
+        pesel:          extract_pesel(value),
+        bsn:            extract_bsn(value),
+        personnummer:   extract_personnummer(value),
+        credit_card:    extract_card(value),
+        ssn:            extract_ssn(value),
+        us_passport:    extract_us_passport(value),
+        rut:            extract_rut(value),
+        cpf:            extract_cpf(value),
+        curp:           extract_curp(value),
+        arg_dni:        extract_arg_dni(value),
+        co_cc:          extract_co_cc(value),
+        co_nit:         extract_co_nit(value),
+        ec_cedula:      extract_ec_cedula(value),
+        pe_dni:         extract_pe_dni(value),
+        uy_ci:          extract_uy_ci(value),
+        npi:            extract_npi(value),
+        mbi:            extract_mbi(value),
+        nhs:            extract_nhs(value),
+        sin:            extract_sin(value),
+        tfn:            extract_tfn(value),
+    }
 }
