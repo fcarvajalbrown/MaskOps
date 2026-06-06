@@ -21,6 +21,10 @@ fn valid_nhs(s: &str) -> bool {
     check == digits[9]
 }
 
+pub fn extract_nhs(s: &str) -> Option<String> {
+    NHS_RE.find_iter(s).find(|m| valid_nhs(m.as_str())).map(|m| m.as_str().to_string())
+}
+
 pub fn contains_nhs(s: &str) -> bool {
     NHS_RE.find_iter(s).any(|m| valid_nhs(m.as_str()))
 }

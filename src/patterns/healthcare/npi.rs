@@ -25,6 +25,10 @@ fn valid_npi(s: &str) -> bool {
     (10 - (sum % 10)) % 10 == digits[9]
 }
 
+pub fn extract_npi(s: &str) -> Option<String> {
+    NPI_RE.find_iter(s).find(|m| valid_npi(m.as_str())).map(|m| m.as_str().to_string())
+}
+
 pub fn contains_npi(s: &str) -> bool {
     NPI_RE.find_iter(s).any(|m| valid_npi(m.as_str()))
 }

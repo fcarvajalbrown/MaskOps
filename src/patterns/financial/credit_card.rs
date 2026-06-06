@@ -53,6 +53,10 @@ fn luhn_valid(card: &str) -> bool {
     sum % 10 == 0
 }
 
+pub fn extract_card(s: &str) -> Option<String> {
+    CARD_RE.find_iter(s).find(|m| luhn_valid(m.as_str())).map(|m| m.as_str().to_string())
+}
+
 pub fn contains_card(s: &str) -> bool {
     CARD_RE.find_iter(s).any(|m| luhn_valid(m.as_str()))
 }

@@ -22,3 +22,8 @@ pub fn mask_vat(value: &str) -> String {
 pub fn contains_vat(value: &str) -> bool {
     VAT_RE.is_match(value)
 }
+
+/// Returns the first EU VAT number found, or None.
+pub fn extract_vat(value: &str) -> Option<String> {
+    VAT_RE.find(value).map(|m| m.as_str().to_string())
+}

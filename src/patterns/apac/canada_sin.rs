@@ -36,6 +36,20 @@ fn not_followed_by_dash(s: &str, end: usize) -> bool {
     s.as_bytes().get(end) != Some(&b'-')
 }
 
+pub fn extract_sin(s: &str) -> Option<String> {
+    SIN_FMT_RE.find_iter(s)
+        .find(|m| {
+            let d: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
+            luhn_valid(&d)
+        })
+        .map(|m| m.as_str().to_string())
+        .or_else(|| {
+            SIN_COMPACT_RE.find_iter(s)
+                .find(|m| luhn_valid(m.as_str()) && not_followed_by_dash(s, m.end()))
+                .map(|m| m.as_str().to_string())
+        })
+}
+
 pub fn contains_sin(s: &str) -> bool {
     SIN_FMT_RE.find_iter(s).any(|m| {
         let d: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();

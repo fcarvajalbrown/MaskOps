@@ -21,3 +21,8 @@ pub fn mask_iban(value: &str) -> String {
 pub fn contains_iban(value: &str) -> bool {
     IBAN_RE.is_match(value)
 }
+
+/// Returns the first IBAN found, or None.
+pub fn extract_iban(value: &str) -> Option<String> {
+    IBAN_RE.find(value).map(|m| m.as_str().to_string())
+}

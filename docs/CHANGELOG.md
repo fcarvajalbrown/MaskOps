@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.14.0] (unreleased)
+
+### Features
+
+* **extract_pii:** new Polars expression returning a 31-field Struct with the first match per PII family; enables routing, reporting, and selective masking without re-scanning
+* **extract_pii:** supports all 31 PII families: email, phone, ip, iban, vat, dni, nie, nin, personalausweis, nir, codice_fiscale, pesel, bsn, personnummer, credit_card, ssn, us_passport, rut, cpf, curp, arg_dni, co_cc, co_nit, ec_cedula, pe_dni, uy_ci, npi, mbi, nhs, sin, tfn
+
 ## [0.13.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.12.3...v0.13.0) (2026-06-06)
 
 

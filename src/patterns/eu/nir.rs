@@ -32,6 +32,10 @@ pub fn contains_nir(s: &str) -> bool {
     NIR_RE.find_iter(s).any(|m| valid_nir(m.as_str()))
 }
 
+pub fn extract_nir(s: &str) -> Option<String> {
+    NIR_RE.find_iter(s).find(|m| valid_nir(m.as_str())).map(|m| m.as_str().to_string())
+}
+
 pub fn mask_nir(s: &str) -> String {
     NIR_RE
         .replace_all(s, |caps: &regex::Captures| {

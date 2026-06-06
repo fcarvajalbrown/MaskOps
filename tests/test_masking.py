@@ -1722,3 +1722,65 @@ class TestMaskPersonnummer:
     def test_null_passthrough(self):
         df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
         assert df.with_columns(maskops.mask_pii("col"))["col"][0] is None
+
+
+class TestExtractPII:
+    def _extract(self, text):
+        df = pl.DataFrame({"col": [text]})
+        return df.with_columns(maskops.extract_pii("col").alias("pii"))["pii"][0]
+
+    def test_email_detected(self):
+        r = self._extract("contact user@example.com for info")
+        assert r["email"] == "user@example.com"
+        assert r["phone"] is None
+
+    def test_credit_card_detected(self):
+        r = self._extract("card 4532015112830366 used")
+        assert r["credit_card"] == "4532015112830366"
+        assert r["email"] is None
+
+    def test_ssn_detected(self):
+        r = self._extract("SSN is 321-45-6789")
+        assert r["ssn"] == "321-45-6789"
+
+    def test_iban_detected(self):
+        r = self._extract("pay to DE89370400440532013000 please")
+        assert r["iban"] == "DE89370400440532013000"
+
+    def test_ip_detected(self):
+        r = self._extract("server at 192.168.1.1 is down")
+        assert r["ip"] == "192.168.1.1"
+
+    def test_phone_detected(self):
+        r = self._extract("call +1 800 555 1234 now")
+        assert r["phone"] is not None
+        assert "+1" in r["phone"]
+
+    def test_null_input_all_none(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        r = df.with_columns(maskops.extract_pii("col").alias("pii"))["pii"][0]
+        assert r["email"] is None
+        assert r["credit_card"] is None
+        assert r["ssn"] is None
+
+    def test_no_pii_all_none(self):
+        r = self._extract("nothing sensitive here")
+        for field in ["email", "phone", "ip", "iban", "credit_card", "ssn", "rut", "cpf"]:
+            assert r[field] is None, f"expected {field} to be None"
+
+    def test_returns_struct_column(self):
+        df = pl.DataFrame({"col": ["user@example.com"]})
+        result = df.with_columns(maskops.extract_pii("col").alias("pii"))
+        assert isinstance(result["pii"].dtype, pl.Struct)
+
+    def test_struct_has_31_fields(self):
+        df = pl.DataFrame({"col": ["user@example.com"]})
+        result = df.with_columns(maskops.extract_pii("col").alias("pii"))
+        assert len(result["pii"].dtype.fields) == 31
+
+    def test_multiple_rows(self):
+        df = pl.DataFrame({"col": ["user@example.com", "4532015112830366", "nothing"]})
+        result = df.with_columns(maskops.extract_pii("col").alias("pii"))
+        assert result["pii"][0]["email"] == "user@example.com"
+        assert result["pii"][1]["credit_card"] == "4532015112830366"
+        assert result["pii"][2]["email"] is None

@@ -354,7 +354,8 @@ pytest tests/ -v
 - [x] Check digit validation for Personalausweis (Germany) and NIN (UK)
 - [x] Format-Preserving Encryption (FPE/FF3-1) for reversible masking
 - [x] Benchmark vs Presidio
-- [ ] Parquet streaming support
+- [x] Parquet streaming support
+- [x] `extract_pii` expression — returns a 31-field Struct column with the first match per PII family, enabling routing, reporting, and selective masking without re-scanning
 
 ## License
 

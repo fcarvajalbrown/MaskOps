@@ -36,6 +36,10 @@ fn valid_cedula(s: &str) -> bool {
     check == digits[9]
 }
 
+pub fn extract_ec_cedula(s: &str) -> Option<String> {
+    EC_CEDULA_RE.find_iter(s).find(|m| valid_cedula(m.as_str())).map(|m| m.as_str().to_string())
+}
+
 pub fn contains_ec_cedula(s: &str) -> bool {
     EC_CEDULA_RE.find_iter(s).any(|m| valid_cedula(m.as_str()))
 }

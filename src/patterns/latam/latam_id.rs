@@ -74,6 +74,36 @@ fn valid_cpf(cpf: &str) -> bool {
     digits[9] == d1 && digits[10] == d2
 }
 
+pub fn extract_rut(s: &str) -> Option<String> {
+    RUT_RE.find_iter(s).find(|m| valid_rut(m.as_str())).map(|m| m.as_str().to_string())
+}
+
+pub fn extract_cpf(s: &str) -> Option<String> {
+    CPF_RE.find_iter(s).find(|m| valid_cpf(m.as_str())).map(|m| m.as_str().to_string())
+}
+
+pub fn extract_curp(s: &str) -> Option<String> {
+    CURP_RE.find(s).map(|m| m.as_str().to_string())
+}
+
+pub fn extract_arg_dni(s: &str) -> Option<String> {
+    ARG_DNI_RE.find_iter(s)
+        .find(|m| !followed_by_id_suffix(s, m.end()))
+        .map(|m| m.as_str().to_string())
+}
+
+pub fn extract_co_cc(s: &str) -> Option<String> {
+    CO_CC_RE.find_iter(s)
+        .find(|m| !followed_by_id_suffix(s, m.end()))
+        .map(|m| m.as_str().to_string())
+}
+
+pub fn extract_co_nit(s: &str) -> Option<String> {
+    CO_NIT_RE.captures_iter(s)
+        .find(|c| valid_nit(&c[1], &c[2]))
+        .map(|c| c[0].to_string())
+}
+
 pub fn contains_rut(s: &str) -> bool {
     RUT_RE.find_iter(s).any(|m| valid_rut(m.as_str()))
 }

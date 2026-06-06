@@ -25,6 +25,10 @@ pub fn contains_pesel(s: &str) -> bool {
     PESEL_RE.find_iter(s).any(|m| valid_pesel(m.as_str()))
 }
 
+pub fn extract_pesel(s: &str) -> Option<String> {
+    PESEL_RE.find_iter(s).find(|m| valid_pesel(m.as_str())).map(|m| m.as_str().to_string())
+}
+
 pub fn mask_pesel(s: &str) -> String {
     PESEL_RE
         .replace_all(s, |caps: &regex::Captures| {
