@@ -1,21 +1,3 @@
-"""
-maskops — High-speed PII masking as a Polars plugin.
-
-Usage::
-
-    import polars as pl
-    import maskops
-
-    df = pl.DataFrame({"payments": ["Ref: DE89370400440532013000", "nothing here"]})
-    df.with_columns(maskops.mask_pii("payments"))
-    # ┌──────────────────────────────┐
-    # │ payments                     │
-    # ╞══════════════════════════════╡
-    # │ Ref: DE89******************  │
-    # │ nothing here                 │
-    # └──────────────────────────────┘
-"""
-
 from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -29,9 +11,7 @@ IntoExpr = Union[pl.Expr, str]
 if TYPE_CHECKING:
     pass
 
-# Path to the compiled Rust shared library inside this package
 _LIB = Path(__file__).parent
-
 
 def mask_pii(
     expr: IntoExpr,
@@ -78,7 +58,7 @@ def mask_pii(
             args=args,
             is_elementwise=True,
         )
-    # default: asterisk
+    
     args = [pl.col(expr) if isinstance(expr, str) else expr]
     if patterns is not None:
         args.append(pl.lit(",".join(patterns)))
@@ -88,7 +68,6 @@ def mask_pii(
         args=args,
         is_elementwise=True,
     )
-
 
 def contains_pii(expr: IntoExpr, patterns: list = None) -> pl.Expr:
     """
@@ -161,7 +140,6 @@ def mask_pii_fpe(expr: IntoExpr, key: bytes, tweak: bytes, patterns: list = None
         is_elementwise=True,
     )
 
-
-from maskops._policy import load_policy  # noqa: E402
+from maskops._policy import load_policy  
 
 __all__ = ["mask_pii", "contains_pii", "mask_pii_fpe", "load_policy"]

@@ -13,7 +13,6 @@ PathLike = Union[str, Path]
 
 _ENV_RE = re.compile(r"\$\{([^}]+)\}")
 
-
 def _interpolate(value: str, column: str) -> str:
     """Replace ${VAR_NAME} tokens with environment variable values."""
     def _sub(m: re.Match) -> str:
@@ -25,7 +24,6 @@ def _interpolate(value: str, column: str) -> str:
             )
         return val
     return _ENV_RE.sub(_sub, value)
-
 
 class Policy:
     """A set of per-column masking rules loaded from a policy file."""
@@ -84,7 +82,6 @@ class Policy:
             resolved[col_name] = resolved_rule
         return cls(resolved)
 
-
 def load_policy(path: PathLike) -> Policy:
     """
     Load a YAML or TOML policy file and return a :class:`Policy`.
@@ -119,7 +116,6 @@ def load_policy(path: PathLike) -> Policy:
 
     raise ValueError(f"unsupported policy file extension '{suffix}' — use .yaml, .yml, or .toml")
 
-
 def _load_toml_policy(path: Path) -> Policy:
     if sys.version_info >= (3, 11):
         import tomllib
@@ -127,16 +123,16 @@ def _load_toml_policy(path: Path) -> Policy:
         try:
             import tomllib
         except ImportError:
-            import tomli as tomllib  # type: ignore[no-redef]
+            import tomli as tomllib  
 
     with path.open("rb") as f:
         data = tomllib.load(f)
 
-    # v1.1 dict format: [columns.col_name] → data["columns"] is a dict
+    
     if isinstance(data.get("columns"), dict):
         return Policy.from_dict(data)
 
-    # v1.0 array format: [[columns]] → data["columns"] is a list
+    
     cols_list = data.get("columns", [])
     if not isinstance(cols_list, list):
         raise ValueError("policy: 'columns' must be a dict or array of tables")

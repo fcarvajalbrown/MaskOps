@@ -1,22 +1,8 @@
-//! Credit card number detection and masking.
-//!
-//! Covers: Visa, Mastercard, American Express, Discover, Maestro.
-//! Masking style: BIN (first 6) + last 4 preserved, middle replaced with `*`.
-//! This follows PCI-DSS maximum display rules and is GDPR-compliant for pseudonymisation.
-//!
-//! Luhn validation is applied to eliminate false positives.
-//!
-//! Examples:
-//!   4111111111111111   →  411111******1111   (Visa, 16 digits)
-//!   371449635398431    →  371449*****8431    (Amex, 15 digits)
-//!   6304000000000000   →  630400******0000   (Maestro, 16 digits)
+
 
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-/// Matches Visa, Mastercard, Amex, Discover, and Maestro card numbers.
-/// Accepts optional spaces or hyphens as group separators.
-/// Uses verbose mode ((?x)) for readability.
 pub static CARD_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?x)
         \b(?:
@@ -39,9 +25,6 @@ pub static CARD_RE: Lazy<Regex> = Lazy::new(|| {
     ").unwrap()
 });
 
-/// Validates a card number string using the Luhn algorithm.
-///
-/// Strips spaces and hyphens before processing.
 fn luhn_valid(card: &str) -> bool {
     let digits: Vec<u32> = card
         .chars()
@@ -70,18 +53,10 @@ fn luhn_valid(card: &str) -> bool {
     sum % 10 == 0
 }
 
-/// Returns true if the input contains a valid credit card number.
 pub fn contains_card(s: &str) -> bool {
     CARD_RE.find_iter(s).any(|m| luhn_valid(m.as_str()))
 }
 
-/// Masks any valid credit card number found, preserving BIN (first 6) and last 4 digits.
-///
-/// Separators (spaces, hyphens) are stripped — output is always compact digits.
-///
-/// Examples:
-///   `4111111111111111`   → `411111******1111`
-///   `3714 496353 98431`  → `371449*****8431`
 pub fn mask_card(s: &str) -> String {
     CARD_RE
         .replace_all(s, |caps: &regex::Captures| {
@@ -93,15 +68,12 @@ pub fn mask_card(s: &str) -> String {
             let len = digits.len();
             let bin = &digits[..6];
             let last4 = &digits[len - 4..];
-            let middle = len - 10; // total digits - 6 (BIN) - 4 (last4)
+            let middle = len - 10; 
             format!("{}{}{}", bin, "*".repeat(middle), last4)
         })
         .into_owned()
 }
 
-/// Masks any valid credit card number found using HMAC-SHA256 consistent pseudonymization.
-///
-/// All digits hashed as a unit — same PAN always produces the same output. Not reversible without salt.
 pub fn mask_card_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
     CARD_RE
         .replace_all(s, |caps: &regex::Captures| {
@@ -118,14 +90,6 @@ pub fn mask_card_consistent(s: &str, hasher: &crate::patterns::consistent::Consi
         .into_owned()
 }
 
-/// Masks any valid credit card number found using FF3-1 format-preserving encryption.
-///
-/// The digit body (BIN + middle + last4) is encrypted as a single unit,
-/// preserving total length. Separators are stripped — output is always compact.
-/// Reversible with the same key and tweak.
-///
-/// Example:
-///   `4111111111111111` → `4782591043821657`  (same length, all digits, reversible)
 pub fn mask_card_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
     CARD_RE
         .replace_all(s, |caps: &regex::Captures| {
@@ -136,7 +100,7 @@ pub fn mask_card_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> Strin
             let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
             match cipher.encrypt(&digits) {
                 Ok(encrypted) => encrypted,
-                Err(_) => digits, // fallback: return plain digits if FPE fails
+                Err(_) => digits, 
             }
         })
         .into_owned()

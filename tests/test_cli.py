@@ -7,7 +7,6 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-
 def _run_cli(*args):
     """Invoke maskops._cli as a subprocess; returns (returncode, stdout, stderr)."""
     result = subprocess.run(
@@ -17,18 +16,15 @@ def _run_cli(*args):
     )
     return result.returncode, result.stdout, result.stderr
 
-
 def _write_config(tmp_path: Path, content: str) -> Path:
     cfg = tmp_path / "config.toml"
     cfg.write_text(textwrap.dedent(content))
     return cfg
 
-
 def _write_parquet(tmp_path: Path, df: pl.DataFrame) -> Path:
     p = tmp_path / "input.parquet"
     df.write_parquet(p)
     return p
-
 
 class TestCliRun:
     def test_run_asterisk_mode(self, tmp_path):
@@ -43,8 +39,8 @@ class TestCliRun:
         rc, stdout, stderr = _run_cli("run", str(cfg), str(inp), str(out))
         assert rc == 0, stderr
         result = pl.read_parquet(out)
-        assert "user@example.com" not in result["notes"][0]   # email was masked
-        assert result["notes"][1] == "nothing here"            # clean row unchanged
+        assert "user@example.com" not in result["notes"][0]   
+        assert result["notes"][1] == "nothing here"            
 
     def test_run_consistent_mode_is_deterministic(self, tmp_path):
         df = pl.DataFrame({"ref": ["user@example.com", "user@example.com"]})
@@ -59,8 +55,8 @@ class TestCliRun:
         rc, _, stderr = _run_cli("run", str(cfg), str(inp), str(out))
         assert rc == 0, stderr
         result = pl.read_parquet(out)
-        assert result["ref"][0] == result["ref"][1]       # same input → same output
-        assert result["ref"][0] != "user@example.com"     # value was masked
+        assert result["ref"][0] == result["ref"][1]       
+        assert result["ref"][0] != "user@example.com"     
 
     def test_run_pattern_filter_leaves_other_pii_intact(self, tmp_path):
         df = pl.DataFrame({"col": ["user@example.com and 4111111111111111"]})
@@ -74,8 +70,8 @@ class TestCliRun:
         rc, _, stderr = _run_cli("run", str(cfg), str(inp), str(out))
         assert rc == 0, stderr
         result = pl.read_parquet(out)
-        assert "user@example.com" not in result["col"][0]  # email was masked
-        assert "4111111111111111" in result["col"][0]       # credit card left alone
+        assert "user@example.com" not in result["col"][0]  
+        assert "4111111111111111" in result["col"][0]       
 
     def test_run_multiple_columns(self, tmp_path):
         df = pl.DataFrame({
@@ -100,11 +96,11 @@ class TestCliRun:
         df = pl.DataFrame({"col": ["user@example.com"]})
         inp = _write_parquet(tmp_path, df)
         out = tmp_path / "output.parquet"
-        cfg = _write_config(tmp_path, "")   # no columns declared
+        cfg = _write_config(tmp_path, "")   
         rc, _, stderr = _run_cli("run", str(cfg), str(inp), str(out))
         assert rc == 0, stderr
         result = pl.read_parquet(out)
-        assert result["col"][0] == "user@example.com"   # unchanged
+        assert result["col"][0] == "user@example.com"   
 
     def test_error_config_not_found(self, tmp_path):
         inp = _write_parquet(tmp_path, pl.DataFrame({"x": ["a"]}))
@@ -157,7 +153,7 @@ class TestCliRun:
         """)
         rc, _, stderr = _run_cli("run", str(cfg), str(inp), str(out))
         assert rc != 0
-        assert "Traceback" not in stderr    # no Python traceback leaked to user
+        assert "Traceback" not in stderr    
         assert "error:" in stderr
 
     def test_help_output(self):
@@ -169,7 +165,6 @@ class TestCliRun:
         rc, stdout, _ = _run_cli("run", "--help")
         assert rc == 0
         assert "config" in stdout
-
 
 class TestCliRunYAML:
     def test_run_yaml_policy_asterisk(self, tmp_path):

@@ -14,11 +14,6 @@ import polars as pl
 import pytest
 import maskops
 
-
-# ---------------------------------------------------------------------------
-# IBAN
-# ---------------------------------------------------------------------------
-
 class TestMaskIBAN:
     def test_german_iban_masked(self):
         df = pl.DataFrame({"col": ["DE89370400440532013000"]})
@@ -46,11 +41,6 @@ class TestMaskIBAN:
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result is None
 
-
-# ---------------------------------------------------------------------------
-# VAT
-# ---------------------------------------------------------------------------
-
 class TestMaskVAT:
     def test_german_vat_masked(self):
         df = pl.DataFrame({"col": ["DE123456789"]})
@@ -63,11 +53,6 @@ class TestMaskVAT:
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result.startswith("FR")
         assert "12345678901" not in result
-
-
-# ---------------------------------------------------------------------------
-# contains_pii
-# ---------------------------------------------------------------------------
 
 class TestContainsPII:
     def test_detects_iban(self):
@@ -94,11 +79,6 @@ class TestContainsPII:
         df = pl.DataFrame({"col": ["+14155552671", "nothing"]})
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
-
-
-# ---------------------------------------------------------------------------
-# Email
-# ---------------------------------------------------------------------------
 
 class TestMaskEmail:
     def test_local_part_masked(self):
@@ -128,11 +108,6 @@ class TestMaskEmail:
         assert "@x.com" in result
         assert "@y.com" in result
 
-
-# ---------------------------------------------------------------------------
-# Phone
-# ---------------------------------------------------------------------------
-
 class TestMaskPhone:
     def test_us_phone_masked(self):
         df = pl.DataFrame({"col": ["+14155552671"]})
@@ -158,11 +133,6 @@ class TestMaskPhone:
         df = pl.DataFrame({"col": [original]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result == original
-
-
-# ---------------------------------------------------------------------------
-# IP Address
-# ---------------------------------------------------------------------------
 
 class TestMaskIP:
     def test_ipv4_host_masked(self):
@@ -197,11 +167,6 @@ class TestMaskIP:
         df = pl.DataFrame({"col": ["192.168.1.1", "nothing"]})
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
-
-
-# ---------------------------------------------------------------------------
-# RUT (Chile)
-# ---------------------------------------------------------------------------
 
 class TestMaskRUT:
     def test_rut_body_masked(self):
@@ -242,11 +207,6 @@ class TestMaskRUT:
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
 
-
-# ---------------------------------------------------------------------------
-# CPF (Brazil)
-# ---------------------------------------------------------------------------
-
 class TestMaskCPF:
     def test_cpf_body_masked(self):
         df = pl.DataFrame({"col": ["529.982.247-25"]})
@@ -279,11 +239,6 @@ class TestMaskCPF:
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
 
-
-# ---------------------------------------------------------------------------
-# CURP (Mexico)
-# ---------------------------------------------------------------------------
-
 class TestMaskCURP:
     def test_curp_fully_masked(self):
         df = pl.DataFrame({"col": ["BADD110313HCMLNS09"]})
@@ -307,11 +262,6 @@ class TestMaskCURP:
         df = pl.DataFrame({"col": ["BADD110313HCMLNS09", "nothing"]})
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
-
-
-# ---------------------------------------------------------------------------
-# LatAm ID fixture-based tests
-# ---------------------------------------------------------------------------
 
 LATAM_FIXTURE = Path(__file__).parent / "fixtures" / "latam_pii_sample.csv"
 
@@ -364,11 +314,6 @@ class TestLatamFixtures:
         df = pl.DataFrame({"col": [r["cpf_clean"] for r in rows]})
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert all(result)
-
-
-# ---------------------------------------------------------------------------
-# EU PII fixture-based tests
-# ---------------------------------------------------------------------------
 
 EU_FIXTURE = Path(__file__).parent / "fixtures" / "eu_pii_sample.csv"
 
@@ -430,11 +375,6 @@ class TestEUFixtures:
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert all(result)
 
-
-# ---------------------------------------------------------------------------
-# Phone fixture-based tests
-# ---------------------------------------------------------------------------
-
 PHONE_FIXTURE = Path(__file__).parent / "fixtures" / "phone_sample.csv"
 
 @pytest.mark.skipif(not PHONE_FIXTURE.exists(), reason="Run generate_fixtures.py first")
@@ -445,7 +385,7 @@ class TestPhoneFixtures:
 
     def test_phone_masked_in_sentence(self):
         rows = self._load()
-        # Only clean E.164: + followed by digits only, length 10-15 chars total
+        
         e164_rows = [
             r for r in rows
             if re.fullmatch(r'\+\d{7,14}', r["phone_e164"])
@@ -482,10 +422,6 @@ class TestPhoneFixtures:
             result = df.with_columns(maskops.mask_pii("col"))["col"][0]
             if "*" in result:
                 assert result.startswith(row["prefix"])
-
-# ---------------------------------------------------------------------------
-# Credit card (unit tests)
-# ---------------------------------------------------------------------------
 
 class TestMaskCard:
     def test_visa_masked(self):
@@ -527,14 +463,10 @@ class TestMaskCard:
         assert result == [True, False]
 
     def test_invalid_card_untouched(self):
-        original = "4111111111111112"  # valid format, fails Luhn
+        original = "4111111111111112"  
         df = pl.DataFrame({"col": [original]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result == original
-
-# ---------------------------------------------------------------------------
-# Credit card fixture-based tests
-# ---------------------------------------------------------------------------
 
 CARD_FIXTURE = Path(__file__).parent / "fixtures" / "card_pii_sample.csv"
 
@@ -589,15 +521,11 @@ class TestCardFixtures:
             assert all(result), f"contains_pii missed cards for scheme: {scheme}"
 
     def test_invalid_card_untouched(self):
-        # All same digit — fails Luhn
+        
         original = "1111111111111111"
         df = pl.DataFrame({"col": [original]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result == original
-
-# ---------------------------------------------------------------------------
-# European ID (unit tests)
-# ---------------------------------------------------------------------------
 
 class TestMaskEuropeanID:
     def test_dni_masked(self):
@@ -634,7 +562,7 @@ class TestMaskEuropeanID:
         assert "registrado" in result
 
     def test_invalid_dni_untouched(self):
-        original = "12345678A"  # wrong check letter
+        original = "12345678A"  
         df = pl.DataFrame({"col": [original]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result == original
@@ -653,11 +581,6 @@ class TestMaskEuropeanID:
         df = pl.DataFrame({"col": ["T220001293", "nothing"]})
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
-
-
-# ---------------------------------------------------------------------------
-# European ID fixture-based tests
-# ---------------------------------------------------------------------------
 
 EU_ID_FIXTURE = Path(__file__).parent / "fixtures" / "european_id_sample.csv"
 
@@ -711,12 +634,10 @@ class TestEuropeanIDFixtures:
             assert result == "*" * len(row["id_clean"]), \
                 f"Personalausweis not fully masked: {result}"
 
-                # ---------------------------------------------------------------------------
-# FPE unit tests
-# ---------------------------------------------------------------------------
+                
 
-KEY  = b"\x00" * 32  # 32-byte AES-256 key (test only — never use zero key in production)
-TWEAK = b"\x00" * 7  # 7-byte tweak
+KEY  = b"\x00" * 32  
+TWEAK = b"\x00" * 7  
 
 class TestMaskPiiFpe:
     def test_card_fpe_preserves_length(self):
@@ -761,7 +682,7 @@ class TestMaskPiiFpe:
     def test_non_digit_pii_still_asterisked(self):
         df = pl.DataFrame({"col": ["email: john@example.com card: 4111111111111111"]})
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
-        assert "*" in result           # email asterisked
+        assert "*" in result           
         assert "john" not in result
         assert "4111111111111111" not in result
 
@@ -784,10 +705,6 @@ class TestMaskPiiFpe:
         df = pl.DataFrame({"col": ["529.982.247-25"]})
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert "*" not in result
-
-# ---------------------------------------------------------------------------
-# FPE fixture-based tests
-# ---------------------------------------------------------------------------
 
 class TestFpeFixtures:
     def _load(self, fixture):
@@ -825,11 +742,6 @@ class TestFpeFixtures:
                 result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
                 assert "*" not in result, \
                     f"Asterisk found in FPE output for {field}: {result}"
-
-
-# ---------------------------------------------------------------------------
-# SSN
-# ---------------------------------------------------------------------------
 
 class TestMaskSSN:
     def test_valid_ssn_masked(self):
@@ -910,11 +822,6 @@ class TestMaskSSN:
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert "*" not in result
 
-
-# ---------------------------------------------------------------------------
-# US passport
-# ---------------------------------------------------------------------------
-
 class TestMaskUSPassport:
     def test_valid_passport_masked(self):
         df = pl.DataFrame({"col": ["A12345678"]})
@@ -937,11 +844,6 @@ class TestMaskUSPassport:
         df = pl.DataFrame({"col": ["A12345678"]})
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert result == "*********"
-
-
-# ---------------------------------------------------------------------------
-# Lazy scan pipeline (streaming)
-# ---------------------------------------------------------------------------
 
 class TestLazyScanPipeline:
     """Verifies mask_pii and contains_pii work through scan_parquet → sink_parquet."""
@@ -994,8 +896,8 @@ class TestLazyScanPipeline:
             .collect()
         )
         flags = result["text"].to_list()
-        assert flags[-1] is False  # clean row
-        assert any(flags[:-1])     # at least one PII row detected
+        assert flags[-1] is False  
+        assert any(flags[:-1])     
 
     def test_mask_pii_fpe_lazy_collect(self, tmp_path):
         src = self._write_parquet(tmp_path)
@@ -1016,15 +918,10 @@ class TestLazyScanPipeline:
             .with_columns(maskops.mask_pii("text"))
             .collect()
         )
-        assert len(result) == len(self.PII_ROWS) - 1  # clean row filtered out
+        assert len(result) == len(self.PII_ROWS) - 1  
         for row in result["text"].to_list():
             assert "123-45-6789" not in row
             assert "john@example.com" not in row
-
-
-# ---------------------------------------------------------------------------
-# Argentine DNI
-# ---------------------------------------------------------------------------
 
 class TestMaskArgDNI:
     def test_dotted_8digit_masked(self):
@@ -1051,11 +948,6 @@ class TestMaskArgDNI:
         assert "*" not in result
         assert result != "12.345.678"
 
-
-# ---------------------------------------------------------------------------
-# Colombian CC
-# ---------------------------------------------------------------------------
-
 class TestMaskCOCC:
     def test_10digit_cc_masked(self):
         df = pl.DataFrame({"col": ["Cédula: 1.234.567.890"]})
@@ -1074,16 +966,11 @@ class TestMaskCOCC:
         assert "*" not in result
         assert result != "1.234.567.890"
 
-
-# ---------------------------------------------------------------------------
-# Colombian NIT
-# ---------------------------------------------------------------------------
-
 class TestMaskCONIT:
     def test_valid_nit_masked(self):
-        # NIT 900123456 with DIAN check digit
-        # sum = 6*3+5*7+4*13+3*17+2*19+1*23+0*29+0*37+9*41 = 18+35+52+51+38+23+0+0+369 = 586
-        # 586 % 11 = 3, check = 11-3 = 8
+        
+        
+        
         df = pl.DataFrame({"col": ["NIT: 900123456-8"]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert "900123456" not in result
@@ -1091,7 +978,7 @@ class TestMaskCONIT:
         assert "*" in result
 
     def test_invalid_nit_check_untouched(self):
-        original = "900123456-0"  # wrong check digit
+        original = "900123456-0"  
         df = pl.DataFrame({"col": [original]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result == original
@@ -1108,11 +995,6 @@ class TestMaskCONIT:
         assert "*" not in result
         assert result != "900123456-8"
 
-
-# ---------------------------------------------------------------------------
-# Pattern selection
-# ---------------------------------------------------------------------------
-
 class TestPatternSelection:
     """mask_pii / contains_pii / mask_pii_fpe with patterns= argument."""
 
@@ -1120,12 +1002,12 @@ class TestPatternSelection:
         df = pl.DataFrame({"col": ["email: john@example.com and SSN: 123-45-6789"]})
         result = df.with_columns(maskops.mask_pii("col", patterns=["email"]))["col"][0]
         assert "john@example.com" not in result
-        assert "123-45-6789" in result  # SSN untouched
+        assert "123-45-6789" in result  
 
     def test_mask_only_ssn(self):
         df = pl.DataFrame({"col": ["email: john@example.com and SSN: 123-45-6789"]})
         result = df.with_columns(maskops.mask_pii("col", patterns=["ssn"]))["col"][0]
-        assert "john@example.com" in result  # email untouched
+        assert "john@example.com" in result  
         assert "123-45-6789" not in result
 
     def test_mask_multiple_patterns(self):
@@ -1147,7 +1029,7 @@ class TestPatternSelection:
         original = "john@example.com"
         df = pl.DataFrame({"col": [original]})
         result = df.with_columns(maskops.mask_pii("col", patterns=["nonexistent_pattern"]))["col"][0]
-        assert result == original  # nothing masked
+        assert result == original  
 
     def test_contains_pii_pattern_filter(self):
         df = pl.DataFrame({"col": ["john@example.com", "123-45-6789", "nothing"]})
@@ -1160,7 +1042,7 @@ class TestPatternSelection:
         df = pl.DataFrame({"col": ["phone +56912345678 card 4111111111111111"]})
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK, patterns=["credit_card"]))["col"][0]
         assert "4111111111111111" not in result
-        assert "+56912345678" in result  # phone untouched
+        assert "+56912345678" in result  
 
     def test_pattern_npi(self):
         df = pl.DataFrame({"col": ["NPI: 1234567893 email: x@x.com"]})
@@ -1175,13 +1057,8 @@ class TestPatternSelection:
         assert with_none == with_explicit
         assert "john@example.com" not in with_none
 
-
-# ---------------------------------------------------------------------------
-# Healthcare: NPI
-# ---------------------------------------------------------------------------
-
 class TestMaskNPI:
-    # 1234567893 — valid NPI (Luhn check with HIPAA prefix 24)
+    
     def test_valid_npi_masked(self):
         df = pl.DataFrame({"col": ["NPI: 1234567893"]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
@@ -1189,7 +1066,7 @@ class TestMaskNPI:
         assert "**********" in result
 
     def test_invalid_npi_untouched(self):
-        original = "1234567890"  # wrong check digit (would need 3 to be valid)
+        original = "1234567890"  
         df = pl.DataFrame({"col": [original]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result == original
@@ -1205,13 +1082,8 @@ class TestMaskNPI:
         assert "*" not in result
         assert result != "1234567893"
 
-
-# ---------------------------------------------------------------------------
-# Healthcare: MBI
-# ---------------------------------------------------------------------------
-
 class TestMaskMBI:
-    # 1EG4TE5MK72 — well-known CMS example MBI
+    
     def test_valid_mbi_masked(self):
         df = pl.DataFrame({"col": ["MBI: 1EG4TE5MK72"]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
@@ -1228,13 +1100,8 @@ class TestMaskMBI:
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert result == "***********"
 
-
-# ---------------------------------------------------------------------------
-# Healthcare: NHS
-# ---------------------------------------------------------------------------
-
 class TestMaskNHS:
-    # 9434765919 — valid NHS number
+    
     def test_valid_nhs_masked(self):
         df = pl.DataFrame({"col": ["NHS: 943 476 5919"]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
@@ -1248,8 +1115,8 @@ class TestMaskNHS:
         assert "9434765919" not in result
 
     def test_invalid_nhs_untouched(self):
-        # Use spaced format so NPI regex (requires 10 consecutive digits) won't fire.
-        # 999 999 9990: check digit should be 9, not 0 → invalid NHS.
+        
+        
         original = "999 999 9990"
         df = pl.DataFrame({"col": [original]})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
@@ -1265,11 +1132,6 @@ class TestMaskNHS:
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert "*" not in result
         assert result != "9434765919"
-
-
-# ---------------------------------------------------------------------------
-# LatAm: Peruvian DNI
-# ---------------------------------------------------------------------------
 
 class TestMaskPeDNI:
     def test_pe_dni_masked(self):
@@ -1289,11 +1151,6 @@ class TestMaskPeDNI:
         assert "*" not in result
         assert result != "12345678"
 
-
-# ---------------------------------------------------------------------------
-# Consistent masking (v0.8)
-# ---------------------------------------------------------------------------
-
 class TestMaskPiiConsistent:
     """Deterministic hash-based pseudonymization via mode='consistent'."""
 
@@ -1305,7 +1162,7 @@ class TestMaskPiiConsistent:
             maskops.mask_pii("col", mode="consistent", salt=self.SALT, **kwargs)
         )["col"][0]
 
-    # --- Determinism ---
+    
 
     def test_same_input_same_output(self):
         out1 = self._mask("123-45-6789")
@@ -1323,7 +1180,7 @@ class TestMaskPiiConsistent:
         out2 = df.with_columns(maskops.mask_pii("col", mode="consistent", salt="salt-b"))["col"][0]
         assert out1 != out2
 
-    # --- Output is not the original ---
+    
 
     def test_ssn_not_original(self):
         out = self._mask("123-45-6789")
@@ -1336,7 +1193,7 @@ class TestMaskPiiConsistent:
         assert len(out) == 16
         assert out.isdigit()
 
-    # --- Non-digit PII still asterisked ---
+    
 
     def test_email_asterisked(self):
         out = self._mask("send to user@example.com please")
@@ -1348,7 +1205,7 @@ class TestMaskPiiConsistent:
         assert "370400440532013000" not in out
         assert "*" in out
 
-    # --- Format of digit PII output ---
+    
 
     def test_ssn_format_preserved(self):
         out = self._mask("123-45-6789")
@@ -1359,7 +1216,7 @@ class TestMaskPiiConsistent:
         assert len(out) == 16
         assert out.isdigit()
 
-    # --- patterns= filter respected ---
+    
 
     def test_patterns_filter_only_masks_selected(self):
         text = "SSN 123-45-6789 card 4111111111111111"
@@ -1370,7 +1227,7 @@ class TestMaskPiiConsistent:
         assert "123-45-6789" not in out
         assert "4111111111111111" in out
 
-    # --- Null passthrough ---
+    
 
     def test_null_passthrough(self):
         df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
@@ -1379,16 +1236,11 @@ class TestMaskPiiConsistent:
         )["col"][0]
         assert result is None
 
-
-# ---------------------------------------------------------------------------
-# v0.9 — EU depth + LatAm + APAC
-# ---------------------------------------------------------------------------
-
 class TestMaskNIR:
     """French NIR / INSEE social security number."""
 
-    VALID = "185037505600181"    # sex=1, 1985-03, dept=75/Paris, commune=056, order=001, key=81
-    INVALID = "185037505600100"  # wrong key
+    VALID = "185037505600181"    
+    INVALID = "185037505600100"  
 
     def _mask(self, value):
         df = pl.DataFrame({"col": [value]})
@@ -1435,12 +1287,11 @@ class TestMaskNIR:
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result is None
 
-
 class TestMaskCodiceFiscale:
     """Italian Codice Fiscale."""
 
-    VALID = "RSSMRA80A01H501U"    # Mario Rossi, Rome, Jan 1 1980
-    INVALID = "RSSMRA80A01H501X"  # wrong check char
+    VALID = "RSSMRA80A01H501U"    
+    INVALID = "RSSMRA80A01H501X"  
 
     def _mask(self, value):
         df = pl.DataFrame({"col": [value]})
@@ -1480,12 +1331,11 @@ class TestMaskCodiceFiscale:
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result is None
 
-
 class TestMaskUruguayCedula:
     """Uruguayan cédula de identidad."""
 
-    VALID = "1.111.111-1"    # body=1111111, check=1
-    INVALID = "1.111.111-9"  # wrong check
+    VALID = "1.111.111-1"    
+    INVALID = "1.111.111-9"  
 
     def _mask(self, value, **kwargs):
         df = pl.DataFrame({"col": [value]})
@@ -1546,13 +1396,12 @@ class TestMaskUruguayCedula:
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result is None
 
-
 class TestMaskCanadaSIN:
     """Canadian Social Insurance Number."""
 
     VALID_FORMATTED = "130-692-544"
     VALID_COMPACT   = "130692544"
-    INVALID         = "130-692-543"  # fails Luhn
+    INVALID         = "130-692-543"  
 
     def _mask(self, value, **kwargs):
         df = pl.DataFrame({"col": [value]})
@@ -1619,13 +1468,12 @@ class TestMaskCanadaSIN:
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result is None
 
-
 class TestMaskAustraliaTFN:
     """Australian Tax File Number."""
 
     VALID_SPACED  = "123 456 782"
     VALID_COMPACT = "123456782"
-    INVALID       = "123456789"   # fails mod-11 check
+    INVALID       = "123456789"   
 
     def _mask(self, value, **kwargs):
         df = pl.DataFrame({"col": [value]})
@@ -1691,12 +1539,11 @@ class TestMaskAustraliaTFN:
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result is None
 
-
 class TestMaskPESEL:
     """Polish PESEL (11-digit national ID)."""
 
-    VALID   = "91010112346"   # check digit = 6
-    INVALID = "91010112340"   # wrong check digit
+    VALID   = "91010112346"   
+    INVALID = "91010112340"   
 
     def _mask(self, value, **kwargs):
         df = pl.DataFrame({"col": [value]})
@@ -1750,12 +1597,11 @@ class TestMaskPESEL:
         df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
         assert df.with_columns(maskops.mask_pii("col"))["col"][0] is None
 
-
 class TestMaskBSN:
     """Dutch BSN (Burgerservicenummer, 9 digits, 11-proof)."""
 
-    VALID   = "123456782"   # sum=154=11*14 (elfproef)
-    INVALID = "123456789"   # sum=147, not divisible by 11
+    VALID   = "123456782"   
+    INVALID = "123456789"   
 
     def _mask(self, value, **kwargs):
         df = pl.DataFrame({"col": [value]})
@@ -1809,13 +1655,12 @@ class TestMaskBSN:
         df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
         assert df.with_columns(maskops.mask_pii("col"))["col"][0] is None
 
-
 class TestMaskPersonnummer:
     """Swedish personnummer (YYMMDD-NNNN format, Luhn on 10 digits)."""
 
-    VALID_SHORT = "811228-9874"    # digits 8112289874, Luhn sum=50
-    VALID_LONG  = "19811228-9874"  # long form, same 10-digit Luhn
-    INVALID     = "811228-9873"    # Luhn sum=49
+    VALID_SHORT = "811228-9874"    
+    VALID_LONG  = "19811228-9874"  
+    INVALID     = "811228-9873"    
 
     def _mask(self, value, **kwargs):
         df = pl.DataFrame({"col": [value]})

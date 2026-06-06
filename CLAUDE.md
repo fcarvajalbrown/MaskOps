@@ -49,7 +49,7 @@ Update `docs/CHANGELOG.md` with every commit that adds, removes, or changes publ
 
 ## Code style
 
-- Comments: 1-line max, no block comments. Informal tone is fine if it fits on one line.
+- **NO comments of any kind** — no `//`, `//!`, `///`, `/* */` in Rust; no `#` comments or docstrings in Python. Zero. Names and types are the only documentation.
 - Bug fixes: root cause only — never patch test parameters or add workarounds to make tests pass.
 - Never write code just to make it compile; code must reflect real behavior.
 

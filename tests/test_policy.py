@@ -5,7 +5,6 @@ import polars as pl
 import maskops
 from maskops._policy import Policy
 
-
 class TestPolicyApply:
     def test_asterisk_mode_masks_email(self):
         policy = Policy({"col": {"mode": "asterisk", "patterns": ["email"]}})
@@ -60,7 +59,6 @@ class TestPolicyApply:
         df = pl.DataFrame({"col": ["user@example.com"]})
         result = policy.apply(df)
         assert result["col"][0] == "user@example.com"
-
 
 class TestLoadPolicyYAML:
     def test_load_yaml_asterisk(self, tmp_path):
@@ -133,7 +131,6 @@ class TestLoadPolicyYAML:
     def test_load_yaml_file_not_found(self, tmp_path):
         with pytest.raises(FileNotFoundError):
             maskops.load_policy(tmp_path / "missing.yaml")
-
 
 class TestLoadPolicyTOML:
     def test_load_toml_dict_format_asterisk(self, tmp_path):

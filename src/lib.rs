@@ -1,8 +1,4 @@
-//! maskops — High-speed PII masking as a native Polars plugin.
-//!
-//! Exposes two Polars expressions:
-//! - `mask_pii(col)`: replaces all detected PII with `*` characters
-//! - `contains_pii(col)`: returns a boolean column, true if PII was found
+
 
 mod patterns;
 
@@ -17,12 +13,6 @@ use patterns::{Ff3Cipher, KEY_LEN, TWEAK_LEN};
 use patterns::ConsistentHasher;
 pub use patterns::fpe::Ff3Cipher as MaskopsFpe;
 
-// ---------------------------------------------------------------------------
-// Expression: mask_pii
-// ---------------------------------------------------------------------------
-
-/// Polars expression: replaces PII in a Utf8 column with masked equivalents.
-/// inputs[0]: string column; inputs[1] (optional): comma-separated pattern names.
 #[polars_expr(output_type=String)]
 fn mask_pii(inputs: &[Series]) -> PolarsResult<Series> {
     let ca = inputs[0].str()?;
@@ -36,12 +26,6 @@ fn mask_pii(inputs: &[Series]) -> PolarsResult<Series> {
     Ok(out.into_series())
 }
 
-// ---------------------------------------------------------------------------
-// Expression: contains_pii
-// ---------------------------------------------------------------------------
-
-/// Polars expression: returns a boolean Series — true where PII was detected.
-/// inputs[0]: string column; inputs[1] (optional): comma-separated pattern names.
 #[polars_expr(output_type=Boolean)]
 fn contains_pii(inputs: &[Series]) -> PolarsResult<Series> {
     let ca = inputs[0].str()?;
@@ -55,15 +39,6 @@ fn contains_pii(inputs: &[Series]) -> PolarsResult<Series> {
     Ok(out.into_series())
 }
 
-// ---------------------------------------------------------------------------
-// Expression: mask_pii_fpe
-// ---------------------------------------------------------------------------
-/// Polars expression: masks digit PII (cards, phones, RUT, CPF) with FF3-1 FPE.
-/// Non-digit PII (IBAN, VAT, email, IP, EU IDs) is still asterisked.
-///
-/// inputs[0]: Utf8 column to mask
-/// inputs[1]: Binary scalar — 32-byte AES-256 key
-/// inputs[2]: Binary scalar — 7-byte tweak
 #[polars_expr(output_type=String)]
 fn mask_pii_fpe(inputs: &[Series]) -> PolarsResult<Series> {
     let ca = inputs[0].str()?;
@@ -103,15 +78,6 @@ fn mask_pii_fpe(inputs: &[Series]) -> PolarsResult<Series> {
     Ok(out.into_series())
 }
 
-// ---------------------------------------------------------------------------
-// Expression: mask_pii_consistent
-// ---------------------------------------------------------------------------
-/// Polars expression: masks digit PII with HMAC-SHA256 consistent pseudonymization.
-/// Non-digit PII (IBAN, VAT, email, IP, EU IDs) is still asterisked.
-///
-/// inputs[0]: Utf8 column to mask
-/// inputs[1]: String scalar — salt for HMAC-SHA256
-/// inputs[2] (optional): comma-separated pattern names
 #[polars_expr(output_type=String)]
 fn mask_pii_consistent(inputs: &[Series]) -> PolarsResult<Series> {
     let ca = inputs[0].str()?;
@@ -128,10 +94,6 @@ fn mask_pii_consistent(inputs: &[Series]) -> PolarsResult<Series> {
     };
     Ok(out.into_series())
 }
-
-// ---------------------------------------------------------------------------
-// PyO3 module — entry point for maturin
-// ---------------------------------------------------------------------------
 
 #[pymodule]
 fn _maskops(m: &Bound<'_, PyModule>) -> PyResult<()> {

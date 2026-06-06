@@ -23,15 +23,10 @@ import polars as pl
 from pathlib import Path
 import random
 
-# ---------------------------------------------------------------------------
-# Locales
-# ---------------------------------------------------------------------------
-
 EU_LOCALES = ["de_DE", "fr_FR", "es_ES", "it_IT", "nl_NL", "pl_PL", "pt_PT", "sv_SE"]
 
-# Faker locale mapped to each country code in country_codes.rs
 PHONE_LOCALES = {
-    "+354": "is_IS",  # Iceland — fallback to en_US if unavailable
+    "+354": "is_IS",  
     "+353": "en_IE",
     "+352": "fr_LU",
     "+351": "pt_PT",
@@ -67,10 +62,6 @@ PHONE_LOCALES = {
 fakes_eu = {locale: Faker(locale) for locale in EU_LOCALES}
 Faker.seed(42)
 random.seed(42)
-
-# ---------------------------------------------------------------------------
-# EU PII fixture (IBAN + VAT + email embedded in text)
-# ---------------------------------------------------------------------------
 
 def generate_eu_row(fake: Faker) -> dict:
     """Generate one realistic row mixing EU PII into natural-language strings."""
@@ -108,19 +99,15 @@ for locale, fake in fakes_eu.items():
 
 df_eu = pl.DataFrame(eu_rows)
 
-# ---------------------------------------------------------------------------
-# Phone fixture — one row per country code, E.164 format
-# ---------------------------------------------------------------------------
-
 phone_rows = []
 for prefix, locale in PHONE_LOCALES.items():
     try:
         fake = Faker(locale)
     except Exception:
         fake = Faker("en_US")
-    for _ in range(50):  # 50 rows per country
+    for _ in range(50):  
         raw = fake.phone_number()
-        # Normalize to E.164-ish by prepending prefix if not present
+        
         normalized = raw if raw.startswith("+") else f"{prefix}{raw.lstrip('0')}"
         phone_rows.append({
             "prefix": prefix,
@@ -132,10 +119,6 @@ for prefix, locale in PHONE_LOCALES.items():
 
 df_phone = pl.DataFrame(phone_rows)
 
-# ---------------------------------------------------------------------------
-# LatAm ID fixture — RUT (Chile), CPF (Brazil), CURP (Mexico)
-# ---------------------------------------------------------------------------
-
 def generate_rut() -> str:
     """Generate a valid Chilean RUT with correct Módulo 11 check digit."""
     body = random.randint(1_000_000, 25_000_000)
@@ -146,11 +129,10 @@ def generate_rut() -> str:
     dv = "0" if remainder == 11 else "K" if remainder == 10 else str(remainder)
     return f"{body:,}".replace(",", ".") + f"-{dv}"
 
-
 def generate_cpf() -> str:
     """Generate a valid Brazilian CPF with correct Módulo 11 check digits."""
     d = [random.randint(0, 9) for _ in range(9)]
-    # Reject all-same
+    
     while len(set(d)) == 1:
         d = [random.randint(0, 9) for _ in range(9)]
 
@@ -164,8 +146,6 @@ def generate_cpf() -> str:
 
     return f"{''.join(map(str, d[:3]))}.{''.join(map(str, d[3:6]))}.{''.join(map(str, d[6:9]))}-{''.join(map(str, d[9:]))}"
 
-
-# CURP uses a fixed valid sample pool — generative synthesis is out of scope
 CURP_SAMPLES = [
     "BADD110313HCMLNS09",
     "GODE561231MDFRRL06",
@@ -202,10 +182,6 @@ for locale, fake in LATAM_FAKES.items():
 
 df_latam = pl.DataFrame(latam_rows)
 
-# ---------------------------------------------------------------------------
-# Credit card fixture — Visa, Mastercard, Amex, Discover, Maestro
-# ---------------------------------------------------------------------------
-
 def generate_luhn(partial: list) -> str:
     """Complete a partial card number with a valid Luhn check digit."""
     total = 0
@@ -215,36 +191,30 @@ def generate_luhn(partial: list) -> str:
     check = (10 - (total % 10)) % 10
     return "".join(map(str, partial)) + str(check)
 
-
 def generate_visa() -> str:
     """Generate a valid 16-digit Visa number."""
     partial = [4] + [random.randint(0, 9) for _ in range(14)]
     return generate_luhn(partial)
-
 
 def generate_mastercard() -> str:
     """Generate a valid 16-digit Mastercard number (51-55 range)."""
     partial = [5, random.randint(1, 5)] + [random.randint(0, 9) for _ in range(13)]
     return generate_luhn(partial)
 
-
 def generate_amex() -> str:
     """Generate a valid 15-digit Amex number (34 or 37 prefix)."""
     partial = [3, random.choice([4, 7])] + [random.randint(0, 9) for _ in range(12)]
     return generate_luhn(partial)
-
 
 def generate_discover() -> str:
     """Generate a valid 16-digit Discover number (6011 prefix)."""
     partial = [6, 0, 1, 1] + [random.randint(0, 9) for _ in range(11)]
     return generate_luhn(partial)
 
-
 def generate_maestro() -> str:
     """Generate a valid 16-digit Maestro number (6304 prefix)."""
     partial = [6, 3, 0, 4] + [random.randint(0, 9) for _ in range(11)]
     return generate_luhn(partial)
-
 
 CARD_GENERATORS = {
     "visa":       generate_visa,
@@ -273,10 +243,6 @@ for scheme, gen in CARD_GENERATORS.items():
 
 df_cards = pl.DataFrame(card_rows)
 
-# ---------------------------------------------------------------------------
-# European ID fixture — DNI/NIE (Spain), NIN (UK), Personalausweis (Germany)
-# ---------------------------------------------------------------------------
-
 DNI_LETTERS = "TRWAGMYFPDXBNJZSQVHLCKE"
 
 def generate_dni() -> str:
@@ -284,7 +250,6 @@ def generate_dni() -> str:
     number = random.randint(10_000_000, 99_999_999)
     letter = DNI_LETTERS[number % 23]
     return f"{number}{letter}"
-
 
 def generate_nie() -> str:
     """Generate a valid Spanish NIE with correct modulo 23 check letter."""
@@ -295,14 +260,13 @@ def generate_nie() -> str:
     letter = DNI_LETTERS[combined % 23]
     return f"{prefix}{number}{letter}"
 
-
 def generate_nin() -> str:
     """Generate a valid UK NIN with correct prefix letter-pair rules."""
-    # First letter: not D, F, I, Q, U, V
+    
     first_pool = [c for c in "ABCEGHJKLMNOPRSTWXYZ" if c not in "DFIQUV"]
-    # Second letter: not D, F, I, O, Q, U, V
+    
     second_pool = [c for c in "ABCEGHJKLMNOPRSTWXYZ" if c not in "DFIOQUV"]
-    # All HMRC-excluded prefix pairs
+    
     invalid_pairs = {"BG", "GB", "KN", "NK", "NT", "TN", "ZZ"}
     first = random.choice(first_pool)
     second = random.choice(second_pool)
@@ -313,22 +277,19 @@ def generate_nin() -> str:
     suffix = random.choice("ABCD")
     return f"{first}{second} {digits[:2]} {digits[2:4]} {digits[4:6]} {suffix}"
 
-
 def _pa_char_value(c: str) -> int:
     """Personalausweis character value: 0-9 → 0-9, A-Z → 10-35."""
     return int(c) if c.isdigit() else ord(c) - ord("A") + 10
 
-
 def generate_personalausweis() -> str:
     """Generate a German Personalausweis number with a valid weighted-sum check digit."""
-    # Format: 1 letter + 8 alphanumeric + 1 check digit
+    
     first = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
     middle = "".join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=8))
     body = first + middle
     weights = [7, 3, 1, 7, 3, 1, 7, 3, 1]
     check = sum(_pa_char_value(c) * w for c, w in zip(body, weights)) % 10
     return f"{body}{check}"
-
 
 EU_ID_FAKES = {
     "es_ES": Faker("es_ES"),
@@ -363,15 +324,11 @@ for locale, generators in EU_ID_GENERATORS.items():
 
 df_eu_ids = pl.DataFrame(eu_id_rows)
 
-# ---------------------------------------------------------------------------
-# Write fixtures
-# ---------------------------------------------------------------------------
-
 out = Path(__file__).parent / "fixtures"
 out.mkdir(exist_ok=True)
 
 df_eu.write_csv(out / "eu_pii_sample.csv")
-# polars write_csv doesn't take encoding — the file is already UTF-8, just the reader was wrong
+
 df_phone.write_csv(out / "phone_sample.csv")
 df_latam.write_csv(out / "latam_pii_sample.csv")
 df_cards.write_csv(out / "card_pii_sample.csv")
