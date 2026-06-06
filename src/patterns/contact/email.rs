@@ -20,3 +20,8 @@ pub fn mask_email(value: &str) -> String {
 pub fn contains_email(value: &str) -> bool {
     EMAIL_RE.is_match(value)
 }
+
+/// Returns the first email address found, or None.
+pub fn extract_email(value: &str) -> Option<String> {
+    EMAIL_RE.find(value).map(|m| m.as_str().to_string())
+}

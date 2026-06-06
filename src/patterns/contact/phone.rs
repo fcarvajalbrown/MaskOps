@@ -29,6 +29,10 @@ pub fn contains_phone(value: &str) -> bool {
     PHONE_RE.is_match(value)
 }
 
+pub fn extract_phone(value: &str) -> Option<String> {
+    PHONE_RE.find(value).map(|m| m.as_str().to_string())
+}
+
 pub fn mask_phone_consistent(value: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
     PHONE_RE
         .replace_all(value, |caps: &regex::Captures| {

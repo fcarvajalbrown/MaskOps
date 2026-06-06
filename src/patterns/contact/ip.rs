@@ -20,6 +20,13 @@ pub fn contains_ip(s: &str) -> bool {
         || IPV6_RE.is_match(s)
 }
 
+pub fn extract_ip(s: &str) -> Option<String> {
+    IPV4_RE.captures_iter(s)
+        .find(|c| valid_ipv4(&c[1], &c[2], &c[3], &c[4]))
+        .map(|c| c[0].to_string())
+        .or_else(|| IPV6_RE.find(s).map(|m| m.as_str().to_string()))
+}
+
 pub fn mask_ip(s: &str) -> String {
     let s = IPV4_RE.replace_all(s, |caps: &regex::Captures| {
         if valid_ipv4(&caps[1], &caps[2], &caps[3], &caps[4]) {
