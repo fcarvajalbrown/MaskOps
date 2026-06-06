@@ -20,6 +20,12 @@ fn valid_ssn(area: &str, group: &str, serial: &str) -> bool {
     !KNOWN_INVALID.contains(&compact.as_str())
 }
 
+pub fn extract_ssn(s: &str) -> Option<String> {
+    SSN_RE.captures_iter(s)
+        .find(|c| valid_ssn(&c[1], &c[2], &c[3]))
+        .map(|c| c[0].to_string())
+}
+
 pub fn contains_ssn(s: &str) -> bool {
     SSN_RE.captures_iter(s).any(|caps| valid_ssn(&caps[1], &caps[2], &caps[3]))
 }
