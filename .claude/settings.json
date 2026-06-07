@@ -52,11 +52,6 @@
             "type": "command",
             "command": "echo '{\"systemMessage\":\"Reminder: have you run /kimi-security, /kimi-optimize, and /kimi-review for this change?\"}'",
             "if": "Bash(git push*)"
-          },
-          {
-            "type": "command",
-            "command": "echo '{\"systemMessage\":\"Reminder: have you run /kimi-security, /kimi-optimize, and /kimi-review for this change?\"}'",
-            "if": "Bash(git commit*)"
           }
         ]
       }
