@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag or ref to build and publish (e.g. v0.3.0)"
+        required: true
 
 jobs:
   linux:
@@ -14,6 +19,8 @@ jobs:
         python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
@@ -36,6 +43,8 @@ jobs:
         python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
@@ -56,6 +65,8 @@ jobs:
         python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
@@ -72,6 +83,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - uses: PyO3/maturin-action@v1
         with:
           command: sdist
@@ -84,12 +97,15 @@ jobs:
   publish:
     needs: [linux, macos, windows, sdist]
     runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
           path: dist
-      - name: Publish to PyPI
-        run: |
-          pip install twine
-          twine upload dist/* --username __token__ --password ${{ secrets.PYPI_API_TOKEN }} --skip-existing
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
