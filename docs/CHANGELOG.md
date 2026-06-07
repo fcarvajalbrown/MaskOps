@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.14.1](https://github.com/fcarvajalbrown/MaskOps/compare/v0.14.0...v0.14.1) (2026-06-07)
+
+
+### Documentation
+
+* **claude:** branch only for roadmap releases ([43ff36b](https://github.com/fcarvajalbrown/MaskOps/commit/43ff36b96a6bc1686d4409d336e27316b9ff120e))
+
 ## [0.14.0](https://github.com/fcarvajalbrown/MaskOps/compare/v0.13.0...v0.14.0) (2026-06-06)
 
 
