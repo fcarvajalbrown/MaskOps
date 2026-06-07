@@ -3,6 +3,8 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.0] (unreleased)
+
 ## [0.14.1](https://github.com/fcarvajalbrown/MaskOps/compare/v0.14.0...v0.14.1) (2026-06-07)
 
 
