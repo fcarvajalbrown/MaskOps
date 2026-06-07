@@ -30,7 +30,7 @@ Goal: configurable patterns, structured output, and audit land individually then
 - [x] **v1.1** — Policy files: YAML/TOML config for per-column masking rules (pairs with v1.0 CLI)
 - [x] **v1.2** — EU depth: Polish PESEL, Dutch BSN, Swedish personnummer
 - [x] **v1.3** — `extract_pii` expression: struct column with one field per PII family
-- [ ] **v1.4** — Multi-column referential integrity: consistent masking across joined tables
+- [x] **v1.4** — Multi-column referential integrity: consistent masking across joined tables
 - [ ] **v1.5** — APAC: Japanese My Number, South Korean RRN
 - [ ] **v1.6** — `mask_pii_audit` expression: masked value + per-family match counts in one pass
 - [ ] **v1.7** — MEA: South African ID, Israeli ID number

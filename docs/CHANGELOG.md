@@ -5,6 +5,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.4.0] (unreleased)
 
+### Features
+
+* **consistent:** cross-column referential integrity — same value + same salt produces identical masked output across any number of columns
+
 ## [0.14.1](https://github.com/fcarvajalbrown/MaskOps/compare/v0.14.0...v0.14.1) (2026-06-07)
 
 

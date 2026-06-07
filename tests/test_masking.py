@@ -1169,6 +1169,22 @@ class TestMaskPiiConsistent:
         out2 = self._mask("123-45-6789")
         assert out1 == out2
 
+    def test_cross_column_same_value_same_output(self):
+        df = pl.DataFrame({"a": ["123-45-6789"], "b": ["123-45-6789"]})
+        result = df.with_columns(
+            maskops.mask_pii("a", mode="consistent", salt=self.SALT),
+            maskops.mask_pii("b", mode="consistent", salt=self.SALT),
+        )
+        assert result["a"][0] == result["b"][0]
+
+    def test_cross_column_different_values_different_output(self):
+        df = pl.DataFrame({"a": ["123-45-6789"], "b": ["987-65-4321"]})
+        result = df.with_columns(
+            maskops.mask_pii("a", mode="consistent", salt=self.SALT),
+            maskops.mask_pii("b", mode="consistent", salt=self.SALT),
+        )
+        assert result["a"][0] != result["b"][0]
+
     def test_different_input_different_output(self):
         out1 = self._mask("123-45-6789")
         out2 = self._mask("987-65-4321")
