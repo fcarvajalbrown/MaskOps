@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **One commit per logical change** — no layer-split commits.
 
-**Every task gets its own branch** — never implement features or fixes directly on `main`. Before starting any implementation task:
+**Branch only for roadmap releases** — create a branch when the work ships a feature or fix that is listed on the roadmap. Tooling, config, and housekeeping commits go directly to `main`. For roadmap work:
 1. Create a branch: `git checkout -b <type>/<short-description>` (e.g. `feat/extract-pii`, `fix/ssn-validation`)
 2. Do the work and commit(s) on that branch
 3. Open a PR with a STAR-format description (see below)
@@ -140,3 +140,15 @@ No `Co-Authored-By` trailers. No "Generated with Claude Code" or any AI attribut
 ## Publishing
 
 PyPI publish is triggered by pushing a version tag (`v*`). The workflow is in `.github/workflows/publish.yml`.
+
+## Release marketing reminders
+
+**Hacker News** — script at `tools/hn_post.py`, run it here in Claude Code (not via CI). Remind the user to post at these moments only — not every release:
+- First public Show HN (not done yet)
+- `extract_pii` / performance sweep results (strong benchmark hook)
+- v2.0.0 enterprise milestone
+- Any time a benchmark or Ask HN angle is relevant
+
+Rules baked into the script: blocks duplicate URLs, enforces 14-day gap, warns on bad timing. Run `--rules` to print full guidelines before posting.
+
+**LinkedIn** — at v2.0.0, remind the user to publish a full LinkedIn article (not just a post): SEO keywords, publish timing, hashtags.
