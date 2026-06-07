@@ -97,9 +97,6 @@ jobs:
   publish:
     needs: [linux, macos, windows, sdist]
     runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
