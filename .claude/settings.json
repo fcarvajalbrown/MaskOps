@@ -25,6 +25,31 @@
           },
           {
             "type": "command",
+            "command": "echo '{\"continue\":false,\"stopReason\":\"Annotated/signed tag — production release action if it is a v* tag. Releases must be deliberate roadmap events; confirm explicitly first.\"}'",
+            "if": "Bash(git tag -a*)"
+          },
+          {
+            "type": "command",
+            "command": "echo '{\"continue\":false,\"stopReason\":\"Annotated/signed tag — production release action if it is a v* tag. Releases must be deliberate roadmap events; confirm explicitly first.\"}'",
+            "if": "Bash(git tag -s*)"
+          },
+          {
+            "type": "command",
+            "command": "echo '{\"continue\":false,\"stopReason\":\"Pushing tags triggers the PyPI publish workflow — production action. Confirm the exact tag and that a roadmap stage actually shipped.\"}'",
+            "if": "Bash(git push*--tags*)"
+          },
+          {
+            "type": "command",
+            "command": "echo '{\"continue\":false,\"stopReason\":\"Pushing a v* tag triggers the PyPI publish workflow — production action. Confirm explicitly first.\"}'",
+            "if": "Bash(git push origin v*)"
+          },
+          {
+            "type": "command",
+            "command": "echo '{\"continue\":false,\"stopReason\":\"Creating a GitHub Release is a production release action. It must be a deliberate roadmap release — confirm explicitly first.\"}'",
+            "if": "Bash(gh release create*)"
+          },
+          {
+            "type": "command",
             "command": "echo '{\"systemMessage\":\"Reminder: have you run /kimi-security, /kimi-optimize, and /kimi-review for this change?\"}'",
             "if": "Bash(git push*)"
           },

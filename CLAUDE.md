@@ -16,7 +16,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **release-please owns version numbers** — do not hand-edit the version in `Cargo.toml`, `pyproject.toml`, or `.release-please-manifest.json` in ordinary feature/fix work. release-please derives the next version from conventional-commit messages and bumps those files itself. Hand-bumping versions in a commit collides with release-please's own bump on `main` and causes merge conflicts across all version files (manifest, Cargo.toml, pyproject.toml, CHANGELOG). Only edit versions by hand when the user explicitly asks for a specific version (e.g. "release as 1.5.1"), and bump all of those files together so they stay in sync.
 
-**A release is a deliberate roadmap event — never a side effect of a simple commit.** The `release-please.yml` workflow only *opens* a release PR; it must never auto-merge, auto-tag, or auto-create a GitHub Release. Cut a new release **only** when all of these are true: a roadmap stage was actually worked on, the roadmap was updated to reflect it, and that work shipped as a PR. In that case, merging the release PR (which creates the tag + GitHub Release) is the deliberate act that publishes the version, and the post-release roadmap follow-up applies. For everything else — `chore`, `docs`, `ci`, `style`, config, tooling, housekeeping — **do nothing release-related**: no release PR merge, no tag, no GitHub Release. A spurious release breaks the roadmap follow-up sequence, so when in doubt, do not release.
+**A release is a deliberate roadmap event — never a side effect of a commit.** There is no auto-release. `release-please.yml` runs only on manual `workflow_dispatch` (never on push), and `pages.yml`/`publish.yml` are scoped so ordinary commits publish nothing. Cut a new release **only** when a roadmap milestone has actually shipped (worked on + `ROADMAP.md` updated + merged via PR). Releasing then means: bump the version files, then create and push the `vX.Y.Z` tag (a production action — needs explicit user approval; the hooks in `.claude/settings.json` block tag creation, tag pushes, and `gh release create` otherwise), which triggers `publish.yml`. For everything else — `chore`, `docs`, `ci`, `style`, config, tooling, housekeeping — **do nothing release-related**: no tag, no GitHub Release, no version bump. When in doubt, do not release.
+
+**`ROADMAP.md` is the single source of truth for the version — read it before any version or release action** (not the design specs under `docs/superpowers/`). Its "Current version" line and checked milestones define what the version *is* and what the next one will be; the repo's version strings must never run ahead of the current completed milestone. The version lives in **five** files that must always match and bump together: `Cargo.toml`, `pyproject.toml`, `.release-please-manifest.json`, the `maskops` entry in `Cargo.lock`, and the `__version__` string in `src/lib.rs` — this last one release-please cannot update (the no-comments rule blocks its update marker), so it must be bumped by hand. If they disagree, the lowest value that matches a shipped roadmap milestone is the real one.
+
+**Finishing a task includes updating the changelog and roadmap — automatically, without being asked.** When work changes user-visible behavior or completes a roadmap milestone, update `docs/CHANGELOG.md` and check off the item in `ROADMAP.md` as the last step of the task, in the same change. Conversely, pure `chore`/`docs`/`ci`/tooling/config work touches neither. Never leave the changelog or roadmap stale waiting to be told.
 
 **One commit per logical change** — no layer-split commits.
 
@@ -133,6 +137,7 @@ Hard rules — never break these in any code change:
 
 - **Ubuntu + Python 3.12 is excluded** from the test matrix — the compiled extension fails to load (`dlopen` error). Same tests pass on Windows and Ubuntu 3.10/3.11.
 - Coverage uploads from the Ubuntu 3.11 job.
+- GitHub Pages deploys via `.github/workflows/pages.yml` (Pages `build_type: workflow`) only when site files change (`index.html`, `sitemap.xml`, `assets/**`) — not on every push.
 - GitHub Actions node version: Node.js 20 is deprecated as of June 2026; actions need updating to support Node.js 24 before September 16, 2026.
 
 ## Commits
@@ -143,7 +148,7 @@ No `Co-Authored-By` trailers. No "Generated with Claude Code" or any AI attribut
 
 ## Publishing
 
-PyPI publish is triggered by pushing a version tag (`v*`). The workflow is in `.github/workflows/publish.yml`.
+Releases are manual and deliberate — there is no auto-release (see the release rules above). `release-please.yml` runs only on manual `workflow_dispatch`. To publish: with explicit user approval and a shipped roadmap milestone, bump the five version files and push a `vX.Y.Z` tag — `publish.yml` (`.github/workflows/publish.yml`) then builds wheels and uploads to PyPI. Note: PyPI has lagged behind the GitHub tags before (cancelled/failed publish runs), so verify the live PyPI version separately rather than trusting the tag list.
 
 ## Release marketing reminders
 

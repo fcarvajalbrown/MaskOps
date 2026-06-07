@@ -264,6 +264,6 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
 
 #[pymodule]
 fn _maskops(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("__version__", "1.4.0")?;
+    m.add("__version__", "1.5.1")?;
     Ok(())
 }
