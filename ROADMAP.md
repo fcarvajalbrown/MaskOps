@@ -2,7 +2,7 @@
 
 MaskOps follows a three-phase path from its initial public release to a production-grade standard for Polars PII masking.
 
-> **Current version:** v0.3.0 (PyPI) — roadmap milestones v0.2–v0.7 complete in code
+> **Current version:** v1.4.0 (PyPI) — roadmap milestones v0.2–v1.3 complete
 > Coverage and infrastructure releases alternate each minor. Enterprise features land individually in 1.x and unify at 2.0.
 
 ---
@@ -27,11 +27,11 @@ Goal: API stability + complete coverage across all major global ID families.
 
 Goal: configurable patterns, structured output, and audit land individually then unify.
 
-- [ ] **v1.1** — Policy files: YAML/TOML config for per-column masking rules (pairs with v1.0 CLI)
-- [ ] **v1.2** — EU depth: Polish PESEL, Dutch BSN, Swedish personnummer
-- [ ] **v1.3** — `extract_pii` expression: struct column with one field per PII family
-- [ ] **v1.4** — Multi-column referential integrity: consistent masking across joined tables
-- [ ] **v1.5** — APAC: Japanese My Number, South Korean RRN
+- [x] **v1.1** — Policy files: YAML/TOML config for per-column masking rules (pairs with v1.0 CLI)
+- [x] **v1.2** — EU depth: Polish PESEL, Dutch BSN, Swedish personnummer
+- [x] **v1.3** — `extract_pii` expression: struct column with one field per PII family
+- [x] **v1.4** — Multi-column referential integrity: consistent masking across joined tables
+- [x] **v1.5** — APAC: Japanese My Number, South Korean RRN
 - [ ] **v1.6** — `mask_pii_audit` expression: masked value + per-family match counts in one pass
 - [ ] **v1.7** — MEA: South African ID, Israeli ID number
 - [ ] **v1.8** — FPE key management helpers: rotation, tweak derivation, validation

@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.0] (unreleased)
+
+### Features
+
+* **apac:** Japanese My Number (個人番号) — 12-digit check-digit-validated national ID; asterisk, FPE, and consistent modes
+* **apac:** South Korean RRN (주민등록번호) — YYMMDD-GXXXXC format with date + check-digit validation; asterisk, FPE, and consistent modes
+
+## [1.4.0] (unreleased)
+
+### Features
+
+* **consistent:** cross-column referential integrity — same value + same salt produces identical masked output across any number of columns
+
 ## [0.14.1](https://github.com/fcarvajalbrown/MaskOps/compare/v0.14.0...v0.14.1) (2026-06-07)
 
 

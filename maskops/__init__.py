@@ -35,6 +35,10 @@ def mask_pii(
     mode : str
         Masking mode. ``"asterisk"`` (default): irreversible redaction.
         ``"consistent"``: deterministic HMAC-SHA256 pseudonymization — requires ``salt``.
+        The same value always produces the same masked output for a given salt, so applying
+        ``mode="consistent"`` with the same salt across multiple columns preserves referential
+        integrity: a customer ID appearing in ``customer_id``, ``reference_id``, and free-text
+        notes will mask to the same value everywhere.
     salt : str | None
         Required when ``mode="consistent"``. Secret salt for HMAC-SHA256.
         Must be kept separate from the data (same GDPR key-separation rule as FPE).
@@ -44,6 +48,10 @@ def mask_pii(
     >>> df.with_columns(maskops.mask_pii("col"))
     >>> df.with_columns(maskops.mask_pii("col", patterns=["email", "ssn"]))
     >>> df.with_columns(maskops.mask_pii("col", mode="consistent", salt="my-secret"))
+    >>> df.with_columns(
+    ...     maskops.mask_pii("customer_id", mode="consistent", salt="my-secret"),
+    ...     maskops.mask_pii("reference_id", mode="consistent", salt="my-secret"),
+    ... )
     """
     if mode == "consistent":
         if salt is None:
