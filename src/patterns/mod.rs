@@ -52,6 +52,8 @@ use crate::patterns::healthcare::{
 use crate::patterns::apac::{
     contains_sin, mask_sin, extract_sin, mask_sin_fpe, mask_sin_consistent,
     contains_tfn, mask_tfn, extract_tfn, mask_tfn_fpe, mask_tfn_consistent,
+    contains_my_number, mask_my_number, extract_my_number, mask_my_number_fpe, mask_my_number_consistent,
+    contains_rrn, mask_rrn, extract_rrn, mask_rrn_fpe, mask_rrn_consistent,
 };
 pub use crate::patterns::fpe::{Ff3Cipher, KEY_LEN, TWEAK_LEN};
 pub use crate::patterns::consistent::ConsistentHasher;
@@ -101,6 +103,8 @@ pub fn mask_digit(value: &str) -> String {
     let s = mask_tfn(&s);
     let s = mask_pesel(&s);
     let s = mask_bsn(&s);
+    let s = mask_my_number(&s);
+    let s = mask_rrn(&s);
     s
 }
 
@@ -123,6 +127,8 @@ pub fn mask_digit_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     let s = mask_tfn_fpe(&s, cipher);
     let s = mask_pesel_fpe(&s, cipher);
     let s = mask_bsn_fpe(&s, cipher);
+    let s = mask_my_number_fpe(&s, cipher);
+    let s = mask_rrn_fpe(&s, cipher);
     s
 }
 
@@ -155,6 +161,8 @@ pub fn mask_digit_consistent(value: &str, hasher: &ConsistentHasher) -> String {
     let s = mask_tfn_consistent(&s, hasher);
     let s = mask_pesel_consistent(&s, hasher);
     let s = mask_bsn_consistent(&s, hasher);
+    let s = mask_my_number_consistent(&s, hasher);
+    let s = mask_rrn_consistent(&s, hasher);
     s
 }
 
@@ -198,6 +206,8 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
             "pesel"           => mask_pesel(&s),
             "bsn"             => mask_bsn(&s),
             "personnummer"    => mask_personnummer(&s),
+            "my_number"       => mask_my_number(&s),
+            "rrn"             => mask_rrn(&s),
             _                 => s,
         };
     }
@@ -239,6 +249,8 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &Ff3Cipher)
             "pesel"           => mask_pesel_fpe(&s, cipher),
             "bsn"             => mask_bsn_fpe(&s, cipher),
             "personnummer"    => mask_personnummer_fpe(&s, cipher),
+            "my_number"       => mask_my_number_fpe(&s, cipher),
+            "rrn"             => mask_rrn_fpe(&s, cipher),
             _                 => s,
         };
     }
@@ -280,6 +292,8 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
             "pesel"           => mask_pesel_consistent(&s, hasher),
             "bsn"             => mask_bsn_consistent(&s, hasher),
             "personnummer"    => mask_personnummer_consistent(&s, hasher),
+            "my_number"       => mask_my_number_consistent(&s, hasher),
+            "rrn"             => mask_rrn_consistent(&s, hasher),
             _                 => s,
         };
     }
@@ -319,6 +333,8 @@ pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
         "pesel"           => contains_pesel(value),
         "bsn"             => contains_bsn(value),
         "personnummer"    => contains_personnummer(value),
+        "my_number"       => contains_my_number(value),
+        "rrn"             => contains_rrn(value),
         _                 => false,
     })
 }
@@ -355,6 +371,8 @@ pub fn contains_any_pii(value: &str) -> bool {
         || contains_pesel(value)
         || contains_bsn(value)
         || contains_personnummer(value)
+        || contains_my_number(value)
+        || contains_rrn(value)
 }
 
 pub struct ExtractResult {
@@ -389,6 +407,8 @@ pub struct ExtractResult {
     pub nhs: Option<String>,
     pub sin: Option<String>,
     pub tfn: Option<String>,
+    pub my_number: Option<String>,
+    pub rrn: Option<String>,
 }
 
 pub fn extract_all(value: &str) -> ExtractResult {
@@ -424,5 +444,7 @@ pub fn extract_all(value: &str) -> ExtractResult {
         nhs:            extract_nhs(value),
         sin:            extract_sin(value),
         tfn:            extract_tfn(value),
+        my_number:      extract_my_number(value),
+        rrn:            extract_rrn(value),
     }
 }

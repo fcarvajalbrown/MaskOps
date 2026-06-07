@@ -129,6 +129,8 @@ fn extract_pii_output(_: &[Field]) -> PolarsResult<Field> {
         Field::new("nhs".into(),            DataType::String),
         Field::new("sin".into(),            DataType::String),
         Field::new("tfn".into(),            DataType::String),
+        Field::new("my_number".into(),      DataType::String),
+        Field::new("rrn".into(),            DataType::String),
     ];
     Ok(Field::new("extract_pii".into(), DataType::Struct(fields)))
 }
@@ -169,6 +171,8 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
     let mut f_nhs           = Vec::with_capacity(len);
     let mut f_sin           = Vec::with_capacity(len);
     let mut f_tfn           = Vec::with_capacity(len);
+    let mut f_my_number     = Vec::with_capacity(len);
+    let mut f_rrn           = Vec::with_capacity(len);
 
     for opt in ca.into_iter() {
         let r: ExtractResult = match opt {
@@ -181,7 +185,7 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
                 us_passport: None, rut: None, cpf: None, curp: None,
                 arg_dni: None, co_cc: None, co_nit: None, ec_cedula: None,
                 pe_dni: None, uy_ci: None, npi: None, mbi: None, nhs: None,
-                sin: None, tfn: None,
+                sin: None, tfn: None, my_number: None, rrn: None,
             },
         };
         f_email.push(r.email);
@@ -215,6 +219,8 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
         f_nhs.push(r.nhs);
         f_sin.push(r.sin);
         f_tfn.push(r.tfn);
+        f_my_number.push(r.my_number);
+        f_rrn.push(r.rrn);
     }
 
     let series: Vec<Series> = vec![
@@ -249,6 +255,8 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
         StringChunked::from_iter_options("nhs".into(),            f_nhs.into_iter()).into_series(),
         StringChunked::from_iter_options("sin".into(),            f_sin.into_iter()).into_series(),
         StringChunked::from_iter_options("tfn".into(),            f_tfn.into_iter()).into_series(),
+        StringChunked::from_iter_options("my_number".into(),      f_my_number.into_iter()).into_series(),
+        StringChunked::from_iter_options("rrn".into(),            f_rrn.into_iter()).into_series(),
     ];
 
     Ok(StructChunked::from_series("extract_pii".into(), len, series.iter())?.into_series())
