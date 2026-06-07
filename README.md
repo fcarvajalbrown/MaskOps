@@ -356,6 +356,7 @@ pytest tests/ -v
 - [x] Benchmark vs Presidio
 - [x] Parquet streaming support
 - [x] `extract_pii` expression — returns a 31-field Struct column with the first match per PII family, enabling routing, reporting, and selective masking without re-scanning
+- [x] `mask_pii_audit` expression — masks and reports per-family match counts in a single pass, returning a nested Struct (`masked` value + `counts`) for compliance auditing
 - [ ] Performance sweep — Opus 4.8 deep review: bug hunting across all 31 pattern modules, regex optimization, allocation reduction, rayon parallelism, and benchmark refresh targeting positive per-family speedups vs Python baseline
 
 ## License

@@ -33,15 +33,17 @@ pub fn contains_npi(s: &str) -> bool {
     NPI_RE.find_iter(s).any(|m| valid_npi(m.as_str()))
 }
 
+pub fn mask_npi_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&NPI_RE, s, |caps: &regex::Captures| {
+        if !valid_npi(&caps[0]) {
+            return None;
+        }
+        Some("*".repeat(10))
+    })
+}
+
 pub fn mask_npi(s: &str) -> String {
-    NPI_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_npi(&caps[0]) {
-                return caps[0].to_string();
-            }
-            "*".repeat(10)
-        })
-        .into_owned()
+    mask_npi_counted(s).0
 }
 
 pub fn mask_npi_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {

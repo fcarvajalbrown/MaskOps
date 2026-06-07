@@ -29,15 +29,17 @@ pub fn contains_nhs(s: &str) -> bool {
     NHS_RE.find_iter(s).any(|m| valid_nhs(m.as_str()))
 }
 
+pub fn mask_nhs_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&NHS_RE, s, |caps: &regex::Captures| {
+        if !valid_nhs(&caps[0]) {
+            return None;
+        }
+        Some(caps[0].chars().map(|c| if c.is_ascii_digit() { '*' } else { c }).collect())
+    })
+}
+
 pub fn mask_nhs(s: &str) -> String {
-    NHS_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_nhs(&caps[0]) {
-                return caps[0].to_string();
-            }
-            caps[0].chars().map(|c| if c.is_ascii_digit() { '*' } else { c }).collect()
-        })
-        .into_owned()
+    mask_nhs_counted(s).0
 }
 
 pub fn mask_nhs_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {

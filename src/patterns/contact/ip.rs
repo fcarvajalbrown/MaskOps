@@ -27,14 +27,20 @@ pub fn extract_ip(s: &str) -> Option<String> {
         .or_else(|| IPV6_RE.find(s).map(|m| m.as_str().to_string()))
 }
 
-pub fn mask_ip(s: &str) -> String {
-    let s = IPV4_RE.replace_all(s, |caps: &regex::Captures| {
+pub fn mask_ip_counted(s: &str) -> (String, u32) {
+    let (s, n4) = crate::patterns::replace_counted(&IPV4_RE, s, |caps: &regex::Captures| {
         if valid_ipv4(&caps[1], &caps[2], &caps[3], &caps[4]) {
-            format!("{}.{}.*.*", &caps[1], &caps[2])
+            Some(format!("{}.{}.*.*", &caps[1], &caps[2]))
         } else {
-            caps[0].to_string()
+            None
         }
     });
-    let s = IPV6_RE.replace_all(&s, "$1:****:****:****:****");
-    s.into_owned()
+    let (s, n6) = crate::patterns::replace_counted(&IPV6_RE, &s, |caps: &regex::Captures| {
+        Some(format!("{}:****:****:****:****", &caps[1]))
+    });
+    (s, n4 + n6)
+}
+
+pub fn mask_ip(s: &str) -> String {
+    mask_ip_counted(s).0
 }

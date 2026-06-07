@@ -15,10 +15,14 @@ pub fn contains_pe_dni(s: &str) -> bool {
     PE_DNI_RE.is_match(s)
 }
 
+pub fn mask_pe_dni_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&PE_DNI_RE, s, |_caps: &regex::Captures| {
+        Some("********".to_string())
+    })
+}
+
 pub fn mask_pe_dni(s: &str) -> String {
-    PE_DNI_RE
-        .replace_all(s, "********")
-        .into_owned()
+    mask_pe_dni_counted(s).0
 }
 
 pub fn mask_pe_dni_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {

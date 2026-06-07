@@ -1960,3 +1960,76 @@ class TestMaskKoreaRRN:
         df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result is None
+
+
+class TestMaskPIIAudit:
+    def _audit(self, text):
+        df = pl.DataFrame({"col": [text]})
+        return df.with_columns(maskops.mask_pii_audit("col").alias("a"))["a"][0]
+
+    def test_masked_matches_mask_pii(self):
+        text = "email a@b.com and card 4111 1111 1111 1111"
+        df = pl.DataFrame({"col": [text]})
+        out = df.with_columns(
+            maskops.mask_pii("col").alias("plain"),
+            maskops.mask_pii_audit("col").alias("a"),
+        )
+        assert out["a"][0]["masked"] == out["plain"][0]
+
+    def test_single_email_count(self):
+        r = self._audit("contact user@example.com please")
+        assert r["counts"]["email"] == 1
+        assert r["counts"]["credit_card"] == 0
+
+    def test_multiple_email_count(self):
+        r = self._audit("mail x@y.com and z@w.org")
+        assert r["counts"]["email"] == 2
+
+    def test_credit_card_count(self):
+        r = self._audit("card 4532015112830366 used")
+        assert r["counts"]["credit_card"] == 1
+
+    def test_mixed_families(self):
+        r = self._audit("SSN 321-45-6789 mail a@b.com ip 192.168.1.1")
+        assert r["counts"]["ssn"] == 1
+        assert r["counts"]["email"] == 1
+        assert r["counts"]["ip"] == 1
+
+    def test_invalid_not_counted(self):
+        r = self._audit("card 4111 1111 1111 1112 is invalid")
+        assert r["counts"]["credit_card"] == 0
+
+    def test_no_pii_all_zero(self):
+        r = self._audit("nothing sensitive here")
+        for fam in ["email", "phone", "ip", "credit_card", "ssn", "iban"]:
+            assert r["counts"][fam] == 0
+
+    def test_null_input(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        r = df.with_columns(maskops.mask_pii_audit("col").alias("a"))["a"][0]
+        assert r["masked"] is None
+        assert r["counts"]["email"] == 0
+
+    def test_returns_nested_struct(self):
+        df = pl.DataFrame({"col": ["user@example.com"]})
+        dtype = df.with_columns(maskops.mask_pii_audit("col").alias("a"))["a"].dtype
+        assert isinstance(dtype, pl.Struct)
+        names = [f.name for f in dtype.fields]
+        assert names == ["masked", "counts"]
+        counts_field = next(f for f in dtype.fields if f.name == "counts")
+        assert isinstance(counts_field.dtype, pl.Struct)
+        assert len(counts_field.dtype.fields) == 33
+
+    def test_counts_are_uint32(self):
+        df = pl.DataFrame({"col": ["user@example.com"]})
+        counts = df.with_columns(
+            maskops.mask_pii_audit("col").alias("a")
+        ).select(pl.col("a").struct.field("counts").struct.field("email"))
+        assert counts.to_series().dtype == pl.UInt32
+
+    def test_multiple_rows(self):
+        df = pl.DataFrame({"col": ["a@b.com", "x@y.com z@w.org", "nothing"]})
+        out = df.with_columns(maskops.mask_pii_audit("col").alias("a"))
+        assert out["a"][0]["counts"]["email"] == 1
+        assert out["a"][1]["counts"]["email"] == 2
+        assert out["a"][2]["counts"]["email"] == 0

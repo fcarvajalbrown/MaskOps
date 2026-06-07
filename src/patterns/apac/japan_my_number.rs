@@ -46,26 +46,27 @@ pub fn contains_my_number(s: &str) -> bool {
     }) || MN_COMPACT_RE.find_iter(s).any(|m| valid_my_number(m.as_str()))
 }
 
+pub fn mask_my_number_counted(s: &str) -> (String, u32) {
+    let (s, n_spaced) = crate::patterns::replace_counted(&MN_SPACED_RE, s, |caps: &regex::Captures| {
+        let raw = &caps[0];
+        let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+        if !valid_my_number(&d) {
+            return None;
+        }
+        let sep: char = raw.chars().nth(4).unwrap_or(' ');
+        Some(format!("****{}****{}****", sep, sep))
+    });
+    let (s, n_compact) = crate::patterns::replace_counted(&MN_COMPACT_RE, &s, |caps: &regex::Captures| {
+        if !valid_my_number(&caps[0]) {
+            return None;
+        }
+        Some("*".repeat(12))
+    });
+    (s, n_spaced + n_compact)
+}
+
 pub fn mask_my_number(s: &str) -> String {
-    let s = MN_SPACED_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !valid_my_number(&d) {
-                return raw.to_string();
-            }
-            let sep: char = raw.chars().nth(4).unwrap_or(' ');
-            format!("****{}****{}****", sep, sep)
-        })
-        .into_owned();
-    MN_COMPACT_RE
-        .replace_all(&s, |caps: &regex::Captures| {
-            if !valid_my_number(&caps[0]) {
-                return caps[0].to_string();
-            }
-            "*".repeat(12)
-        })
-        .into_owned()
+    mask_my_number_counted(s).0
 }
 
 pub fn mask_my_number_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {

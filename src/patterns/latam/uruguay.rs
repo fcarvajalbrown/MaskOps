@@ -31,15 +31,17 @@ pub fn contains_uy_ci(s: &str) -> bool {
     UY_CI_RE.find_iter(s).any(|m| valid_uy_ci(m.as_str()))
 }
 
+pub fn mask_uy_ci_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&UY_CI_RE, s, |caps: &regex::Captures| {
+        if !valid_uy_ci(&caps[0]) {
+            return None;
+        }
+        Some("*".repeat(caps[0].len()))
+    })
+}
+
 pub fn mask_uy_ci(s: &str) -> String {
-    UY_CI_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_uy_ci(&caps[0]) {
-                return caps[0].to_string();
-            }
-            "*".repeat(caps[0].len())
-        })
-        .into_owned()
+    mask_uy_ci_counted(s).0
 }
 
 pub fn mask_uy_ci_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {

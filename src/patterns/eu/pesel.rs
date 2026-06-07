@@ -29,15 +29,17 @@ pub fn extract_pesel(s: &str) -> Option<String> {
     PESEL_RE.find_iter(s).find(|m| valid_pesel(m.as_str())).map(|m| m.as_str().to_string())
 }
 
+pub fn mask_pesel_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&PESEL_RE, s, |caps: &regex::Captures| {
+        if !valid_pesel(&caps[0]) {
+            return None;
+        }
+        Some("*".repeat(11))
+    })
+}
+
 pub fn mask_pesel(s: &str) -> String {
-    PESEL_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_pesel(&caps[0]) {
-                return caps[0].to_string();
-            }
-            "*".repeat(11)
-        })
-        .into_owned()
+    mask_pesel_counted(s).0
 }
 
 pub fn mask_pesel_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
