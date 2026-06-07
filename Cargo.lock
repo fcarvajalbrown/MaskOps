@@ -645,7 +645,7 @@ dependencies = [
 
 [[package]]
 name = "maskops"
-version = "0.13.0"
+version = "1.6.0"
 dependencies = [
  "aes",
  "cipher",

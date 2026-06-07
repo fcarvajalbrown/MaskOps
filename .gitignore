@@ -12,6 +12,7 @@ coverage.xml
 .kimi/
 *.so
 *.pyd
+*.pdb
 
 # Editor / agent artifacts
 opencode.json

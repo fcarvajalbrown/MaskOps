@@ -14,6 +14,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Creating `v*` tags is a production action** — it triggers the PyPI publish workflow. Treat it the same as a deployment: require explicit user approval before creating any tag that matches `v*`. "Proceed" or "go ahead" in context counts as approval.
 
+**release-please owns version numbers** — do not hand-edit the version in `Cargo.toml`, `pyproject.toml`, or `.release-please-manifest.json` in ordinary feature/fix work. release-please derives the next version from conventional-commit messages and bumps those files itself. Hand-bumping versions in a commit collides with release-please's own bump on `main` and causes merge conflicts across all version files (manifest, Cargo.toml, pyproject.toml, CHANGELOG). Only edit versions by hand when the user explicitly asks for a specific version (e.g. "release as 1.5.1"), and bump all of those files together so they stay in sync.
+
 **One commit per logical change** — no layer-split commits.
 
 **Branch only for roadmap releases** — create a branch when the work ships a feature or fix that is listed on the roadmap. Tooling, config, and housekeeping commits go directly to `main`. For roadmap work:
@@ -143,12 +145,11 @@ PyPI publish is triggered by pushing a version tag (`v*`). The workflow is in `.
 
 ## Release marketing reminders
 
-**Hacker News** — script at `tools/hn_post.py`, run it here in Claude Code (not via CI). Remind the user to post at these moments only — not every release:
-- First public Show HN (not done yet)
-- `extract_pii` / performance sweep results (strong benchmark hook)
+**dev.to** — script at `tools/devto_post.py`, run it here in Claude Code (not via CI). Remind at milestones only — not every release:
+- Performance sweep results (benchmark numbers are a strong hook)
 - v2.0.0 enterprise milestone
-- Any time a benchmark or Ask HN angle is relevant
+- Any tutorial, deep-dive, or benchmark comparison angle
 
-Rules baked into the script: blocks duplicate URLs, enforces 14-day gap, warns on bad timing. Run `--rules` to print full guidelines before posting.
+Rules baked into the script: enforces 14-day cooldown, max 4 tags, Hemingway+Dijkstra prose. Run `--rules` to print full guidelines. Reminder fires automatically every 21 days via the Stop hook in settings.json.
 
 **LinkedIn** — at v2.0.0, remind the user to publish a full LinkedIn article (not just a post): SEO keywords, publish timing, hashtags.

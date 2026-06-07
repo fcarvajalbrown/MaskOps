@@ -200,6 +200,18 @@ Returns the masked value alongside a match-count struct per PII family. Enables 
 - US driver's license patterns (state-by-state format matching)
 - Date of birth patterns (structured date fields, configurable locale)
 
+### v1.10.0 — Infra: Performance sweep (Opus 4.8 deep review)
+
+Full Rust codebase review by Claude Opus 4.8 targeting:
+- Bug hunting across all 31 pattern modules (edge cases, false positives, false negatives)
+- Regex optimization — rewrite hot patterns to minimize backtracking and redundant captures
+- Allocation reduction — eliminate unnecessary String heap allocations in the masking pipeline
+- `rayon` parallelism for single-column batch masking (earlier than the v2.7.0 multi-column pass)
+- SIMD investigation for high-frequency digit-scan paths (credit card Luhn, check digit loops)
+- Benchmark refresh after changes — target: bring the per-family speedup tables in README into positive territory vs the Python baseline
+
+Goal: the single-family benchmark numbers (currently 0.4×–0.7× vs Python on dense/mixed profiles) should reflect MaskOps' real advantage once Luhn + check digit cost is amortized across the full pattern set. If the per-family numbers cannot be made positive without removing validation, document why in the benchmark note rather than faking the result.
+
 ### v2.0.0 — Milestone: Enterprise release
 
 Consolidation release — no new coverage. Unifies the building blocks from 0.6.0, 0.8.0, 1.3.0, 1.4.0, 1.6.0, 1.1.0 into a cohesive, documented enterprise API. Includes a migration guide for users upgrading from pre-1.0.
