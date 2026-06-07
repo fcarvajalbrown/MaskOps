@@ -1789,10 +1789,10 @@ class TestExtractPII:
         result = df.with_columns(maskops.extract_pii("col").alias("pii"))
         assert isinstance(result["pii"].dtype, pl.Struct)
 
-    def test_struct_has_31_fields(self):
+    def test_struct_has_33_fields(self):
         df = pl.DataFrame({"col": ["user@example.com"]})
         result = df.with_columns(maskops.extract_pii("col").alias("pii"))
-        assert len(result["pii"].dtype.fields) == 31
+        assert len(result["pii"].dtype.fields) == 33
 
     def test_multiple_rows(self):
         df = pl.DataFrame({"col": ["user@example.com", "4532015112830366", "nothing"]})
@@ -1800,3 +1800,163 @@ class TestExtractPII:
         assert result["pii"][0]["email"] == "user@example.com"
         assert result["pii"][1]["credit_card"] == "4532015112830366"
         assert result["pii"][2]["email"] is None
+
+
+class TestMaskJapanMyNumber:
+    """Japanese My Number (個人番号) — 12-digit national ID."""
+
+    VALID_COMPACT = "123456789123"
+    VALID_SPACED  = "1234 5678 9123"
+    INVALID       = "123456789124"
+
+    def _mask(self, value, **kwargs):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.mask_pii("col", **kwargs))["col"][0]
+
+    def _contains(self, value):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.contains_pii("col"))["col"][0]
+
+    def test_detects_compact(self):
+        assert self._contains(self.VALID_COMPACT)
+
+    def test_detects_spaced(self):
+        assert self._contains(self.VALID_SPACED)
+
+    def test_does_not_detect_invalid(self):
+        assert not self._contains(self.INVALID)
+
+    def test_asterisk_compact(self):
+        out = self._mask(self.VALID_COMPACT)
+        assert out == "*" * 12
+
+    def test_asterisk_spaced(self):
+        out = self._mask(self.VALID_SPACED)
+        assert self.VALID_SPACED not in out
+        assert "*" in out
+        assert len(out) == len(self.VALID_SPACED)
+
+    def test_invalid_not_masked(self):
+        out = self._mask(self.INVALID)
+        assert out == self.INVALID
+
+    def test_in_sentence(self):
+        text = f"個人番号: {self.VALID_COMPACT} — 要保護"
+        out = self._mask(text)
+        assert self.VALID_COMPACT not in out
+
+    def test_fpe_preserves_digit_count(self):
+        key = b"\x00" * 32
+        tweak = b"\x00" * 7
+        df = pl.DataFrame({"col": [self.VALID_COMPACT]})
+        out = df.with_columns(maskops.mask_pii_fpe("col", key, tweak))["col"][0]
+        assert len(out) == 12
+        assert out.isdigit()
+
+    def test_consistent_deterministic(self):
+        out1 = self._mask(self.VALID_COMPACT, mode="consistent", salt="test-salt")
+        out2 = self._mask(self.VALID_COMPACT, mode="consistent", salt="test-salt")
+        assert out1 == out2
+
+    def test_consistent_not_original(self):
+        out = self._mask(self.VALID_COMPACT, mode="consistent", salt="test-salt")
+        assert out != self.VALID_COMPACT
+
+    def test_patterns_filter(self):
+        df = pl.DataFrame({"col": [self.VALID_COMPACT]})
+        out = df.with_columns(maskops.mask_pii("col", patterns=["my_number"]))["col"][0]
+        assert self.VALID_COMPACT not in out
+
+    def test_extract_pii(self):
+        df = pl.DataFrame({"col": [self.VALID_COMPACT]})
+        result = df.with_columns(maskops.extract_pii("col").alias("pii"))
+        assert result["pii"][0]["my_number"] == self.VALID_COMPACT
+
+    def test_null_passthrough(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result is None
+
+
+class TestMaskKoreaRRN:
+    """South Korean Resident Registration Number (주민등록번호)."""
+
+    VALID_FMT     = "900101-1234568"
+    VALID_COMPACT = "9001011234568"
+    INVALID       = "900101-1234567"
+
+    def _mask(self, value, **kwargs):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.mask_pii("col", **kwargs))["col"][0]
+
+    def _contains(self, value):
+        df = pl.DataFrame({"col": [value]})
+        return df.with_columns(maskops.contains_pii("col"))["col"][0]
+
+    def test_detects_formatted(self):
+        assert self._contains(self.VALID_FMT)
+
+    def test_detects_compact(self):
+        assert self._contains(self.VALID_COMPACT)
+
+    def test_does_not_detect_invalid(self):
+        assert not self._contains(self.INVALID)
+
+    def test_asterisk_formatted(self):
+        out = self._mask(self.VALID_FMT)
+        assert self.VALID_FMT not in out
+        assert "*" in out
+        assert len(out) == len(self.VALID_FMT)
+
+    def test_asterisk_compact(self):
+        out = self._mask(self.VALID_COMPACT)
+        assert out == "*" * 13
+
+    def test_invalid_not_masked(self):
+        out = self._mask(self.INVALID)
+        assert out == self.INVALID
+
+    def test_in_sentence(self):
+        text = f"주민번호: {self.VALID_FMT} — 개인정보"
+        out = self._mask(text)
+        assert self.VALID_FMT not in out
+
+    def test_fpe_formatted_preserves_separator(self):
+        key = b"\x00" * 32
+        tweak = b"\x00" * 7
+        df = pl.DataFrame({"col": [self.VALID_FMT]})
+        out = df.with_columns(maskops.mask_pii_fpe("col", key, tweak))["col"][0]
+        assert "-" in out
+        assert len(out) == len(self.VALID_FMT)
+
+    def test_fpe_compact_preserves_digit_count(self):
+        key = b"\x00" * 32
+        tweak = b"\x00" * 7
+        df = pl.DataFrame({"col": [self.VALID_COMPACT]})
+        out = df.with_columns(maskops.mask_pii_fpe("col", key, tweak))["col"][0]
+        assert len(out) == 13
+        assert out.isdigit()
+
+    def test_consistent_deterministic(self):
+        out1 = self._mask(self.VALID_COMPACT, mode="consistent", salt="test-salt")
+        out2 = self._mask(self.VALID_COMPACT, mode="consistent", salt="test-salt")
+        assert out1 == out2
+
+    def test_consistent_not_original(self):
+        out = self._mask(self.VALID_COMPACT, mode="consistent", salt="test-salt")
+        assert out != self.VALID_COMPACT
+
+    def test_patterns_filter(self):
+        df = pl.DataFrame({"col": [self.VALID_FMT]})
+        out = df.with_columns(maskops.mask_pii("col", patterns=["rrn"]))["col"][0]
+        assert self.VALID_FMT not in out
+
+    def test_extract_pii(self):
+        df = pl.DataFrame({"col": [self.VALID_FMT]})
+        result = df.with_columns(maskops.extract_pii("col").alias("pii"))
+        assert result["pii"][0]["rrn"] == self.VALID_FMT
+
+    def test_null_passthrough(self):
+        df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result is None

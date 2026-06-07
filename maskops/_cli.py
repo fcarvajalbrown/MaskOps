@@ -24,7 +24,7 @@ def cmd_run(args: argparse.Namespace) -> None:
         df = pl.read_parquet(input_path)
         df = policy.apply(df)
         df.write_parquet(output_path)
-        print(f"wrote {len(df)} rows → {output_path}")
+        print(f"wrote {len(df)} rows -> {output_path}")
     except Exception as exc:
         print(f"error: {exc}", file=sys.stderr)
         sys.exit(1)
