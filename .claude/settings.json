@@ -25,13 +25,45 @@
           },
           {
             "type": "command",
-            "command": "echo '{\"systemMessage\":\"Reminder: have you asked me to run /kimi-security and /kimi-optimize for this change?\"}'",
+            "command": "echo '{\"systemMessage\":\"Reminder: have you run /kimi-security, /kimi-optimize, and /kimi-review for this change?\"}'",
             "if": "Bash(git push*)"
           },
           {
             "type": "command",
-            "command": "echo '{\"systemMessage\":\"Reminder: have you asked me to run /kimi-security and /kimi-optimize for this change?\"}'",
+            "command": "echo '{\"systemMessage\":\"Reminder: have you run /kimi-security, /kimi-optimize, and /kimi-review for this change?\"}'",
             "if": "Bash(git commit*)"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\":\"Rust file changed — re-run maturin develop --release before running tests.\"}'",
+            "if": "Edit(*.rs)"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\":\"Rust file changed — re-run maturin develop --release before running tests.\"}'",
+            "if": "Write(*.rs)"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\":\"maturin build complete — run: python tests/generate_fixtures.py && pytest tests/ -v\"}'",
+            "if": "Bash(maturin develop*)"
           }
         ]
       }
