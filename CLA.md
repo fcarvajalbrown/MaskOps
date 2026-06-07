@@ -1,6 +1,6 @@
 # Contributor License Agreement
 
-By submitting a pull request to this repository, you agree to the following terms.
+By submitting a pull request to this repository, you agree to the following terms. No signature or bot interaction is required — submitting a contribution constitutes acceptance.
 
 ---
 
@@ -20,7 +20,7 @@ You retain the copyright to your contribution. This agreement does not transfer 
 
 ## 3. What you're confirming
 
-By signing, you confirm that:
+By submitting a contribution, you confirm that:
 
 - You wrote the contribution yourself, or have the right to submit it
 - The contribution does not violate any third-party intellectual property rights
@@ -30,16 +30,6 @@ By signing, you confirm that:
 ## 4. No patent trap
 
 This agreement does not require you to license any patents you hold. It covers copyright only.
-
-## 5. How to sign
-
-When you open your first pull request, a bot will ask you to sign this agreement by commenting:
-
-```
-I have read the CLA and agree to its terms.
-```
-
-Your signature is recorded against your GitHub account. You only need to sign once.
 
 ---
 
