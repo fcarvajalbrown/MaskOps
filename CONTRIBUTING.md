@@ -2,17 +2,9 @@
 
 ## Contributor License Agreement (CLA)
 
-**All contributions require signing the CLA before a PR can be merged.**
+By submitting a pull request you automatically accept the [CLA](CLA.md). No signature or bot interaction is required.
 
-The CLA grants the project maintainer the right to use your contribution under any license (including commercial). It does not transfer copyright — you keep ownership of your code.
-
-**How to sign:** Open a pull request and post a comment containing exactly:
-
-> I have read the CLA and agree to its terms.
-
-The CLA bot will record your signature automatically. You only sign once; it covers all future contributions.
-
-The full agreement is in [CLA.md](CLA.md). If you have questions, open an issue or email [fcarvajalbrown@gmail.com](mailto:fcarvajalbrown@gmail.com).
+The CLA grants the project maintainer the right to use your contribution under any license (including commercial). It does not transfer copyright — you keep ownership of your code. If you have questions, open an issue or email [fcarvajalbrown@gmail.com](mailto:fcarvajalbrown@gmail.com).
 
 ---
 
