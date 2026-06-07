@@ -148,7 +148,11 @@ No `Co-Authored-By` trailers. No "Generated with Claude Code" or any AI attribut
 
 ## Publishing
 
-Releases are manual and deliberate — there is no auto-release (see the release rules above). `release-please.yml` runs only on manual `workflow_dispatch`. To publish: with explicit user approval and a shipped roadmap milestone, bump the five version files and push a `vX.Y.Z` tag — `publish.yml` (`.github/workflows/publish.yml`) then builds wheels and uploads to PyPI. Note: PyPI has lagged behind the GitHub tags before (cancelled/failed publish runs), so verify the live PyPI version separately rather than trusting the tag list.
+Releases are manual and deliberate — there is no auto-release (see the release rules above). `release-please.yml` runs only on manual `workflow_dispatch`.
+
+Cut a release with the helper: **`python tools/release.py X.Y.Z`** is a dry run that validates all five version files, the changelog section, and the roadmap agree on the version; **`python tools/release.py X.Y.Z --yes`** then tags, pushes, and creates the GitHub Release. Pushing the tag triggers `publish.yml` (`.github/workflows/publish.yml`), which builds wheels and uploads to PyPI. **Do not modify `publish.yml` — it works; the release flow only pushes a tag it already reacts to.**
+
+**Claude must never run the script with `--yes`** (a hook blocks it). The `--yes` step is the user's, run via `! python tools/release.py X.Y.Z --yes`; Claude may run the dry-run to confirm everything is green before handing off. Note: PyPI has lagged behind GitHub tags before (cancelled/failed publish runs), so verify the live PyPI version separately rather than trusting the tag list.
 
 ## Release marketing reminders
 

@@ -50,6 +50,11 @@
           },
           {
             "type": "command",
+            "command": "echo '{\"continue\":false,\"stopReason\":\"tools/release.py --yes cuts a real release (tag push + PyPI publish). Only the user runs this; Claude must not. Run it without --yes for a dry-run check.\"}'",
+            "if": "Bash(python tools/release.py*--yes*)"
+          },
+          {
+            "type": "command",
             "command": "echo '{\"systemMessage\":\"Reminder: have you run /kimi-security, /kimi-optimize, and /kimi-review for this change?\"}'",
             "if": "Bash(git push*)"
           }
