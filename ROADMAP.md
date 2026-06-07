@@ -2,7 +2,7 @@
 
 MaskOps follows a three-phase path from its initial public release to a production-grade standard for Polars PII masking.
 
-> **Current version:** v1.5.0 (PyPI) — roadmap milestones v0.2–v1.5 complete
+> **Current version:** v1.5.1 (PyPI) — roadmap milestones v0.2–v1.5 complete
 > Coverage and infrastructure releases alternate each minor. Enterprise features land individually in 1.x and unify at 2.0.
 
 ---
