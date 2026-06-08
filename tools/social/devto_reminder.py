@@ -25,8 +25,12 @@ def main():
     last_date = datetime.fromisoformat(last["date"])
     days_ago = (datetime.now(timezone.utc) - last_date).days
 
-    if days_ago >= REMIND_AFTER_DAYS:
-        msg = f"dev.to reminder: last post was {days_ago} days ago ('{last['title']}'). Good time for a new article."
+    today = datetime.now(timezone.utc)
+    if days_ago >= REMIND_AFTER_DAYS and today.weekday() <= 2:
+        msg = (
+            f"dev.to reminder: last post was {days_ago} days ago ('{last['title']}')."
+            " Today is a good day to post — best window: 12:00–18:00 UTC."
+        )
         print(json.dumps({"systemMessage": msg}))
 
 if __name__ == "__main__":

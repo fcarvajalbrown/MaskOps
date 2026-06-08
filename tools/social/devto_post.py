@@ -22,6 +22,12 @@ from pathlib import Path
 
 import requests
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
+except ImportError:
+    pass
+
 DEVTO_API = "https://dev.to/api/articles"
 HISTORY_FILE = Path(__file__).parent / "devto_history.json"
 MIN_DAYS_BETWEEN_POSTS = 14
@@ -38,10 +44,20 @@ dev.to posting rules
 6. ENGAGE    Reply to comments within 24 hours.
 7. CANONICAL If the content lives elsewhere first (GitHub, your site), set canonical_url.
 
+TIMING (data-backed)
+====================
+- Best days:  Monday, Tuesday, Wednesday. Avoid weekends.
+- Best time:  12:00–18:00 UTC (8am–2pm EST / 5am–11am PST).
+- Visibility: 80% of reactions accumulate in the first 4 days — timing matters most at publish.
+- Length:     5-min read is the practical sweet spot. Longer (13 min) gets more reactions
+              but only if the depth earns it.
+
 WRITING STYLE
 =============
-Hemingway + Dijkstra: short declarative sentences, no adjectives that don't earn their place,
-no hedging, no filler. State what the thing does. State what it doesn't do. Stop.
+Albert Camus + Dijkstra: short declarative sentences, first-person but not self-absorbed,
+no sentiment, no hedging, no adjectives that don't earn their place.
+The story comes first — lead with the human context, then the technical content.
+State what happened. State what the thing does. State what it doesn't do. Stop.
 No "excited to share", no "thrilled to announce", no "journey". Say the thing.
 """
 

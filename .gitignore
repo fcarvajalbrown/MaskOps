@@ -21,3 +21,6 @@ docs/superpowers/
 
 # Tooling runtime artifacts
 tools/social/devto_history.json
+
+# Local secrets — never commit
+.env
