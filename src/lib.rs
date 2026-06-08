@@ -9,7 +9,8 @@ use pyo3_polars::export::polars_core::prelude::*;
 use patterns::{mask_all, mask_all_fpe, contains_any_pii,
                mask_all_selected, mask_all_selected_fpe, contains_any_selected,
                mask_all_consistent, mask_all_selected_consistent,
-               extract_all, ExtractResult, mask_all_audit};
+               extract_all, extract_all_selected, ExtractResult,
+               mask_all_audit, mask_all_audit_selected};
 use patterns::{Ff3Cipher, Ff1Cipher, FpeCipher, KEY_LEN, TWEAK_LEN};
 use patterns::ConsistentHasher;
 pub use patterns::fpe::Ff3Cipher as MaskopsFpe;
@@ -184,6 +185,12 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
     let ca = inputs[0].str()?;
     let len = ca.len();
 
+    let pat_owned: Vec<String> = if inputs.len() > 1 {
+        inputs[1].str()?.get(0).unwrap_or("").split(',').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect()
+    } else { Vec::new() };
+    let pat_refs: Vec<&str> = pat_owned.iter().map(|s| s.as_str()).collect();
+    let select = inputs.len() > 1;
+
     let mut f_email         = Vec::with_capacity(len);
     let mut f_phone         = Vec::with_capacity(len);
     let mut f_ip            = Vec::with_capacity(len);
@@ -223,7 +230,7 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
 
     for opt in ca.into_iter() {
         let r: ExtractResult = match opt {
-            Some(s) => extract_all(s),
+            Some(s) => if select { extract_all_selected(s, &pat_refs) } else { extract_all(s) },
             None => ExtractResult {
                 email: None, phone: None, ip: None, iban: None, vat: None,
                 dni: None, nie: None, nin: None, personalausweis: None,
@@ -367,6 +374,12 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
     let ca = inputs[0].str()?;
     let len = ca.len();
 
+    let pat_owned: Vec<String> = if inputs.len() > 1 {
+        inputs[1].str()?.get(0).unwrap_or("").split(',').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect()
+    } else { Vec::new() };
+    let pat_refs: Vec<&str> = pat_owned.iter().map(|s| s.as_str()).collect();
+    let select = inputs.len() > 1;
+
     let mut masked: Vec<Option<String>> = Vec::with_capacity(len);
     let mut c_email           = Vec::with_capacity(len);
     let mut c_phone           = Vec::with_capacity(len);
@@ -408,7 +421,7 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
     for opt in ca.into_iter() {
         match opt {
             Some(s) => {
-                let (m, c) = mask_all_audit(s);
+                let (m, c) = if select { mask_all_audit_selected(s, &pat_refs) } else { mask_all_audit(s) };
                 masked.push(Some(m));
                 c_email.push(c.email);
                 c_phone.push(c.phone);
@@ -537,6 +550,6 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
 
 #[pymodule]
 fn _maskops(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("__version__", "1.9.0")?;
+    m.add("__version__", "2.0.0")?;
     Ok(())
 }

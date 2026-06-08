@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.0.0](https://github.com/fcarvajalbrown/MaskOps/compare/v1.9.0...v2.0.0) (2026-06-08)
+
+### Features
+
+* **api:** unify configurable `patterns=` across the structured-output expressions — `extract_pii` and `mask_pii_audit` now accept the same family selection as `mask_pii`, completing the enterprise surface (configurable patterns + structured output + audit)
+* **docs:** add the v2.0 migration guide — 2.0 is a drop-in upgrade; documents the unified API, the FF1 / key-management / MEA additions, and the stable 2.x surface
+
+### Notes
+
+* 2.0 is API-stable for the 2.x line. The only behavioral change from 1.x is that `mask_pii_fpe` now rejects weak keys (non-32-byte, or a single repeated byte) with `ValueError` — see the migration guide.
+
 ## [1.9.0](https://github.com/fcarvajalbrown/MaskOps/compare/v1.8.0...v1.9.0) (2026-06-08)
 
 ### Features

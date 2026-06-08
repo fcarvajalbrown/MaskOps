@@ -2291,3 +2291,51 @@ class TestMaskIlId:
         df = pl.DataFrame({"col": [IL_ID]})
         out = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert out.isdigit() and len(out) == 9 and "*" not in out
+
+
+class TestUnifiedPatterns:
+    SRC = "mail a@b.com card 4111111111111111 ssn 123-45-6789"
+
+    def _audit(self, patterns=None):
+        df = pl.DataFrame({"col": [self.SRC]})
+        return df.with_columns(maskops.mask_pii_audit("col", patterns=patterns).alias("a"))
+
+    def test_audit_patterns_masks_only_selected(self):
+        a = self._audit(patterns=["email"])
+        masked = a.select(pl.col("a").struct.field("masked"))["masked"][0]
+        assert "a@b.com" not in masked
+        assert "4111111111111111" in masked
+        assert "123-45-6789" in masked
+
+    def test_audit_patterns_counts_only_selected(self):
+        a = self._audit(patterns=["email"])
+        counts = a.select(pl.col("a").struct.field("counts")).unnest("counts")
+        assert counts["email"][0] == 1
+        assert counts["ssn"][0] == 0
+        assert counts["credit_card"][0] == 0
+
+    def test_audit_no_patterns_masks_all(self):
+        a = self._audit()
+        masked = a.select(pl.col("a").struct.field("masked"))["masked"][0]
+        assert "a@b.com" not in masked
+        assert "4111111111111111" not in masked
+        assert "123-45-6789" not in masked
+
+    def test_extract_patterns_nulls_non_selected(self):
+        df = pl.DataFrame({"col": [self.SRC]})
+        ex = df.with_columns(maskops.extract_pii("col", patterns=["email"]).alias("e"))
+        assert ex.select(pl.col("e").struct.field("email"))["email"][0] == "a@b.com"
+        assert ex.select(pl.col("e").struct.field("ssn"))["ssn"][0] is None
+        assert ex.select(pl.col("e").struct.field("credit_card"))["credit_card"][0] is None
+
+    def test_extract_no_patterns_populates_all(self):
+        df = pl.DataFrame({"col": [self.SRC]})
+        ex = df.with_columns(maskops.extract_pii("col").alias("e"))
+        assert ex.select(pl.col("e").struct.field("email"))["email"][0] == "a@b.com"
+        assert ex.select(pl.col("e").struct.field("ssn"))["ssn"][0] == "123-45-6789"
+
+    def test_audit_multi_pattern_selection(self):
+        a = self._audit(patterns=["email", "ssn"])
+        masked = a.select(pl.col("a").struct.field("masked"))["masked"][0]
+        assert "a@b.com" not in masked and "123-45-6789" not in masked
+        assert "4111111111111111" in masked
