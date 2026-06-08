@@ -239,6 +239,52 @@ class TestMaskCPF:
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
 
+class TestMaskCNPJ:
+    def test_cnpj_body_masked(self):
+        df = pl.DataFrame({"col": ["11.222.333/0001-81"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.endswith("-81")
+        assert "11.222.333" not in result
+        assert "*" in result
+
+    def test_cnpj_without_separators(self):
+        df = pl.DataFrame({"col": ["11222333000181"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "11222333000181" not in result
+        assert "*" in result
+
+    def test_cnpj_in_sentence(self):
+        df = pl.DataFrame({"col": ["CNPJ da empresa: 11.222.333/0001-81 ativo"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "11.222.333/0001-81" not in result
+        assert "CNPJ da empresa:" in result
+        assert "ativo" in result
+
+    def test_invalid_cnpj_not_extracted(self):
+        df = pl.DataFrame({"col": ["11.222.333/0001-99"]})
+        result = df.with_columns(maskops.extract_pii("col")).unnest("col")["cnpj"][0]
+        assert result is None
+
+    def test_contains_pii_detects_cnpj(self):
+        df = pl.DataFrame({"col": ["11.222.333/0001-81", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False]
+
+    def test_cnpj_extracted(self):
+        df = pl.DataFrame({"col": ["empresa 11.222.333/0001-81"]})
+        result = df.with_columns(maskops.extract_pii("col")).unnest("col")["cnpj"][0]
+        assert result == "11.222.333/0001-81"
+
+    def test_cnpj_audit_count(self):
+        df = pl.DataFrame({"col": ["11.222.333/0001-81 e 11222333000181"]})
+        audit = df.with_columns(maskops.mask_pii_audit("col")).unnest("col").unnest("counts")
+        assert audit["cnpj"][0] == 2
+
+    def test_cnpj_consistent_deterministic(self):
+        df = pl.DataFrame({"col": ["11.222.333/0001-81", "11222333000181"]})
+        out = df.with_columns(maskops.mask_pii("col", mode="consistent", salt="s"))["col"].to_list()
+        assert out[0] == out[1]
+
 class TestMaskCURP:
     def test_curp_fully_masked(self):
         df = pl.DataFrame({"col": ["BADD110313HCMLNS09"]})
@@ -671,6 +717,13 @@ class TestMaskPiiFpe:
         df = pl.DataFrame({"col": ["+56912345678"]})
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert "*" not in result
+
+    def test_cnpj_fpe_preserves_length(self):
+        df = pl.DataFrame({"col": ["11222333000181"]})
+        result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert len(result) == 14
+        assert result.isdigit()
+        assert result != "11222333000181"
 
     def test_different_tweaks_differ(self):
         tweak2 = b"\x01" * 7
@@ -1789,10 +1842,10 @@ class TestExtractPII:
         result = df.with_columns(maskops.extract_pii("col").alias("pii"))
         assert isinstance(result["pii"].dtype, pl.Struct)
 
-    def test_struct_has_33_fields(self):
+    def test_struct_has_34_fields(self):
         df = pl.DataFrame({"col": ["user@example.com"]})
         result = df.with_columns(maskops.extract_pii("col").alias("pii"))
-        assert len(result["pii"].dtype.fields) == 33
+        assert len(result["pii"].dtype.fields) == 34
 
     def test_multiple_rows(self):
         df = pl.DataFrame({"col": ["user@example.com", "4532015112830366", "nothing"]})
@@ -2018,7 +2071,7 @@ class TestMaskPIIAudit:
         assert names == ["masked", "counts"]
         counts_field = next(f for f in dtype.fields if f.name == "counts")
         assert isinstance(counts_field.dtype, pl.Struct)
-        assert len(counts_field.dtype.fields) == 33
+        assert len(counts_field.dtype.fields) == 34
 
     def test_counts_are_uint32(self):
         df = pl.DataFrame({"col": ["user@example.com"]})

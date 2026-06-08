@@ -30,7 +30,7 @@ def mask_pii(
         Optional list of pattern names to apply. Valid names:
         ``email``, ``phone``, ``ip``, ``iban``, ``vat``, ``dni``, ``nie``,
         ``nin``, ``personalausweis``, ``us_passport``, ``curp``, ``rut``,
-        ``cpf``, ``ssn``, ``arg_dni``, ``co_cc``, ``co_nit``, ``ec_cedula``,
+        ``cpf``, ``cnpj``, ``ssn``, ``arg_dni``, ``co_cc``, ``co_nit``, ``ec_cedula``,
         ``credit_card``, ``npi``, ``mbi``, ``nhs``, ``pe_dni``.
     mode : str
         Masking mode. ``"asterisk"`` (default): irreversible redaction.
@@ -166,5 +166,9 @@ def mask_pii_audit(expr: IntoExpr) -> pl.Expr:
 
 
 from maskops._policy import load_policy
+from maskops._manifest import masking_manifest, write_manifest
 
-__all__ = ["mask_pii", "contains_pii", "mask_pii_fpe", "extract_pii", "mask_pii_audit", "load_policy"]
+__all__ = [
+    "mask_pii", "contains_pii", "mask_pii_fpe", "extract_pii", "mask_pii_audit",
+    "load_policy", "masking_manifest", "write_manifest",
+]

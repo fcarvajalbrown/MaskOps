@@ -117,6 +117,7 @@ fn extract_pii_output(_: &[Field]) -> PolarsResult<Field> {
         Field::new("us_passport".into(),    DataType::String),
         Field::new("rut".into(),            DataType::String),
         Field::new("cpf".into(),            DataType::String),
+        Field::new("cnpj".into(),           DataType::String),
         Field::new("curp".into(),           DataType::String),
         Field::new("arg_dni".into(),        DataType::String),
         Field::new("co_cc".into(),          DataType::String),
@@ -159,6 +160,7 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
     let mut f_us_passport   = Vec::with_capacity(len);
     let mut f_rut           = Vec::with_capacity(len);
     let mut f_cpf           = Vec::with_capacity(len);
+    let mut f_cnpj          = Vec::with_capacity(len);
     let mut f_curp          = Vec::with_capacity(len);
     let mut f_arg_dni       = Vec::with_capacity(len);
     let mut f_co_cc         = Vec::with_capacity(len);
@@ -182,7 +184,7 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
                 dni: None, nie: None, nin: None, personalausweis: None,
                 nir: None, codice_fiscale: None, pesel: None, bsn: None,
                 personnummer: None, credit_card: None, ssn: None,
-                us_passport: None, rut: None, cpf: None, curp: None,
+                us_passport: None, rut: None, cpf: None, cnpj: None, curp: None,
                 arg_dni: None, co_cc: None, co_nit: None, ec_cedula: None,
                 pe_dni: None, uy_ci: None, npi: None, mbi: None, nhs: None,
                 sin: None, tfn: None, my_number: None, rrn: None,
@@ -207,6 +209,7 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
         f_us_passport.push(r.us_passport);
         f_rut.push(r.rut);
         f_cpf.push(r.cpf);
+        f_cnpj.push(r.cnpj);
         f_curp.push(r.curp);
         f_arg_dni.push(r.arg_dni);
         f_co_cc.push(r.co_cc);
@@ -243,6 +246,7 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
         StringChunked::from_iter_options("us_passport".into(),    f_us_passport.into_iter()).into_series(),
         StringChunked::from_iter_options("rut".into(),            f_rut.into_iter()).into_series(),
         StringChunked::from_iter_options("cpf".into(),            f_cpf.into_iter()).into_series(),
+        StringChunked::from_iter_options("cnpj".into(),           f_cnpj.into_iter()).into_series(),
         StringChunked::from_iter_options("curp".into(),           f_curp.into_iter()).into_series(),
         StringChunked::from_iter_options("arg_dni".into(),        f_arg_dni.into_iter()).into_series(),
         StringChunked::from_iter_options("co_cc".into(),          f_co_cc.into_iter()).into_series(),
@@ -283,6 +287,7 @@ fn mask_pii_audit_output(_: &[Field]) -> PolarsResult<Field> {
         Field::new("us_passport".into(),     DataType::UInt32),
         Field::new("rut".into(),             DataType::UInt32),
         Field::new("cpf".into(),             DataType::UInt32),
+        Field::new("cnpj".into(),            DataType::UInt32),
         Field::new("curp".into(),            DataType::UInt32),
         Field::new("arg_dni".into(),         DataType::UInt32),
         Field::new("co_cc".into(),           DataType::UInt32),
@@ -330,6 +335,7 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
     let mut c_us_passport     = Vec::with_capacity(len);
     let mut c_rut             = Vec::with_capacity(len);
     let mut c_cpf             = Vec::with_capacity(len);
+    let mut c_cnpj            = Vec::with_capacity(len);
     let mut c_curp            = Vec::with_capacity(len);
     let mut c_arg_dni         = Vec::with_capacity(len);
     let mut c_co_cc           = Vec::with_capacity(len);
@@ -369,6 +375,7 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
                 c_us_passport.push(c.us_passport);
                 c_rut.push(c.rut);
                 c_cpf.push(c.cpf);
+                c_cnpj.push(c.cnpj);
                 c_curp.push(c.curp);
                 c_arg_dni.push(c.arg_dni);
                 c_co_cc.push(c.co_cc);
@@ -405,6 +412,7 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
                 c_us_passport.push(0);
                 c_rut.push(0);
                 c_cpf.push(0);
+                c_cnpj.push(0);
                 c_curp.push(0);
                 c_arg_dni.push(0);
                 c_co_cc.push(0);
@@ -443,6 +451,7 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
         UInt32Chunked::from_vec("us_passport".into(),     c_us_passport).into_series(),
         UInt32Chunked::from_vec("rut".into(),             c_rut).into_series(),
         UInt32Chunked::from_vec("cpf".into(),             c_cpf).into_series(),
+        UInt32Chunked::from_vec("cnpj".into(),            c_cnpj).into_series(),
         UInt32Chunked::from_vec("curp".into(),            c_curp).into_series(),
         UInt32Chunked::from_vec("arg_dni".into(),         c_arg_dni).into_series(),
         UInt32Chunked::from_vec("co_cc".into(),           c_co_cc).into_series(),
