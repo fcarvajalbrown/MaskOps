@@ -28,6 +28,10 @@ static CO_NIT_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"\b(\d{9})-(\d)\b").unwrap()
 });
 
+static CNPJ_TAIL_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^/\d{4}-?\d{2}\b").unwrap()
+});
+
 fn valid_rut(rut: &str) -> bool {
     let clean: String = rut.chars().filter(|c| c.is_alphanumeric()).collect();
     if clean.len() < 2 {
@@ -88,13 +92,13 @@ pub fn extract_curp(s: &str) -> Option<String> {
 
 pub fn extract_arg_dni(s: &str) -> Option<String> {
     ARG_DNI_RE.find_iter(s)
-        .find(|m| !followed_by_id_suffix(s, m.end()))
+        .find(|m| !part_of_larger_id(s, m.end()))
         .map(|m| m.as_str().to_string())
 }
 
 pub fn extract_co_cc(s: &str) -> Option<String> {
     CO_CC_RE.find_iter(s)
-        .find(|m| !followed_by_id_suffix(s, m.end()))
+        .find(|m| !part_of_larger_id(s, m.end()))
         .map(|m| m.as_str().to_string())
 }
 
@@ -203,6 +207,14 @@ fn followed_by_id_suffix(s: &str, end: usize) -> bool {
     }
 }
 
+fn followed_by_cnpj_tail(s: &str, end: usize) -> bool {
+    CNPJ_TAIL_RE.is_match(&s[end..])
+}
+
+fn part_of_larger_id(s: &str, end: usize) -> bool {
+    followed_by_id_suffix(s, end) || followed_by_cnpj_tail(s, end)
+}
+
 const NIT_WEIGHTS: &[u32] = &[3, 7, 13, 17, 19, 23, 29, 37, 41];
 
 fn valid_nit(body: &str, check: &str) -> bool {
@@ -222,13 +234,13 @@ fn valid_nit(body: &str, check: &str) -> bool {
 }
 
 pub fn contains_arg_dni(s: &str) -> bool {
-    ARG_DNI_RE.find_iter(s).any(|m| !followed_by_id_suffix(s, m.end()))
+    ARG_DNI_RE.find_iter(s).any(|m| !part_of_larger_id(s, m.end()))
 }
 
 pub fn mask_arg_dni_counted(s: &str) -> (String, u32) {
     crate::patterns::replace_counted(&ARG_DNI_RE, s, |caps: &regex::Captures| {
         let m = caps.get(0).unwrap();
-        if followed_by_id_suffix(s, m.end()) {
+        if part_of_larger_id(s, m.end()) {
             return None;
         }
         Some(m.as_str().chars().map(|c| if c.is_ascii_digit() { '*' } else { c }).collect())
@@ -243,7 +255,7 @@ pub fn mask_arg_dni_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> St
     ARG_DNI_RE
         .replace_all(s, |caps: &regex::Captures| {
             let m = caps.get(0).unwrap();
-            if followed_by_id_suffix(s, m.end()) {
+            if part_of_larger_id(s, m.end()) {
                 return m.as_str().to_string();
             }
             let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
@@ -256,13 +268,13 @@ pub fn mask_arg_dni_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> St
 }
 
 pub fn contains_co_cc(s: &str) -> bool {
-    CO_CC_RE.find_iter(s).any(|m| !followed_by_id_suffix(s, m.end()))
+    CO_CC_RE.find_iter(s).any(|m| !part_of_larger_id(s, m.end()))
 }
 
 pub fn mask_co_cc_counted(s: &str) -> (String, u32) {
     crate::patterns::replace_counted(&CO_CC_RE, s, |caps: &regex::Captures| {
         let m = caps.get(0).unwrap();
-        if followed_by_id_suffix(s, m.end()) {
+        if part_of_larger_id(s, m.end()) {
             return None;
         }
         Some(m.as_str().chars().map(|c| if c.is_ascii_digit() { '*' } else { c }).collect())
@@ -277,7 +289,7 @@ pub fn mask_co_cc_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> Stri
     CO_CC_RE
         .replace_all(s, |caps: &regex::Captures| {
             let m = caps.get(0).unwrap();
-            if followed_by_id_suffix(s, m.end()) {
+            if part_of_larger_id(s, m.end()) {
                 return m.as_str().to_string();
             }
             let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
@@ -358,7 +370,7 @@ pub fn mask_arg_dni_consistent(s: &str, hasher: &crate::patterns::consistent::Co
     ARG_DNI_RE
         .replace_all(s, |caps: &regex::Captures| {
             let m = caps.get(0).unwrap();
-            if followed_by_id_suffix(s, m.end()) {
+            if part_of_larger_id(s, m.end()) {
                 return m.as_str().to_string();
             }
             let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
@@ -374,7 +386,7 @@ pub fn mask_co_cc_consistent(s: &str, hasher: &crate::patterns::consistent::Cons
     CO_CC_RE
         .replace_all(s, |caps: &regex::Captures| {
             let m = caps.get(0).unwrap();
-            if followed_by_id_suffix(s, m.end()) {
+            if part_of_larger_id(s, m.end()) {
                 return m.as_str().to_string();
             }
             let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();

@@ -285,6 +285,18 @@ class TestMaskCNPJ:
         out = df.with_columns(maskops.mask_pii("col", mode="consistent", salt="s"))["col"].to_list()
         assert out[0] == out[1]
 
+    def test_invalid_cnpj_prefix_not_masked_as_co_cc(self):
+        original = "empresa 11.222.333/0001-99 fim"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_non_cnpj_slash_still_masks_arg_dni(self):
+        df = pl.DataFrame({"col": ["expediente 11.222.333/2020"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "11.222.333" not in result
+        assert "*" in result
+
 class TestMaskCURP:
     def test_curp_fully_masked(self):
         df = pl.DataFrame({"col": ["BADD110313HCMLNS09"]})
