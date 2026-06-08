@@ -468,6 +468,6 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
 
 #[pymodule]
 fn _maskops(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("__version__", "1.5.1")?;
+    m.add("__version__", "1.6.0")?;
     Ok(())
 }
