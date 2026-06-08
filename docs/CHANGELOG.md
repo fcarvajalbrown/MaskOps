@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.7.0](https://github.com/fcarvajalbrown/MaskOps/compare/v1.6.0...v1.7.0) (2026-06-08)
 
 ### Features
 
