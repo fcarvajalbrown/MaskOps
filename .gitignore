@@ -24,3 +24,6 @@ tools/social/devto_history.json
 
 # Local secrets — never commit
 .env
+
+# Confidential business/sales/acquisition material — local only, never push
+docs/business/
