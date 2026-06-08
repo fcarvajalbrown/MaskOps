@@ -30,15 +30,17 @@ pub fn contains_ssn(s: &str) -> bool {
     SSN_RE.captures_iter(s).any(|caps| valid_ssn(&caps[1], &caps[2], &caps[3]))
 }
 
+pub fn mask_ssn_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&SSN_RE, s, |caps: &regex::Captures| {
+        if !valid_ssn(&caps[1], &caps[2], &caps[3]) {
+            return None;
+        }
+        Some("***-**-****".to_string())
+    })
+}
+
 pub fn mask_ssn(s: &str) -> String {
-    SSN_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_ssn(&caps[1], &caps[2], &caps[3]) {
-                return caps[0].to_string();
-            }
-            "***-**-****".to_string()
-        })
-        .into_owned()
+    mask_ssn_counted(s).0
 }
 
 pub fn mask_ssn_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {

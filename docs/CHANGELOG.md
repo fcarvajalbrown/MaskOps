@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Features
+
+* **audit:** add `mask_pii_audit` expression — masked value plus per-family validated match counts in a single pass, returned as a nested Struct (`masked` + `counts`)
+
 ## [1.5.1](https://github.com/fcarvajalbrown/MaskOps/compare/v1.5.0...v1.5.1) (2026-06-07)
 
 ### Features

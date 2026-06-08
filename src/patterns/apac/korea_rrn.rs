@@ -50,25 +50,26 @@ pub fn contains_rrn(s: &str) -> bool {
     }) || RRN_COMPACT_RE.find_iter(s).any(|m| valid_rrn(m.as_str()))
 }
 
+pub fn mask_rrn_counted(s: &str) -> (String, u32) {
+    let (s, n_fmt) = crate::patterns::replace_counted(&RRN_FMT_RE, s, |caps: &regex::Captures| {
+        let raw = &caps[0];
+        let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+        if !valid_rrn(&d) {
+            return None;
+        }
+        Some("*".repeat(raw.len()))
+    });
+    let (s, n_compact) = crate::patterns::replace_counted(&RRN_COMPACT_RE, &s, |caps: &regex::Captures| {
+        if !valid_rrn(&caps[0]) {
+            return None;
+        }
+        Some("*".repeat(13))
+    });
+    (s, n_fmt + n_compact)
+}
+
 pub fn mask_rrn(s: &str) -> String {
-    let s = RRN_FMT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !valid_rrn(&d) {
-                return raw.to_string();
-            }
-            "*".repeat(raw.len())
-        })
-        .into_owned();
-    RRN_COMPACT_RE
-        .replace_all(&s, |caps: &regex::Captures| {
-            if !valid_rrn(&caps[0]) {
-                return caps[0].to_string();
-            }
-            "*".repeat(13)
-        })
-        .into_owned()
+    mask_rrn_counted(s).0
 }
 
 pub fn mask_rrn_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {

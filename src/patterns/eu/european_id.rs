@@ -87,67 +87,75 @@ pub fn contains_dni(s: &str) -> bool {
     DNI_RE.find_iter(s).any(|m| valid_dni(m.as_str()))
 }
 
+pub fn mask_dni_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&DNI_RE, s, |caps: &regex::Captures| {
+        let dni = &caps[0];
+        if !valid_dni(dni) {
+            return None;
+        }
+        let letter = &dni[dni.len() - 1..];
+        Some(format!("{}{}", "*".repeat(8), letter))
+    })
+}
+
 pub fn mask_dni(s: &str) -> String {
-    DNI_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let dni = &caps[0];
-            if !valid_dni(dni) {
-                return dni.to_string();
-            }
-            let letter = &dni[dni.len() - 1..];
-            format!("{}{}", "*".repeat(8), letter)
-        })
-        .into_owned()
+    mask_dni_counted(s).0
 }
 
 pub fn contains_nie(s: &str) -> bool {
     NIE_RE.find_iter(s).any(|m| valid_nie(m.as_str()))
 }
 
+pub fn mask_nie_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&NIE_RE, s, |caps: &regex::Captures| {
+        let nie = &caps[0];
+        if !valid_nie(nie) {
+            return None;
+        }
+        let letter = &nie[nie.len() - 1..];
+        Some(format!("{}{}", "*".repeat(nie.len() - 1), letter))
+    })
+}
+
 pub fn mask_nie(s: &str) -> String {
-    NIE_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let nie = &caps[0];
-            if !valid_nie(nie) {
-                return nie.to_string();
-            }
-            let letter = &nie[nie.len() - 1..];
-            format!("{}{}", "*".repeat(nie.len() - 1), letter)
-        })
-        .into_owned()
+    mask_nie_counted(s).0
 }
 
 pub fn contains_nin(s: &str) -> bool {
     NIN_RE.find_iter(s).any(|m| valid_nin_prefix(m.as_str()))
 }
 
+pub fn mask_nin_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&NIN_RE, s, |caps: &regex::Captures| {
+        let nin = &caps[0];
+        if !valid_nin_prefix(nin) {
+            return None;
+        }
+        let suffix = &nin[nin.len() - 1..];
+        Some(format!("{}{}", "*".repeat(nin.len() - 1), suffix))
+    })
+}
+
 pub fn mask_nin(s: &str) -> String {
-    NIN_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let nin = &caps[0];
-            if !valid_nin_prefix(nin) {
-                return nin.to_string();
-            }
-            let suffix = &nin[nin.len() - 1..];
-            format!("{}{}", "*".repeat(nin.len() - 1), suffix)
-        })
-        .into_owned()
+    mask_nin_counted(s).0
 }
 
 pub fn contains_personalausweis(s: &str) -> bool {
     PA_RE.find_iter(s).any(|m| valid_personalausweis(m.as_str()))
 }
 
+pub fn mask_personalausweis_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&PA_RE, s, |caps: &regex::Captures| {
+        let id = &caps[0];
+        if !valid_personalausweis(id) {
+            return None;
+        }
+        Some("*".repeat(id.len()))
+    })
+}
+
 pub fn mask_personalausweis(s: &str) -> String {
-    PA_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let id = &caps[0];
-            if !valid_personalausweis(id) {
-                return id.to_string();
-            }
-            "*".repeat(id.len())
-        })
-        .into_owned()
+    mask_personalausweis_counted(s).0
 }
 
 /// Returns the first valid Spanish DNI found, or None.

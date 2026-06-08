@@ -36,14 +36,16 @@ pub fn extract_nir(s: &str) -> Option<String> {
     NIR_RE.find_iter(s).find(|m| valid_nir(m.as_str())).map(|m| m.as_str().to_string())
 }
 
+pub fn mask_nir_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&NIR_RE, s, |caps: &regex::Captures| {
+        let nir = &caps[0];
+        if !valid_nir(nir) {
+            return None;
+        }
+        Some("*".repeat(nir.len()))
+    })
+}
+
 pub fn mask_nir(s: &str) -> String {
-    NIR_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let nir = &caps[0];
-            if !valid_nir(nir) {
-                return nir.to_string();
-            }
-            "*".repeat(nir.len())
-        })
-        .into_owned()
+    mask_nir_counted(s).0
 }

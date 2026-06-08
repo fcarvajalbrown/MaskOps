@@ -156,7 +156,15 @@ def extract_pii(expr: IntoExpr) -> pl.Expr:
         is_elementwise=True,
     )
 
+def mask_pii_audit(expr: IntoExpr) -> pl.Expr:
+    return register_plugin_function(
+        plugin_path=_LIB,
+        function_name="mask_pii_audit",
+        args=[pl.col(expr) if isinstance(expr, str) else expr],
+        is_elementwise=True,
+    )
+
 
 from maskops._policy import load_policy
 
-__all__ = ["mask_pii", "contains_pii", "mask_pii_fpe", "extract_pii", "load_policy"]
+__all__ = ["mask_pii", "contains_pii", "mask_pii_fpe", "extract_pii", "mask_pii_audit", "load_policy"]

@@ -67,6 +67,54 @@ use crate::patterns::latam::{mask_ec_cedula_consistent, mask_pe_dni_consistent};
 use crate::patterns::us::mask_ssn_consistent;
 use crate::patterns::healthcare::{mask_npi_consistent, mask_nhs_consistent};
 
+use crate::patterns::eu::iban::mask_iban_counted;
+use crate::patterns::eu::vat::mask_vat_counted;
+use crate::patterns::eu::nir::mask_nir_counted;
+use crate::patterns::eu::codice_fiscale::mask_cf_counted;
+use crate::patterns::eu::pesel::mask_pesel_counted;
+use crate::patterns::eu::bsn::mask_bsn_counted;
+use crate::patterns::eu::personnummer::mask_personnummer_counted;
+use crate::patterns::eu::european_id::{
+    mask_dni_counted, mask_nie_counted, mask_nin_counted, mask_personalausweis_counted,
+};
+use crate::patterns::contact::email::mask_email_counted;
+use crate::patterns::contact::ip::mask_ip_counted;
+use crate::patterns::contact::phone::mask_phone_counted;
+use crate::patterns::financial::credit_card::mask_card_counted;
+use crate::patterns::us::ssn::mask_ssn_counted;
+use crate::patterns::us::passport::mask_us_passport_counted;
+use crate::patterns::healthcare::mbi::mask_mbi_counted;
+use crate::patterns::healthcare::npi::mask_npi_counted;
+use crate::patterns::healthcare::nhs::mask_nhs_counted;
+use crate::patterns::latam::latam_id::{
+    mask_rut_counted, mask_cpf_counted, mask_curp_counted,
+    mask_arg_dni_counted, mask_co_cc_counted, mask_co_nit_counted,
+};
+use crate::patterns::latam::ecuador::mask_ec_cedula_counted;
+use crate::patterns::latam::peru::mask_pe_dni_counted;
+use crate::patterns::latam::uruguay::mask_uy_ci_counted;
+use crate::patterns::apac::canada_sin::mask_sin_counted;
+use crate::patterns::apac::australia_tfn::mask_tfn_counted;
+use crate::patterns::apac::japan_my_number::mask_my_number_counted;
+use crate::patterns::apac::korea_rrn::mask_rrn_counted;
+
+pub fn replace_counted<F>(re: &regex::Regex, s: &str, render: F) -> (String, u32)
+where
+    F: Fn(&regex::Captures) -> Option<String>,
+{
+    let count = std::cell::Cell::new(0u32);
+    let out = re
+        .replace_all(s, |caps: &regex::Captures| match render(caps) {
+            Some(masked) => {
+                count.set(count.get() + 1);
+                masked
+            }
+            None => caps[0].to_string(),
+        })
+        .into_owned();
+    (out, count.get())
+}
+
 pub fn mask_non_digit(value: &str) -> String {
     let s = mask_iban(value);
     let s = mask_vat(&s);
@@ -447,4 +495,82 @@ pub fn extract_all(value: &str) -> ExtractResult {
         my_number:      extract_my_number(value),
         rrn:            extract_rrn(value),
     }
+}
+
+#[derive(Default)]
+pub struct AuditCounts {
+    pub email: u32,
+    pub phone: u32,
+    pub ip: u32,
+    pub iban: u32,
+    pub vat: u32,
+    pub dni: u32,
+    pub nie: u32,
+    pub nin: u32,
+    pub personalausweis: u32,
+    pub nir: u32,
+    pub codice_fiscale: u32,
+    pub pesel: u32,
+    pub bsn: u32,
+    pub personnummer: u32,
+    pub credit_card: u32,
+    pub ssn: u32,
+    pub us_passport: u32,
+    pub rut: u32,
+    pub cpf: u32,
+    pub curp: u32,
+    pub arg_dni: u32,
+    pub co_cc: u32,
+    pub co_nit: u32,
+    pub ec_cedula: u32,
+    pub pe_dni: u32,
+    pub uy_ci: u32,
+    pub npi: u32,
+    pub mbi: u32,
+    pub nhs: u32,
+    pub sin: u32,
+    pub tfn: u32,
+    pub my_number: u32,
+    pub rrn: u32,
+}
+
+pub fn mask_all_audit(value: &str) -> (String, AuditCounts) {
+    let mut c = AuditCounts::default();
+
+    let (s, n) = mask_iban_counted(value);         c.iban = n;
+    let (s, n) = mask_vat_counted(&s);             c.vat = n;
+    let (s, n) = mask_email_counted(&s);           c.email = n;
+    let (s, n) = mask_ip_counted(&s);              c.ip = n;
+    let (s, n) = mask_curp_counted(&s);            c.curp = n;
+    let (s, n) = mask_dni_counted(&s);             c.dni = n;
+    let (s, n) = mask_nie_counted(&s);             c.nie = n;
+    let (s, n) = mask_nin_counted(&s);             c.nin = n;
+    let (s, n) = mask_personalausweis_counted(&s); c.personalausweis = n;
+    let (s, n) = mask_us_passport_counted(&s);     c.us_passport = n;
+    let (s, n) = mask_mbi_counted(&s);             c.mbi = n;
+    let (s, n) = mask_nir_counted(&s);             c.nir = n;
+    let (s, n) = mask_cf_counted(&s);              c.codice_fiscale = n;
+
+    let (s, n) = mask_phone_counted(&s);           c.phone = n;
+    let (s, n) = mask_rut_counted(&s);             c.rut = n;
+    let (s, n) = mask_cpf_counted(&s);             c.cpf = n;
+    let (s, n) = mask_card_counted(&s);            c.credit_card = n;
+    let (s, n) = mask_ssn_counted(&s);             c.ssn = n;
+    let (s, n) = mask_arg_dni_counted(&s);         c.arg_dni = n;
+    let (s, n) = mask_co_cc_counted(&s);           c.co_cc = n;
+    let (s, n) = mask_co_nit_counted(&s);          c.co_nit = n;
+    let (s, n) = mask_personnummer_counted(&s);    c.personnummer = n;
+    let (s, n) = mask_ec_cedula_counted(&s);       c.ec_cedula = n;
+    let (s, n) = mask_pe_dni_counted(&s);          c.pe_dni = n;
+    let (s, n) = mask_npi_counted(&s);             c.npi = n;
+    let (s, n) = mask_nhs_counted(&s);             c.nhs = n;
+    let (s, n) = mask_uy_ci_counted(&s);           c.uy_ci = n;
+    let (s, n) = mask_sin_counted(&s);             c.sin = n;
+    let (s, n) = mask_tfn_counted(&s);             c.tfn = n;
+    let (s, n) = mask_pesel_counted(&s);           c.pesel = n;
+    let (s, n) = mask_bsn_counted(&s);             c.bsn = n;
+    let (s, n) = mask_my_number_counted(&s);       c.my_number = n;
+    let (s, n) = mask_rrn_counted(&s);             c.rrn = n;
+
+    (s, c)
 }

@@ -9,14 +9,16 @@ pub static VAT_RE: Lazy<Regex> = Lazy::new(|| {
     ).unwrap()
 });
 
+pub fn mask_vat_counted(value: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&VAT_RE, value, |caps: &regex::Captures| {
+        let vat = caps.get(0).unwrap().as_str();
+        let (prefix, rest) = vat.split_at(2.min(vat.len()));
+        Some(format!("{}{}", prefix, "*".repeat(rest.len())))
+    })
+}
+
 pub fn mask_vat(value: &str) -> String {
-    VAT_RE
-        .replace_all(value, |caps: &regex::Captures| {
-            let vat = caps.get(0).unwrap().as_str();
-            let (prefix, rest) = vat.split_at(2.min(vat.len()));
-            format!("{}{}", prefix, "*".repeat(rest.len()))
-        })
-        .into_owned()
+    mask_vat_counted(value).0
 }
 
 pub fn contains_vat(value: &str) -> bool {

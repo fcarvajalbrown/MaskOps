@@ -46,21 +46,22 @@ pub fn contains_tfn(s: &str) -> bool {
     }) || TFN_COMPACT_RE.find_iter(s).any(|m| valid_tfn(m.as_str()))
 }
 
+pub fn mask_tfn_counted(s: &str) -> (String, u32) {
+    let (s, n_spaced) = crate::patterns::replace_counted(&TFN_SPACED_RE, s, |caps: &regex::Captures| {
+        let raw = &caps[0];
+        let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+        if !valid_tfn(&d) { return None; }
+        Some("*** *** ***".to_string())
+    });
+    let (s, n_compact) = crate::patterns::replace_counted(&TFN_COMPACT_RE, &s, |caps: &regex::Captures| {
+        if !valid_tfn(&caps[0]) { return None; }
+        Some("*".repeat(9))
+    });
+    (s, n_spaced + n_compact)
+}
+
 pub fn mask_tfn(s: &str) -> String {
-    let s = TFN_SPACED_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !valid_tfn(&d) { return raw.to_string(); }
-            "*** *** ***".to_string()
-        })
-        .into_owned();
-    TFN_COMPACT_RE
-        .replace_all(&s, |caps: &regex::Captures| {
-            if !valid_tfn(&caps[0]) { return caps[0].to_string(); }
-            "*".repeat(9)
-        })
-        .into_owned()
+    mask_tfn_counted(s).0
 }
 
 pub fn mask_tfn_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {

@@ -108,46 +108,54 @@ pub fn contains_rut(s: &str) -> bool {
     RUT_RE.find_iter(s).any(|m| valid_rut(m.as_str()))
 }
 
+pub fn mask_rut_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&RUT_RE, s, |caps: &regex::Captures| {
+        let rut = &caps[0];
+        if !valid_rut(rut) {
+            return None;
+        }
+        let dv = &rut[rut.len() - 1..];
+        let body_len = rut.len() - 2;
+        Some(format!("{}-{}", "*".repeat(body_len), dv))
+    })
+}
+
 pub fn mask_rut(s: &str) -> String {
-    RUT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let rut = &caps[0];
-            if !valid_rut(rut) {
-                return rut.to_string();
-            }
-            let dv = &rut[rut.len() - 1..];
-            let body_len = rut.len() - 2; 
-            format!("{}-{}", "*".repeat(body_len), dv)
-        })
-        .into_owned()
+    mask_rut_counted(s).0
 }
 
 pub fn contains_cpf(s: &str) -> bool {
     CPF_RE.find_iter(s).any(|m| valid_cpf(m.as_str()))
 }
 
+pub fn mask_cpf_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&CPF_RE, s, |caps: &regex::Captures| {
+        let cpf = &caps[0];
+        if !valid_cpf(cpf) {
+            return None;
+        }
+        let digits: String = cpf.chars().filter(|c| c.is_ascii_digit()).collect();
+        let check = &digits[9..];
+        Some(format!("{}-{}", "*".repeat(9), check))
+    })
+}
+
 pub fn mask_cpf(s: &str) -> String {
-    CPF_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let cpf = &caps[0];
-            if !valid_cpf(cpf) {
-                return cpf.to_string();
-            }
-            let digits: String = cpf.chars().filter(|c| c.is_ascii_digit()).collect();
-            let check = &digits[9..];
-            format!("{}-{}", "*".repeat(9), check)
-        })
-        .into_owned()
+    mask_cpf_counted(s).0
 }
 
 pub fn contains_curp(s: &str) -> bool {
     CURP_RE.is_match(s)
 }
 
+pub fn mask_curp_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&CURP_RE, s, |caps: &regex::Captures| {
+        Some("*".repeat(caps[0].len()))
+    })
+}
+
 pub fn mask_curp(s: &str) -> String {
-    CURP_RE
-        .replace_all(s, |caps: &regex::Captures| "*".repeat(caps[0].len()))
-        .into_owned()
+    mask_curp_counted(s).0
 }
 
 pub fn mask_rut_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
@@ -217,16 +225,18 @@ pub fn contains_arg_dni(s: &str) -> bool {
     ARG_DNI_RE.find_iter(s).any(|m| !followed_by_id_suffix(s, m.end()))
 }
 
+pub fn mask_arg_dni_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&ARG_DNI_RE, s, |caps: &regex::Captures| {
+        let m = caps.get(0).unwrap();
+        if followed_by_id_suffix(s, m.end()) {
+            return None;
+        }
+        Some(m.as_str().chars().map(|c| if c.is_ascii_digit() { '*' } else { c }).collect())
+    })
+}
+
 pub fn mask_arg_dni(s: &str) -> String {
-    ARG_DNI_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let m = caps.get(0).unwrap();
-            if followed_by_id_suffix(s, m.end()) {
-                return m.as_str().to_string();
-            }
-            m.as_str().chars().map(|c| if c.is_ascii_digit() { '*' } else { c }).collect()
-        })
-        .into_owned()
+    mask_arg_dni_counted(s).0
 }
 
 pub fn mask_arg_dni_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
@@ -249,16 +259,18 @@ pub fn contains_co_cc(s: &str) -> bool {
     CO_CC_RE.find_iter(s).any(|m| !followed_by_id_suffix(s, m.end()))
 }
 
+pub fn mask_co_cc_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&CO_CC_RE, s, |caps: &regex::Captures| {
+        let m = caps.get(0).unwrap();
+        if followed_by_id_suffix(s, m.end()) {
+            return None;
+        }
+        Some(m.as_str().chars().map(|c| if c.is_ascii_digit() { '*' } else { c }).collect())
+    })
+}
+
 pub fn mask_co_cc(s: &str) -> String {
-    CO_CC_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let m = caps.get(0).unwrap();
-            if followed_by_id_suffix(s, m.end()) {
-                return m.as_str().to_string();
-            }
-            m.as_str().chars().map(|c| if c.is_ascii_digit() { '*' } else { c }).collect()
-        })
-        .into_owned()
+    mask_co_cc_counted(s).0
 }
 
 pub fn mask_co_cc_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
@@ -281,15 +293,17 @@ pub fn contains_co_nit(s: &str) -> bool {
     CO_NIT_RE.captures_iter(s).any(|caps| valid_nit(&caps[1], &caps[2]))
 }
 
+pub fn mask_co_nit_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&CO_NIT_RE, s, |caps: &regex::Captures| {
+        if !valid_nit(&caps[1], &caps[2]) {
+            return None;
+        }
+        Some(format!("*********-{}", &caps[2]))
+    })
+}
+
 pub fn mask_co_nit(s: &str) -> String {
-    CO_NIT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_nit(&caps[1], &caps[2]) {
-                return caps[0].to_string();
-            }
-            format!("*********-{}", &caps[2])
-        })
-        .into_owned()
+    mask_co_nit_counted(s).0
 }
 
 pub fn mask_co_nit_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {

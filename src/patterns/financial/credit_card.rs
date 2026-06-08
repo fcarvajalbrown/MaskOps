@@ -61,21 +61,23 @@ pub fn contains_card(s: &str) -> bool {
     CARD_RE.find_iter(s).any(|m| luhn_valid(m.as_str()))
 }
 
+pub fn mask_card_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&CARD_RE, s, |caps: &regex::Captures| {
+        let raw = caps.get(0).unwrap().as_str();
+        if !luhn_valid(raw) {
+            return None;
+        }
+        let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+        let len = digits.len();
+        let bin = &digits[..6];
+        let last4 = &digits[len - 4..];
+        let middle = len - 10;
+        Some(format!("{}{}{}", bin, "*".repeat(middle), last4))
+    })
+}
+
 pub fn mask_card(s: &str) -> String {
-    CARD_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = caps.get(0).unwrap().as_str();
-            if !luhn_valid(raw) {
-                return raw.to_string();
-            }
-            let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            let len = digits.len();
-            let bin = &digits[..6];
-            let last4 = &digits[len - 4..];
-            let middle = len - 10; 
-            format!("{}{}{}", bin, "*".repeat(middle), last4)
-        })
-        .into_owned()
+    mask_card_counted(s).0
 }
 
 pub fn mask_card_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {

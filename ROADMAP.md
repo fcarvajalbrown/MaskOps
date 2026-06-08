@@ -32,7 +32,7 @@ Goal: configurable patterns, structured output, and audit land individually then
 - [x] **v1.3** — `extract_pii` expression: struct column with one field per PII family
 - [x] **v1.4** — Multi-column referential integrity: consistent masking across joined tables
 - [x] **v1.5** — APAC: Japanese My Number, South Korean RRN
-- [ ] **v1.6** — `mask_pii_audit` expression: masked value + per-family match counts in one pass
+- [x] **v1.6** — `mask_pii_audit` expression: masked value + per-family match counts in one pass
 - [ ] **v1.7** — MEA: South African ID, Israeli ID number
 - [ ] **v1.8** — FPE key management helpers: rotation, tweak derivation, validation
 - [ ] **v1.9** — US driver's license (state-by-state) · date of birth patterns

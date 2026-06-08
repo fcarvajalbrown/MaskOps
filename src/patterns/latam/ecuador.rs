@@ -44,15 +44,17 @@ pub fn contains_ec_cedula(s: &str) -> bool {
     EC_CEDULA_RE.find_iter(s).any(|m| valid_cedula(m.as_str()))
 }
 
+pub fn mask_ec_cedula_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&EC_CEDULA_RE, s, |caps: &regex::Captures| {
+        if !valid_cedula(&caps[0]) {
+            return None;
+        }
+        Some("*".repeat(10))
+    })
+}
+
 pub fn mask_ec_cedula(s: &str) -> String {
-    EC_CEDULA_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_cedula(&caps[0]) {
-                return caps[0].to_string();
-            }
-            "*".repeat(10)
-        })
-        .into_owned()
+    mask_ec_cedula_counted(s).0
 }
 
 pub fn mask_ec_cedula_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {

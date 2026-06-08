@@ -26,15 +26,17 @@ pub fn extract_bsn(s: &str) -> Option<String> {
     BSN_RE.find_iter(s).find(|m| valid_bsn(m.as_str())).map(|m| m.as_str().to_string())
 }
 
+pub fn mask_bsn_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&BSN_RE, s, |caps: &regex::Captures| {
+        if !valid_bsn(&caps[0]) {
+            return None;
+        }
+        Some("*".repeat(9))
+    })
+}
+
 pub fn mask_bsn(s: &str) -> String {
-    BSN_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_bsn(&caps[0]) {
-                return caps[0].to_string();
-            }
-            "*".repeat(9)
-        })
-        .into_owned()
+    mask_bsn_counted(s).0
 }
 
 pub fn mask_bsn_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {

@@ -7,15 +7,16 @@ pub static IBAN_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"\b([A-Z]{2}\d{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16})\b").unwrap()
 });
 
+pub fn mask_iban_counted(value: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&IBAN_RE, value, |caps: &regex::Captures| {
+        let iban = caps.get(0).unwrap().as_str();
+        let (visible, secret) = iban.split_at(4.min(iban.len()));
+        Some(format!("{}{}", visible, "*".repeat(secret.len())))
+    })
+}
+
 pub fn mask_iban(value: &str) -> String {
-    IBAN_RE
-        .replace_all(value, |caps: &regex::Captures| {
-            let iban = caps.get(0).unwrap().as_str();
-            
-            let (visible, secret) = iban.split_at(4.min(iban.len()));
-            format!("{}{}", visible, "*".repeat(secret.len()))
-        })
-        .into_owned()
+    mask_iban_counted(value).0
 }
 
 pub fn contains_iban(value: &str) -> bool {

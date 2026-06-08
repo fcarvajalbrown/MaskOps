@@ -9,7 +9,7 @@ use pyo3_polars::export::polars_core::prelude::*;
 use patterns::{mask_all, mask_all_fpe, contains_any_pii,
                mask_all_selected, mask_all_selected_fpe, contains_any_selected,
                mask_all_consistent, mask_all_selected_consistent,
-               extract_all, ExtractResult};
+               extract_all, ExtractResult, mask_all_audit};
 use patterns::{Ff3Cipher, KEY_LEN, TWEAK_LEN};
 use patterns::ConsistentHasher;
 pub use patterns::fpe::Ff3Cipher as MaskopsFpe;
@@ -260,6 +260,210 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
     ];
 
     Ok(StructChunked::from_series("extract_pii".into(), len, series.iter())?.into_series())
+}
+
+fn mask_pii_audit_output(_: &[Field]) -> PolarsResult<Field> {
+    let count_fields = vec![
+        Field::new("email".into(),           DataType::UInt32),
+        Field::new("phone".into(),           DataType::UInt32),
+        Field::new("ip".into(),              DataType::UInt32),
+        Field::new("iban".into(),            DataType::UInt32),
+        Field::new("vat".into(),             DataType::UInt32),
+        Field::new("dni".into(),             DataType::UInt32),
+        Field::new("nie".into(),             DataType::UInt32),
+        Field::new("nin".into(),             DataType::UInt32),
+        Field::new("personalausweis".into(), DataType::UInt32),
+        Field::new("nir".into(),             DataType::UInt32),
+        Field::new("codice_fiscale".into(),  DataType::UInt32),
+        Field::new("pesel".into(),           DataType::UInt32),
+        Field::new("bsn".into(),             DataType::UInt32),
+        Field::new("personnummer".into(),    DataType::UInt32),
+        Field::new("credit_card".into(),     DataType::UInt32),
+        Field::new("ssn".into(),             DataType::UInt32),
+        Field::new("us_passport".into(),     DataType::UInt32),
+        Field::new("rut".into(),             DataType::UInt32),
+        Field::new("cpf".into(),             DataType::UInt32),
+        Field::new("curp".into(),            DataType::UInt32),
+        Field::new("arg_dni".into(),         DataType::UInt32),
+        Field::new("co_cc".into(),           DataType::UInt32),
+        Field::new("co_nit".into(),          DataType::UInt32),
+        Field::new("ec_cedula".into(),       DataType::UInt32),
+        Field::new("pe_dni".into(),          DataType::UInt32),
+        Field::new("uy_ci".into(),           DataType::UInt32),
+        Field::new("npi".into(),             DataType::UInt32),
+        Field::new("mbi".into(),             DataType::UInt32),
+        Field::new("nhs".into(),             DataType::UInt32),
+        Field::new("sin".into(),             DataType::UInt32),
+        Field::new("tfn".into(),             DataType::UInt32),
+        Field::new("my_number".into(),       DataType::UInt32),
+        Field::new("rrn".into(),             DataType::UInt32),
+    ];
+    let fields = vec![
+        Field::new("masked".into(), DataType::String),
+        Field::new("counts".into(), DataType::Struct(count_fields)),
+    ];
+    Ok(Field::new("mask_pii_audit".into(), DataType::Struct(fields)))
+}
+
+#[polars_expr(output_type_func=mask_pii_audit_output)]
+fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
+    let ca = inputs[0].str()?;
+    let len = ca.len();
+
+    let mut masked: Vec<Option<String>> = Vec::with_capacity(len);
+    let mut c_email           = Vec::with_capacity(len);
+    let mut c_phone           = Vec::with_capacity(len);
+    let mut c_ip              = Vec::with_capacity(len);
+    let mut c_iban            = Vec::with_capacity(len);
+    let mut c_vat             = Vec::with_capacity(len);
+    let mut c_dni             = Vec::with_capacity(len);
+    let mut c_nie             = Vec::with_capacity(len);
+    let mut c_nin             = Vec::with_capacity(len);
+    let mut c_personalausweis = Vec::with_capacity(len);
+    let mut c_nir             = Vec::with_capacity(len);
+    let mut c_codice_fiscale  = Vec::with_capacity(len);
+    let mut c_pesel           = Vec::with_capacity(len);
+    let mut c_bsn             = Vec::with_capacity(len);
+    let mut c_personnummer    = Vec::with_capacity(len);
+    let mut c_credit_card     = Vec::with_capacity(len);
+    let mut c_ssn             = Vec::with_capacity(len);
+    let mut c_us_passport     = Vec::with_capacity(len);
+    let mut c_rut             = Vec::with_capacity(len);
+    let mut c_cpf             = Vec::with_capacity(len);
+    let mut c_curp            = Vec::with_capacity(len);
+    let mut c_arg_dni         = Vec::with_capacity(len);
+    let mut c_co_cc           = Vec::with_capacity(len);
+    let mut c_co_nit          = Vec::with_capacity(len);
+    let mut c_ec_cedula       = Vec::with_capacity(len);
+    let mut c_pe_dni          = Vec::with_capacity(len);
+    let mut c_uy_ci           = Vec::with_capacity(len);
+    let mut c_npi             = Vec::with_capacity(len);
+    let mut c_mbi             = Vec::with_capacity(len);
+    let mut c_nhs             = Vec::with_capacity(len);
+    let mut c_sin             = Vec::with_capacity(len);
+    let mut c_tfn             = Vec::with_capacity(len);
+    let mut c_my_number       = Vec::with_capacity(len);
+    let mut c_rrn             = Vec::with_capacity(len);
+
+    for opt in ca.into_iter() {
+        match opt {
+            Some(s) => {
+                let (m, c) = mask_all_audit(s);
+                masked.push(Some(m));
+                c_email.push(c.email);
+                c_phone.push(c.phone);
+                c_ip.push(c.ip);
+                c_iban.push(c.iban);
+                c_vat.push(c.vat);
+                c_dni.push(c.dni);
+                c_nie.push(c.nie);
+                c_nin.push(c.nin);
+                c_personalausweis.push(c.personalausweis);
+                c_nir.push(c.nir);
+                c_codice_fiscale.push(c.codice_fiscale);
+                c_pesel.push(c.pesel);
+                c_bsn.push(c.bsn);
+                c_personnummer.push(c.personnummer);
+                c_credit_card.push(c.credit_card);
+                c_ssn.push(c.ssn);
+                c_us_passport.push(c.us_passport);
+                c_rut.push(c.rut);
+                c_cpf.push(c.cpf);
+                c_curp.push(c.curp);
+                c_arg_dni.push(c.arg_dni);
+                c_co_cc.push(c.co_cc);
+                c_co_nit.push(c.co_nit);
+                c_ec_cedula.push(c.ec_cedula);
+                c_pe_dni.push(c.pe_dni);
+                c_uy_ci.push(c.uy_ci);
+                c_npi.push(c.npi);
+                c_mbi.push(c.mbi);
+                c_nhs.push(c.nhs);
+                c_sin.push(c.sin);
+                c_tfn.push(c.tfn);
+                c_my_number.push(c.my_number);
+                c_rrn.push(c.rrn);
+            }
+            None => {
+                masked.push(None);
+                c_email.push(0);
+                c_phone.push(0);
+                c_ip.push(0);
+                c_iban.push(0);
+                c_vat.push(0);
+                c_dni.push(0);
+                c_nie.push(0);
+                c_nin.push(0);
+                c_personalausweis.push(0);
+                c_nir.push(0);
+                c_codice_fiscale.push(0);
+                c_pesel.push(0);
+                c_bsn.push(0);
+                c_personnummer.push(0);
+                c_credit_card.push(0);
+                c_ssn.push(0);
+                c_us_passport.push(0);
+                c_rut.push(0);
+                c_cpf.push(0);
+                c_curp.push(0);
+                c_arg_dni.push(0);
+                c_co_cc.push(0);
+                c_co_nit.push(0);
+                c_ec_cedula.push(0);
+                c_pe_dni.push(0);
+                c_uy_ci.push(0);
+                c_npi.push(0);
+                c_mbi.push(0);
+                c_nhs.push(0);
+                c_sin.push(0);
+                c_tfn.push(0);
+                c_my_number.push(0);
+                c_rrn.push(0);
+            }
+        }
+    }
+
+    let count_series: Vec<Series> = vec![
+        UInt32Chunked::from_vec("email".into(),           c_email).into_series(),
+        UInt32Chunked::from_vec("phone".into(),           c_phone).into_series(),
+        UInt32Chunked::from_vec("ip".into(),              c_ip).into_series(),
+        UInt32Chunked::from_vec("iban".into(),            c_iban).into_series(),
+        UInt32Chunked::from_vec("vat".into(),             c_vat).into_series(),
+        UInt32Chunked::from_vec("dni".into(),             c_dni).into_series(),
+        UInt32Chunked::from_vec("nie".into(),             c_nie).into_series(),
+        UInt32Chunked::from_vec("nin".into(),             c_nin).into_series(),
+        UInt32Chunked::from_vec("personalausweis".into(), c_personalausweis).into_series(),
+        UInt32Chunked::from_vec("nir".into(),             c_nir).into_series(),
+        UInt32Chunked::from_vec("codice_fiscale".into(),  c_codice_fiscale).into_series(),
+        UInt32Chunked::from_vec("pesel".into(),           c_pesel).into_series(),
+        UInt32Chunked::from_vec("bsn".into(),             c_bsn).into_series(),
+        UInt32Chunked::from_vec("personnummer".into(),    c_personnummer).into_series(),
+        UInt32Chunked::from_vec("credit_card".into(),     c_credit_card).into_series(),
+        UInt32Chunked::from_vec("ssn".into(),             c_ssn).into_series(),
+        UInt32Chunked::from_vec("us_passport".into(),     c_us_passport).into_series(),
+        UInt32Chunked::from_vec("rut".into(),             c_rut).into_series(),
+        UInt32Chunked::from_vec("cpf".into(),             c_cpf).into_series(),
+        UInt32Chunked::from_vec("curp".into(),            c_curp).into_series(),
+        UInt32Chunked::from_vec("arg_dni".into(),         c_arg_dni).into_series(),
+        UInt32Chunked::from_vec("co_cc".into(),           c_co_cc).into_series(),
+        UInt32Chunked::from_vec("co_nit".into(),          c_co_nit).into_series(),
+        UInt32Chunked::from_vec("ec_cedula".into(),       c_ec_cedula).into_series(),
+        UInt32Chunked::from_vec("pe_dni".into(),          c_pe_dni).into_series(),
+        UInt32Chunked::from_vec("uy_ci".into(),           c_uy_ci).into_series(),
+        UInt32Chunked::from_vec("npi".into(),             c_npi).into_series(),
+        UInt32Chunked::from_vec("mbi".into(),             c_mbi).into_series(),
+        UInt32Chunked::from_vec("nhs".into(),             c_nhs).into_series(),
+        UInt32Chunked::from_vec("sin".into(),             c_sin).into_series(),
+        UInt32Chunked::from_vec("tfn".into(),             c_tfn).into_series(),
+        UInt32Chunked::from_vec("my_number".into(),       c_my_number).into_series(),
+        UInt32Chunked::from_vec("rrn".into(),             c_rrn).into_series(),
+    ];
+
+    let counts = StructChunked::from_series("counts".into(), len, count_series.iter())?.into_series();
+    let masked_series = StringChunked::from_iter_options("masked".into(), masked.into_iter()).into_series();
+
+    let out_series = vec![masked_series, counts];
+    Ok(StructChunked::from_series("mask_pii_audit".into(), len, out_series.iter())?.into_series())
 }
 
 #[pymodule]

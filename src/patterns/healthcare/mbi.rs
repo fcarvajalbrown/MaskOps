@@ -28,10 +28,14 @@ pub fn contains_mbi(s: &str) -> bool {
     MBI_RE.is_match(s)
 }
 
+pub fn mask_mbi_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&MBI_RE, s, |_caps: &regex::Captures| {
+        Some("*".repeat(11))
+    })
+}
+
 pub fn mask_mbi(s: &str) -> String {
-    MBI_RE
-        .replace_all(s, "*".repeat(11).as_str())
-        .into_owned()
+    mask_mbi_counted(s).0
 }
 
 #[allow(dead_code)]

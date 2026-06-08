@@ -15,8 +15,12 @@ pub fn contains_us_passport(s: &str) -> bool {
     PASSPORT_RE.is_match(s)
 }
 
+pub fn mask_us_passport_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&PASSPORT_RE, s, |_caps: &regex::Captures| {
+        Some("*********".to_string())
+    })
+}
+
 pub fn mask_us_passport(s: &str) -> String {
-    PASSPORT_RE
-        .replace_all(s, "*********")
-        .into_owned()
+    mask_us_passport_counted(s).0
 }

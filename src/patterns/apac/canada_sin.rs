@@ -59,21 +59,25 @@ pub fn contains_sin(s: &str) -> bool {
     })
 }
 
-pub fn mask_sin(s: &str) -> String {
-    let s = SIN_FMT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !luhn_valid(&d) { return raw.to_string(); }
-            "*".repeat(raw.len())
-        })
-        .into_owned();
-    mask_sin_compact_asterisk(&s)
+pub fn mask_sin_counted(s: &str) -> (String, u32) {
+    let (s, n_fmt) = crate::patterns::replace_counted(&SIN_FMT_RE, s, |caps: &regex::Captures| {
+        let raw = &caps[0];
+        let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+        if !luhn_valid(&d) { return None; }
+        Some("*".repeat(raw.len()))
+    });
+    let (s, n_compact) = mask_sin_compact_asterisk_counted(&s);
+    (s, n_fmt + n_compact)
 }
 
-fn mask_sin_compact_asterisk(s: &str) -> String {
+pub fn mask_sin(s: &str) -> String {
+    mask_sin_counted(s).0
+}
+
+fn mask_sin_compact_asterisk_counted(s: &str) -> (String, u32) {
     let mut result = String::with_capacity(s.len());
     let mut last = 0;
+    let mut count = 0u32;
     for m in SIN_COMPACT_RE.find_iter(s) {
         if !luhn_valid(m.as_str()) || !not_followed_by_dash(s, m.end()) {
             result.push_str(&s[last..m.end()]);
@@ -82,10 +86,11 @@ fn mask_sin_compact_asterisk(s: &str) -> String {
         }
         result.push_str(&s[last..m.start()]);
         result.push_str(&"*".repeat(9));
+        count += 1;
         last = m.end();
     }
     result.push_str(&s[last..]);
-    result
+    (result, count)
 }
 
 pub fn mask_sin_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {

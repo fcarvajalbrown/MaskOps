@@ -62,14 +62,16 @@ pub fn extract_cf(s: &str) -> Option<String> {
     CF_RE.find_iter(s).find(|m| valid_cf(m.as_str())).map(|m| m.as_str().to_string())
 }
 
+pub fn mask_cf_counted(s: &str) -> (String, u32) {
+    crate::patterns::replace_counted(&CF_RE, s, |caps: &regex::Captures| {
+        let cf = &caps[0];
+        if !valid_cf(cf) {
+            return None;
+        }
+        Some("*".repeat(16))
+    })
+}
+
 pub fn mask_cf(s: &str) -> String {
-    CF_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let cf = &caps[0];
-            if !valid_cf(cf) {
-                return cf.to_string();
-            }
-            "*".repeat(16)
-        })
-        .into_owned()
+    mask_cf_counted(s).0
 }

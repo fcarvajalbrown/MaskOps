@@ -47,21 +47,22 @@ pub fn extract_personnummer(s: &str) -> Option<String> {
         .map(|m| m.as_str().to_string())
 }
 
+pub fn mask_personnummer_counted(s: &str) -> (String, u32) {
+    let (s, n_short) = crate::patterns::replace_counted(&SHORT_RE, s, |caps: &regex::Captures| {
+        let raw = &caps[0];
+        if !luhn_valid(&short_digits(raw)) { return None; }
+        Some(raw.chars().map(|c| if c.is_ascii_digit() { '*' } else { c }).collect())
+    });
+    let (s, n_long) = crate::patterns::replace_counted(&LONG_RE, &s, |caps: &regex::Captures| {
+        let raw = &caps[0];
+        if !luhn_valid(&long_digits(raw)) { return None; }
+        Some(raw.chars().map(|c| if c.is_ascii_digit() { '*' } else { c }).collect())
+    });
+    (s, n_short + n_long)
+}
+
 pub fn mask_personnummer(s: &str) -> String {
-    let s = SHORT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            if !luhn_valid(&short_digits(raw)) { return raw.to_string(); }
-            raw.chars().map(|c| if c.is_ascii_digit() { '*' } else { c }).collect()
-        })
-        .into_owned();
-    LONG_RE
-        .replace_all(&s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            if !luhn_valid(&long_digits(raw)) { return raw.to_string(); }
-            raw.chars().map(|c| if c.is_ascii_digit() { '*' } else { c }).collect()
-        })
-        .into_owned()
+    mask_personnummer_counted(s).0
 }
 
 pub fn mask_personnummer_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
