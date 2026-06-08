@@ -5,6 +5,7 @@ pub mod financial;
 pub mod us;
 pub mod healthcare;
 pub mod apac;
+pub mod mea;
 pub mod country_codes;
 pub mod fpe;
 pub mod fpe_ff1;
@@ -57,6 +58,10 @@ use crate::patterns::apac::{
     contains_my_number, mask_my_number, extract_my_number, mask_my_number_fpe, mask_my_number_consistent,
     contains_rrn, mask_rrn, extract_rrn, mask_rrn_fpe, mask_rrn_consistent,
 };
+use crate::patterns::mea::{
+    contains_za_id, mask_za_id, extract_za_id, mask_za_id_fpe, mask_za_id_consistent,
+    contains_il_id, mask_il_id, extract_il_id, mask_il_id_fpe, mask_il_id_consistent,
+};
 pub use crate::patterns::fpe::{Ff3Cipher, FpeCipher, KEY_LEN, TWEAK_LEN};
 pub use crate::patterns::fpe_ff1::Ff1Cipher;
 pub use crate::patterns::consistent::ConsistentHasher;
@@ -101,6 +106,8 @@ use crate::patterns::apac::canada_sin::mask_sin_counted;
 use crate::patterns::apac::australia_tfn::mask_tfn_counted;
 use crate::patterns::apac::japan_my_number::mask_my_number_counted;
 use crate::patterns::apac::korea_rrn::mask_rrn_counted;
+use crate::patterns::mea::south_africa::mask_za_id_counted;
+use crate::patterns::mea::israel::mask_il_id_counted;
 
 pub fn replace_counted<F>(re: &regex::Regex, s: &str, render: F) -> (String, u32)
 where
@@ -158,6 +165,8 @@ pub fn mask_digit(value: &str) -> String {
     let s = mask_bsn(&s);
     let s = mask_my_number(&s);
     let s = mask_rrn(&s);
+    let s = mask_za_id(&s);
+    let s = mask_il_id(&s);
     s
 }
 
@@ -183,6 +192,8 @@ pub fn mask_digit_fpe(value: &str, cipher: &FpeCipher) -> String {
     let s = mask_bsn_fpe(&s, cipher);
     let s = mask_my_number_fpe(&s, cipher);
     let s = mask_rrn_fpe(&s, cipher);
+    let s = mask_za_id_fpe(&s, cipher);
+    let s = mask_il_id_fpe(&s, cipher);
     s
 }
 
@@ -218,6 +229,8 @@ pub fn mask_digit_consistent(value: &str, hasher: &ConsistentHasher) -> String {
     let s = mask_bsn_consistent(&s, hasher);
     let s = mask_my_number_consistent(&s, hasher);
     let s = mask_rrn_consistent(&s, hasher);
+    let s = mask_za_id_consistent(&s, hasher);
+    let s = mask_il_id_consistent(&s, hasher);
     s
 }
 
@@ -264,6 +277,8 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
             "personnummer"    => mask_personnummer(&s),
             "my_number"       => mask_my_number(&s),
             "rrn"             => mask_rrn(&s),
+            "za_id"           => mask_za_id(&s),
+            "il_id"           => mask_il_id(&s),
             _                 => s,
         };
     }
@@ -308,6 +323,8 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher)
             "personnummer"    => mask_personnummer_fpe(&s, cipher),
             "my_number"       => mask_my_number_fpe(&s, cipher),
             "rrn"             => mask_rrn_fpe(&s, cipher),
+            "za_id"           => mask_za_id_fpe(&s, cipher),
+            "il_id"           => mask_il_id_fpe(&s, cipher),
             _                 => s,
         };
     }
@@ -352,6 +369,8 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
             "personnummer"    => mask_personnummer_consistent(&s, hasher),
             "my_number"       => mask_my_number_consistent(&s, hasher),
             "rrn"             => mask_rrn_consistent(&s, hasher),
+            "za_id"           => mask_za_id_consistent(&s, hasher),
+            "il_id"           => mask_il_id_consistent(&s, hasher),
             _                 => s,
         };
     }
@@ -394,6 +413,8 @@ pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
         "personnummer"    => contains_personnummer(value),
         "my_number"       => contains_my_number(value),
         "rrn"             => contains_rrn(value),
+        "za_id"           => contains_za_id(value),
+        "il_id"           => contains_il_id(value),
         _                 => false,
     })
 }
@@ -433,6 +454,8 @@ pub fn contains_any_pii(value: &str) -> bool {
         || contains_personnummer(value)
         || contains_my_number(value)
         || contains_rrn(value)
+        || contains_za_id(value)
+        || contains_il_id(value)
 }
 
 pub struct ExtractResult {
@@ -470,6 +493,8 @@ pub struct ExtractResult {
     pub tfn: Option<String>,
     pub my_number: Option<String>,
     pub rrn: Option<String>,
+    pub za_id: Option<String>,
+    pub il_id: Option<String>,
 }
 
 pub fn extract_all(value: &str) -> ExtractResult {
@@ -508,6 +533,8 @@ pub fn extract_all(value: &str) -> ExtractResult {
         tfn:            extract_tfn(value),
         my_number:      extract_my_number(value),
         rrn:            extract_rrn(value),
+        za_id:          extract_za_id(value),
+        il_id:          extract_il_id(value),
     }
 }
 
@@ -547,6 +574,8 @@ pub struct AuditCounts {
     pub tfn: u32,
     pub my_number: u32,
     pub rrn: u32,
+    pub za_id: u32,
+    pub il_id: u32,
 }
 
 pub fn mask_all_audit(value: &str) -> (String, AuditCounts) {
@@ -587,6 +616,8 @@ pub fn mask_all_audit(value: &str) -> (String, AuditCounts) {
     let (s, n) = mask_bsn_counted(&s);             c.bsn = n;
     let (s, n) = mask_my_number_counted(&s);       c.my_number = n;
     let (s, n) = mask_rrn_counted(&s);             c.rrn = n;
+    let (s, n) = mask_za_id_counted(&s);           c.za_id = n;
+    let (s, n) = mask_il_id_counted(&s);           c.il_id = n;
 
     (s, c)
 }

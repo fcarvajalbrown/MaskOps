@@ -1854,10 +1854,10 @@ class TestExtractPII:
         result = df.with_columns(maskops.extract_pii("col").alias("pii"))
         assert isinstance(result["pii"].dtype, pl.Struct)
 
-    def test_struct_has_34_fields(self):
+    def test_struct_has_36_fields(self):
         df = pl.DataFrame({"col": ["user@example.com"]})
         result = df.with_columns(maskops.extract_pii("col").alias("pii"))
-        assert len(result["pii"].dtype.fields) == 34
+        assert len(result["pii"].dtype.fields) == 36
 
     def test_multiple_rows(self):
         df = pl.DataFrame({"col": ["user@example.com", "4532015112830366", "nothing"]})
@@ -2083,7 +2083,7 @@ class TestMaskPIIAudit:
         assert names == ["masked", "counts"]
         counts_field = next(f for f in dtype.fields if f.name == "counts")
         assert isinstance(counts_field.dtype, pl.Struct)
-        assert len(counts_field.dtype.fields) == 34
+        assert len(counts_field.dtype.fields) == 36
 
     def test_counts_are_uint32(self):
         df = pl.DataFrame({"col": ["user@example.com"]})
@@ -2209,3 +2209,85 @@ class TestKeyManagement:
         df = pl.DataFrame({"col": ["4111111111111111"]})
         out = df.with_columns(maskops.mask_pii_fpe("col", k, t))["col"][0]
         assert out.isdigit() and len(out) == 16
+
+
+ZA_ID = "8507158001087"
+ZA_ID2 = "9001015009086"
+IL_ID = "012345674"
+
+
+class TestMaskZaId:
+    def test_masks_valid(self):
+        df = pl.DataFrame({"col": [f"ID {ZA_ID} on file"]})
+        out = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert ZA_ID not in out
+        assert "*" * 13 in out
+
+    def test_rejects_bad_date(self):
+        bad = "9013015009081"
+        df = pl.DataFrame({"col": [f"x {bad} y"]})
+        out = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert bad in out
+
+    def test_rejects_wrong_length(self):
+        df = pl.DataFrame({"col": ["850715800108"]})
+        out = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "850715800108" in out
+
+    def test_contains(self):
+        df = pl.DataFrame({"col": [f"ID {ZA_ID}"]})
+        assert df.with_columns(maskops.contains_pii("col", patterns=["za_id"]).alias("h"))["h"][0]
+
+    def test_extract(self):
+        df = pl.DataFrame({"col": [f"ID {ZA_ID}"]})
+        ex = df.with_columns(maskops.extract_pii("col").alias("e"))
+        assert ex.select(pl.col("e").struct.field("za_id"))["za_id"][0] == ZA_ID
+
+    def test_audit_count(self):
+        df = pl.DataFrame({"col": [f"{ZA_ID} and {ZA_ID2}"]})
+        a = df.with_columns(maskops.mask_pii_audit("col").alias("a"))
+        assert a.select(pl.col("a").struct.field("counts").struct.field("za_id"))["za_id"][0] == 1
+
+    def test_fpe_preserves_digits(self):
+        df = pl.DataFrame({"col": [ZA_ID]})
+        out = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert out.isdigit() and len(out) == 13 and "*" not in out
+
+    def test_consistent_is_deterministic(self):
+        df = pl.DataFrame({"col": [ZA_ID]})
+        a = df.with_columns(maskops.mask_pii("col", mode="consistent", salt="s"))["col"][0]
+        b = df.with_columns(maskops.mask_pii("col", mode="consistent", salt="s"))["col"][0]
+        assert a == b and ZA_ID not in a
+
+
+class TestMaskIlId:
+    def test_masks_valid(self):
+        df = pl.DataFrame({"col": [f"teudat {IL_ID} zehut"]})
+        out = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert IL_ID not in out
+        assert "*" * 9 in out
+
+    def test_rejects_bad_checksum(self):
+        bad = "012345670"
+        df = pl.DataFrame({"col": [f"x {bad} y"]})
+        out = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert bad in out
+
+    def test_contains(self):
+        df = pl.DataFrame({"col": [f"id {IL_ID}"]})
+        assert df.with_columns(maskops.contains_pii("col", patterns=["il_id"]).alias("h"))["h"][0]
+
+    def test_extract(self):
+        df = pl.DataFrame({"col": [f"id {IL_ID}"]})
+        ex = df.with_columns(maskops.extract_pii("col").alias("e"))
+        assert ex.select(pl.col("e").struct.field("il_id"))["il_id"][0] == IL_ID
+
+    def test_audit_count(self):
+        df = pl.DataFrame({"col": [f"id {IL_ID}"]})
+        a = df.with_columns(maskops.mask_pii_audit("col").alias("a"))
+        assert a.select(pl.col("a").struct.field("counts").struct.field("il_id"))["il_id"][0] == 1
+
+    def test_fpe_preserves_digits(self):
+        df = pl.DataFrame({"col": [IL_ID]})
+        out = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        assert out.isdigit() and len(out) == 9 and "*" not in out

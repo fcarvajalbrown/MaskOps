@@ -173,6 +173,8 @@ fn extract_pii_output(_: &[Field]) -> PolarsResult<Field> {
         Field::new("tfn".into(),            DataType::String),
         Field::new("my_number".into(),      DataType::String),
         Field::new("rrn".into(),            DataType::String),
+        Field::new("za_id".into(),          DataType::String),
+        Field::new("il_id".into(),          DataType::String),
     ];
     Ok(Field::new("extract_pii".into(), DataType::Struct(fields)))
 }
@@ -216,6 +218,8 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
     let mut f_tfn           = Vec::with_capacity(len);
     let mut f_my_number     = Vec::with_capacity(len);
     let mut f_rrn           = Vec::with_capacity(len);
+    let mut f_za_id         = Vec::with_capacity(len);
+    let mut f_il_id         = Vec::with_capacity(len);
 
     for opt in ca.into_iter() {
         let r: ExtractResult = match opt {
@@ -229,6 +233,7 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
                 arg_dni: None, co_cc: None, co_nit: None, ec_cedula: None,
                 pe_dni: None, uy_ci: None, npi: None, mbi: None, nhs: None,
                 sin: None, tfn: None, my_number: None, rrn: None,
+                za_id: None, il_id: None,
             },
         };
         f_email.push(r.email);
@@ -265,6 +270,8 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
         f_tfn.push(r.tfn);
         f_my_number.push(r.my_number);
         f_rrn.push(r.rrn);
+        f_za_id.push(r.za_id);
+        f_il_id.push(r.il_id);
     }
 
     let series: Vec<Series> = vec![
@@ -302,6 +309,8 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
         StringChunked::from_iter_options("tfn".into(),            f_tfn.into_iter()).into_series(),
         StringChunked::from_iter_options("my_number".into(),      f_my_number.into_iter()).into_series(),
         StringChunked::from_iter_options("rrn".into(),            f_rrn.into_iter()).into_series(),
+        StringChunked::from_iter_options("za_id".into(),          f_za_id.into_iter()).into_series(),
+        StringChunked::from_iter_options("il_id".into(),          f_il_id.into_iter()).into_series(),
     ];
 
     Ok(StructChunked::from_series("extract_pii".into(), len, series.iter())?.into_series())
@@ -343,6 +352,8 @@ fn mask_pii_audit_output(_: &[Field]) -> PolarsResult<Field> {
         Field::new("tfn".into(),             DataType::UInt32),
         Field::new("my_number".into(),       DataType::UInt32),
         Field::new("rrn".into(),             DataType::UInt32),
+        Field::new("za_id".into(),           DataType::UInt32),
+        Field::new("il_id".into(),           DataType::UInt32),
     ];
     let fields = vec![
         Field::new("masked".into(), DataType::String),
@@ -391,6 +402,8 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
     let mut c_tfn             = Vec::with_capacity(len);
     let mut c_my_number       = Vec::with_capacity(len);
     let mut c_rrn             = Vec::with_capacity(len);
+    let mut c_za_id           = Vec::with_capacity(len);
+    let mut c_il_id           = Vec::with_capacity(len);
 
     for opt in ca.into_iter() {
         match opt {
@@ -431,6 +444,8 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
                 c_tfn.push(c.tfn);
                 c_my_number.push(c.my_number);
                 c_rrn.push(c.rrn);
+                c_za_id.push(c.za_id);
+                c_il_id.push(c.il_id);
             }
             None => {
                 masked.push(None);
@@ -468,6 +483,8 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
                 c_tfn.push(0);
                 c_my_number.push(0);
                 c_rrn.push(0);
+                c_za_id.push(0);
+                c_il_id.push(0);
             }
         }
     }
@@ -507,6 +524,8 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
         UInt32Chunked::from_vec("tfn".into(),             c_tfn).into_series(),
         UInt32Chunked::from_vec("my_number".into(),       c_my_number).into_series(),
         UInt32Chunked::from_vec("rrn".into(),             c_rrn).into_series(),
+        UInt32Chunked::from_vec("za_id".into(),           c_za_id).into_series(),
+        UInt32Chunked::from_vec("il_id".into(),           c_il_id).into_series(),
     ];
 
     let counts = StructChunked::from_series("counts".into(), len, count_series.iter())?.into_series();
