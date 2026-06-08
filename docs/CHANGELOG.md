@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Features
+
+* **latam:** add Brazilian CNPJ (legal-entity) detection and masking — two mod-11 check digits, asterisk / FPE / consistent modes
+* **manifest:** add `masking_manifest` + `write_manifest` — per-column PII inventory with match counts, built-in family→regulation mapping, and mask mode; exports a JSON RAT / data-processing register
+
 ## [1.6.0](https://github.com/fcarvajalbrown/MaskOps/compare/v1.5.1...v1.6.0) (2026-06-08)
 
 ### Features

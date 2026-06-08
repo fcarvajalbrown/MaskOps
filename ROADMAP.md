@@ -35,7 +35,7 @@ Goal: the enterprise surface — audit, reversible FPE, and configurable policy 
 - [x] **v1.4** — Multi-column referential integrity: consistent masking across joined tables
 - [x] **v1.5** — APAC: Japanese My Number, South Korean RRN
 - [x] **v1.6** — `mask_pii_audit` expression: masked value + per-family match counts in one pass
-- [ ] **v1.7** — LATAM depth & Chile readiness: Brazilian CNPJ (legal-entity confidentiality masking) · masking manifest / RAT export (per-column PII family, regulation, mask mode, and match counts — feeds Ley 21.719's data-processing register and auditor evidence)
+- [x] **v1.7** — LATAM depth & Chile readiness: Brazilian CNPJ (legal-entity confidentiality masking) · masking manifest / RAT export (per-column PII family, regulation, mask mode, and match counts — feeds Ley 21.719's data-processing register and auditor evidence)
 - [ ] **v1.8** — FPE crypto & key management: key rotation, tweak derivation, validation · FF1 mode (NIST-surviving FPE alternative to FF3-1)
 - [ ] **v1.9** — MEA: South African ID, Israeli ID number
 - [ ] **v2.0** — Enterprise release: configurable patterns + structured output + audit unified · migration guide

@@ -43,6 +43,7 @@ use crate::patterns::latam::{
     contains_ec_cedula, mask_ec_cedula, extract_ec_cedula, mask_ec_cedula_fpe,
     contains_pe_dni, mask_pe_dni, extract_pe_dni, mask_pe_dni_fpe,
     contains_uy_ci, mask_uy_ci, extract_uy_ci, mask_uy_ci_fpe, mask_uy_ci_consistent,
+    contains_cnpj, mask_cnpj, extract_cnpj, mask_cnpj_fpe, mask_cnpj_consistent,
 };
 use crate::patterns::healthcare::{
     contains_npi, mask_npi, extract_npi, mask_npi_fpe,
@@ -93,6 +94,7 @@ use crate::patterns::latam::latam_id::{
 use crate::patterns::latam::ecuador::mask_ec_cedula_counted;
 use crate::patterns::latam::peru::mask_pe_dni_counted;
 use crate::patterns::latam::uruguay::mask_uy_ci_counted;
+use crate::patterns::latam::brazil_cnpj::mask_cnpj_counted;
 use crate::patterns::apac::canada_sin::mask_sin_counted;
 use crate::patterns::apac::australia_tfn::mask_tfn_counted;
 use crate::patterns::apac::japan_my_number::mask_my_number_counted;
@@ -136,6 +138,7 @@ pub fn mask_digit(value: &str) -> String {
     let s = mask_phone(value);
     let s = mask_rut(&s);
     let s = mask_cpf(&s);
+    let s = mask_cnpj(&s);
     let s = mask_card(&s);
     let s = mask_ssn(&s);
     let s = mask_arg_dni(&s);
@@ -160,6 +163,7 @@ pub fn mask_digit_fpe(value: &str, cipher: &Ff3Cipher) -> String {
     let s = mask_phone_fpe(value, cipher);
     let s = mask_rut_fpe(&s, cipher);
     let s = mask_cpf_fpe(&s, cipher);
+    let s = mask_cnpj_fpe(&s, cipher);
     let s = mask_card_fpe(&s, cipher);
     let s = mask_ssn_fpe(&s, cipher);
     let s = mask_arg_dni_fpe(&s, cipher);
@@ -194,6 +198,7 @@ pub fn mask_digit_consistent(value: &str, hasher: &ConsistentHasher) -> String {
     let s = mask_phone_consistent(value, hasher);
     let s = mask_rut_consistent(&s, hasher);
     let s = mask_cpf_consistent(&s, hasher);
+    let s = mask_cnpj_consistent(&s, hasher);
     let s = mask_card_consistent(&s, hasher);
     let s = mask_ssn_consistent(&s, hasher);
     let s = mask_arg_dni_consistent(&s, hasher);
@@ -236,6 +241,7 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
             "curp"            => mask_curp(&s),
             "rut"             => mask_rut(&s),
             "cpf"             => mask_cpf(&s),
+            "cnpj"            => mask_cnpj(&s),
             "ssn"             => mask_ssn(&s),
             "arg_dni"         => mask_arg_dni(&s),
             "co_cc"           => mask_co_cc(&s),
@@ -279,6 +285,7 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &Ff3Cipher)
             "curp"            => mask_curp(&s),
             "rut"             => mask_rut_fpe(&s, cipher),
             "cpf"             => mask_cpf_fpe(&s, cipher),
+            "cnpj"            => mask_cnpj_fpe(&s, cipher),
             "ssn"             => mask_ssn_fpe(&s, cipher),
             "arg_dni"         => mask_arg_dni_fpe(&s, cipher),
             "co_cc"           => mask_co_cc_fpe(&s, cipher),
@@ -322,6 +329,7 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
             "curp"            => mask_curp(&s),
             "rut"             => mask_rut_consistent(&s, hasher),
             "cpf"             => mask_cpf_consistent(&s, hasher),
+            "cnpj"            => mask_cnpj_consistent(&s, hasher),
             "ssn"             => mask_ssn_consistent(&s, hasher),
             "arg_dni"         => mask_arg_dni_consistent(&s, hasher),
             "co_cc"           => mask_co_cc_consistent(&s, hasher),
@@ -363,6 +371,7 @@ pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
         "curp"            => contains_curp(value),
         "rut"             => contains_rut(value),
         "cpf"             => contains_cpf(value),
+        "cnpj"            => contains_cnpj(value),
         "ssn"             => contains_ssn(value),
         "arg_dni"         => contains_arg_dni(value),
         "co_cc"           => contains_co_cc(value),
@@ -395,6 +404,7 @@ pub fn contains_any_pii(value: &str) -> bool {
         || contains_ip(value)
         || contains_rut(value)
         || contains_cpf(value)
+        || contains_cnpj(value)
         || contains_curp(value)
         || contains_card(value)
         || contains_dni(value)
@@ -443,6 +453,7 @@ pub struct ExtractResult {
     pub us_passport: Option<String>,
     pub rut: Option<String>,
     pub cpf: Option<String>,
+    pub cnpj: Option<String>,
     pub curp: Option<String>,
     pub arg_dni: Option<String>,
     pub co_cc: Option<String>,
@@ -480,6 +491,7 @@ pub fn extract_all(value: &str) -> ExtractResult {
         us_passport:    extract_us_passport(value),
         rut:            extract_rut(value),
         cpf:            extract_cpf(value),
+        cnpj:           extract_cnpj(value),
         curp:           extract_curp(value),
         arg_dni:        extract_arg_dni(value),
         co_cc:          extract_co_cc(value),
@@ -518,6 +530,7 @@ pub struct AuditCounts {
     pub us_passport: u32,
     pub rut: u32,
     pub cpf: u32,
+    pub cnpj: u32,
     pub curp: u32,
     pub arg_dni: u32,
     pub co_cc: u32,
@@ -554,6 +567,7 @@ pub fn mask_all_audit(value: &str) -> (String, AuditCounts) {
     let (s, n) = mask_phone_counted(&s);           c.phone = n;
     let (s, n) = mask_rut_counted(&s);             c.rut = n;
     let (s, n) = mask_cpf_counted(&s);             c.cpf = n;
+    let (s, n) = mask_cnpj_counted(&s);            c.cnpj = n;
     let (s, n) = mask_card_counted(&s);            c.credit_card = n;
     let (s, n) = mask_ssn_counted(&s);             c.ssn = n;
     let (s, n) = mask_arg_dni_counted(&s);         c.arg_dni = n;
