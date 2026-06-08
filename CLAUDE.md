@@ -152,7 +152,7 @@ Releases are manual and deliberate — there is no auto-release (see the release
 
 Cut a release with the helper: **`python tools/release/release.py X.Y.Z`** is a dry run that validates all five version files, the changelog section, and the roadmap agree on the version; **`python tools/release/release.py X.Y.Z --yes`** then tags, pushes, and creates the GitHub Release. Pushing the tag triggers `publish.yml` (`.github/workflows/publish.yml`), which builds wheels and uploads to PyPI. **Do not modify `publish.yml` — it works; the release flow only pushes a tag it already reacts to.**
 
-**Claude must never run the script with `--yes`** (a hook blocks it). The `--yes` step is the user's, run via `! python tools/release/release.py X.Y.Z --yes`; Claude may run the dry-run to confirm everything is green before handing off. Note: PyPI has lagged behind GitHub tags before (cancelled/failed publish runs), so verify the live PyPI version separately rather than trusting the tag list.
+**Claude may run the script with `--yes`** to cut the release itself once the dry-run is green and the milestone has actually shipped (worked on + `ROADMAP.md` updated + merged via PR). Run the dry-run first (`python tools/release/release.py X.Y.Z`) to confirm all five version files, the changelog section, and the roadmap agree; only then run `python tools/release/release.py X.Y.Z --yes`, which tags, pushes, and creates the GitHub Release. This is still a deliberate roadmap event — never a side effect of a routine commit. Note: PyPI has lagged behind GitHub tags before (cancelled/failed publish runs), so verify the live PyPI version separately rather than trusting the tag list.
 
 ## Release marketing reminders
 
