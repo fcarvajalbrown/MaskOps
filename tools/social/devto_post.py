@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Usage:
-    python tools/devto_post.py --title "..." --body article.md --tags polars,rust,python
-    python tools/devto_post.py --dry-run --title "..." --body article.md
-    python tools/devto_post.py --history
-    python tools/devto_post.py --rules
+    python tools/social/devto_post.py --title "..." --body article.md --tags polars,rust,python
+    python tools/social/devto_post.py --dry-run --title "..." --body article.md
+    python tools/social/devto_post.py --history
+    python tools/social/devto_post.py --rules
 
 Credentials via env var:
     DEVTO_API_KEY=your_api_key  (dev.to Settings > Account > API Keys)

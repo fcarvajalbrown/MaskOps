@@ -150,13 +150,13 @@ No `Co-Authored-By` trailers. No "Generated with Claude Code" or any AI attribut
 
 Releases are manual and deliberate — there is no auto-release (see the release rules above). `release-please.yml` runs only on manual `workflow_dispatch`.
 
-Cut a release with the helper: **`python tools/release.py X.Y.Z`** is a dry run that validates all five version files, the changelog section, and the roadmap agree on the version; **`python tools/release.py X.Y.Z --yes`** then tags, pushes, and creates the GitHub Release. Pushing the tag triggers `publish.yml` (`.github/workflows/publish.yml`), which builds wheels and uploads to PyPI. **Do not modify `publish.yml` — it works; the release flow only pushes a tag it already reacts to.**
+Cut a release with the helper: **`python tools/release/release.py X.Y.Z`** is a dry run that validates all five version files, the changelog section, and the roadmap agree on the version; **`python tools/release/release.py X.Y.Z --yes`** then tags, pushes, and creates the GitHub Release. Pushing the tag triggers `publish.yml` (`.github/workflows/publish.yml`), which builds wheels and uploads to PyPI. **Do not modify `publish.yml` — it works; the release flow only pushes a tag it already reacts to.**
 
-**Claude must never run the script with `--yes`** (a hook blocks it). The `--yes` step is the user's, run via `! python tools/release.py X.Y.Z --yes`; Claude may run the dry-run to confirm everything is green before handing off. Note: PyPI has lagged behind GitHub tags before (cancelled/failed publish runs), so verify the live PyPI version separately rather than trusting the tag list.
+**Claude must never run the script with `--yes`** (a hook blocks it). The `--yes` step is the user's, run via `! python tools/release/release.py X.Y.Z --yes`; Claude may run the dry-run to confirm everything is green before handing off. Note: PyPI has lagged behind GitHub tags before (cancelled/failed publish runs), so verify the live PyPI version separately rather than trusting the tag list.
 
 ## Release marketing reminders
 
-**dev.to** — script at `tools/devto_post.py`, run it here in Claude Code (not via CI). Remind at milestones only — not every release:
+**dev.to** — script at `tools/social/devto_post.py`, run it here in Claude Code (not via CI). Remind at milestones only — not every release:
 - Performance sweep results (benchmark numbers are a strong hook)
 - v2.0.0 enterprise milestone
 - Any tutorial, deep-dive, or benchmark comparison angle

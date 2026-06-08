@@ -3,7 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 
 VERSION_PATTERNS = [
     ("pyproject.toml", r'(?m)^version = "(.+?)"'),
@@ -49,7 +49,7 @@ def main():
     do_release = "--yes" in flags
     positional = [a for a in flags if a != "--yes"]
     if len(positional) != 1:
-        fail("usage: python tools/release.py X.Y.Z [--yes]")
+        fail("usage: python tools/release/release.py X.Y.Z [--yes]")
     version = positional[0].lstrip("v")
     tag = f"v{version}"
 
@@ -90,7 +90,7 @@ def main():
 
     if not do_release:
         print()
-        print(f"Dry run. To publish: python tools/release.py {version} --yes")
+        print(f"Dry run. To publish: python tools/release/release.py {version} --yes")
         return
 
     run(["git", "tag", "-a", tag, "-m", tag])
