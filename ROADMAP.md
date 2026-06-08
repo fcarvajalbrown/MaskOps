@@ -11,7 +11,7 @@ MaskOps is the only open-source PII-masking engine that runs natively inside Pol
 
 ## Phase 1 — Foundation `v0.2 → v1.0`
 
-Goal: API stability + complete coverage across all major global ID families.
+Goal: broad, check-digit-validated coverage and a stable public API — the credibility base that makes the engine production-adoptable.
 
 - [x] **v0.2** — Module reorganization (`eu/`, `latam/`, `us/`, `healthcare/`, `contact/`, `financial/`) · NIN + Personalausweis check digit validation
 - [x] **v0.3** — US identifiers: SSN, US passport number
@@ -27,7 +27,7 @@ Goal: API stability + complete coverage across all major global ID families.
 
 ## Phase 2 — Enterprise `v1.1 → v2.0`
 
-Goal: configurable patterns, structured output, and audit land individually then unify.
+Goal: the enterprise surface — audit, reversible FPE, and configurable policy — that turns adoption into measurable compliance value for regulated teams.
 
 - [x] **v1.1** — Policy files: YAML/TOML config for per-column masking rules (pairs with v1.0 CLI)
 - [x] **v1.2** — EU depth: Polish PESEL, Dutch BSN, Swedish personnummer
@@ -44,7 +44,7 @@ Goal: configurable patterns, structured output, and audit land individually then
 
 ## Phase 3 — Ecosystem `v2.1 → v3.0`
 
-Goal: integrations, hosted docs, official listings, clean API for long-term stability.
+Goal: integrations, official listings, and a stable long-term API that position MaskOps as the default privacy layer in the Polars ecosystem.
 
 - [ ] **v2.1** — Python typing stubs (`.pyi`) · full mypy/pyright support
 - [ ] **v2.2** — GitHub Pages documentation site live
