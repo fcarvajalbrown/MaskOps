@@ -242,7 +242,7 @@
 <!-- Hero -->
 <section class="hero">
   <div class="container">
-    <div class="hero-badge" data-i18n="hero.badge">Open-source · MPL-2.0 · v0.2</div>
+    <div class="hero-badge" data-i18n="hero.badge">Open-source · MPL-2.0 · v1.6.0</div>
     <h1 data-i18n-html="hero.h1">PII masking at <em>Rust speed</em>.<br/>Air-gapped. GDPR-ready.</h1>
     <p class="hero-sub" data-i18n="hero.sub">A native Polars plugin that masks sensitive data inside your pipeline — zero rows leave your infrastructure, zero Python overhead per row.</p>
     <div class="hero-actions">
@@ -350,6 +350,7 @@ masked = df.<span class="fn">with_columns</span>(
     <div class="fpe-callout">
       <h3 data-i18n="fpe.title">What GDPR Art. 4(5) actually means for your team</h3>
       <p data-i18n-html="fpe.desc">Pseudonymized data — where re-identification requires a separately-held key — still falls under GDPR, but with <span class="art">significantly reduced risk and lighter compliance burden</span>. Under Art. 32, pseudonymization is an explicitly recommended security measure. MaskOps FPE mode is a direct technical implementation of that requirement. The key stays with you. The regulator is satisfied. Your analytics team keeps working.</p>
+      <p data-i18n-html="fpe.note" style="margin-top:18px;padding-top:18px;border-top:1px solid rgba(61,219,129,0.2);font-size:13px;color:var(--muted)">On the cryptography: FF3-1 is proposed for deprecation in NIST's draft SP 800-38G Rev.1. We document the status, our mitigations, and the FF1 migration path openly — <a href="https://github.com/fcarvajalbrown/MaskOps/blob/main/docs/gdpr/fpe-ff3-1-nist-status.md" target="_blank" rel="noopener">read the security note →</a></p>
     </div>
   </div>
 </section>
@@ -366,6 +367,8 @@ masked = df.<span class="fn">with_columns</span>(
         <div class="compliance-row"><span>IBAN — bank identifiers</span><span class="status done">✓</span></div>
         <div class="compliance-row"><span>VAT numbers</span><span class="status done">✓</span></div>
         <div class="compliance-row"><span>NIN (UK), Personalausweis (DE)</span><span class="status done">✓</span></div>
+        <div class="compliance-row"><span>NIR (FR), Codice Fiscale (IT)</span><span class="status done">✓</span></div>
+        <div class="compliance-row"><span>PESEL (PL), BSN (NL), personnummer (SE)</span><span class="status done">✓</span></div>
         <div class="compliance-row"><span>Email, phone, IP address</span><span class="status done">✓</span></div>
         <div class="compliance-row"><span>Credit cards</span><span class="status done">✓</span></div>
       </div>
@@ -374,8 +377,11 @@ masked = df.<span class="fn">with_columns</span>(
         <div class="compliance-row"><span class="flag">🇨🇱</span><span>RUT (Chile) <span class="law">Ley 19.628 / 21.719</span></span><span class="status done">✓</span></div>
         <div class="compliance-row"><span class="flag">🇧🇷</span><span>CPF (Brazil) <span class="law">LGPD</span></span><span class="status done">✓</span></div>
         <div class="compliance-row"><span class="flag">🇲🇽</span><span>CURP (Mexico) <span class="law">LFPDPPP</span></span><span class="status done">✓</span></div>
-        <div class="compliance-row"><span class="flag">🇦🇷</span><span>DNI (Argentina) <span class="law">Ley 25.326</span></span><span class="status" style="color:var(--muted);font-size:13px">v0.5</span></div>
-        <div class="compliance-row"><span class="flag">🇨🇴</span><span>CC / NIT (Colombia) <span class="law">Ley 1581</span></span><span class="status" style="color:var(--muted);font-size:13px">v0.5</span></div>
+        <div class="compliance-row"><span class="flag">🇦🇷</span><span>DNI (Argentina) <span class="law">Ley 25.326</span></span><span class="status done">✓</span></div>
+        <div class="compliance-row"><span class="flag">🇨🇴</span><span>CC / NIT (Colombia) <span class="law">Ley 1581</span></span><span class="status done">✓</span></div>
+        <div class="compliance-row"><span class="flag">🇪🇨</span><span>Cédula (Ecuador) <span class="law">LOPDP</span></span><span class="status done">✓</span></div>
+        <div class="compliance-row"><span class="flag">🇵🇪</span><span>DNI (Peru) <span class="law">Ley 29733</span></span><span class="status done">✓</span></div>
+        <div class="compliance-row"><span class="flag">🇺🇾</span><span>Cédula (Uruguay) <span class="law">Ley 18.331</span></span><span class="status done">✓</span></div>
       </div>
     </div>
   </div>
@@ -524,7 +530,7 @@ masked = df.<span class="fn">with_columns</span>(
 <script>
 const T = {
   en: {
-    'hero.badge':'Open-source · MPL-2.0 · v0.2','hero.h1':'PII masking at <em>Rust speed</em>.<br/>Air-gapped. GDPR-ready.','hero.sub':'A native Polars plugin that masks sensitive data inside your pipeline — zero rows leave your infrastructure, zero Python overhead per row.','hero.copy':'copy','hero.copied':'copied!','hero.github_btn':'View on GitHub →',
+    'hero.badge':'Open-source · MPL-2.0 · v1.6.0','hero.h1':'PII masking at <em>Rust speed</em>.<br/>Air-gapped. GDPR-ready.','hero.sub':'A native Polars plugin that masks sensitive data inside your pipeline — zero rows leave your infrastructure, zero Python overhead per row.','hero.copy':'copy','hero.copied':'copied!','hero.github_btn':'View on GitHub →',
     'stats.faster':'faster than Presidio','stats.speed':'for 1 million rows','stats.air':'air-gapped','stats.gdpr':'Art. 4(5) compliant',
     'feat.label':'Why MaskOps','feat.h2':'Everything your data pipeline needs.<br/>Nothing it doesn\'t.','feat.desc':'Built for engineers who can\'t afford cloud vendors in their data path — or simply don\'t want them there.',
     'feat.1.title':'Air-Gapped by Design','feat.1.desc':'No network calls, ever. Runs offline, in CI, behind firewalls, inside VPCs. Your data never touches an external server — by architecture, not by policy.',
@@ -536,6 +542,7 @@ const T = {
     'code.label':'FPE Mode','code.h2':'Reversible pseudonymization. Your key, your data.',
     'code.li1':'The FPE key never leaves your infrastructure — MaskOps never sees it','code.li2':'Masked values keep the original format: a RUT stays a valid-looking RUT','code.li3':'Produce a real record in 10 seconds for a regulator audit','code.li4':'GDPR Art. 4(5) compliant pseudonymization — lighter regulatory burden than raw PII',
     'fpe.title':'What GDPR Art. 4(5) actually means for your team','fpe.desc':'Pseudonymized data — where re-identification requires a separately-held key — still falls under GDPR, but with <span class="art">significantly reduced risk and lighter compliance burden</span>. Under Art. 32, pseudonymization is an explicitly recommended security measure. MaskOps FPE mode is a direct technical implementation of that requirement. The key stays with you. The regulator is satisfied. Your analytics team keeps working.',
+    'fpe.note':'On the cryptography: FF3-1 is proposed for deprecation in NIST\'s draft SP 800-38G Rev.1. We document the status, our mitigations, and the FF1 migration path openly — <a href="https://github.com/fcarvajalbrown/MaskOps/blob/main/docs/gdpr/fpe-ff3-1-nist-status.md" target="_blank" rel="noopener">read the security note →</a>',
     'comp.label':'Regulatory Coverage','comp.h2':'Built for the laws your clients actually face.','comp.desc':'PII identifiers matched to the regulation that makes them sensitive.',
     'price.label':'Retainer Plans','price.h2':'Simple, transparent pricing.','price.desc':'Start with a free 3-week pilot. Convert to a retainer when you\'re ready. No procurement committees, no annual lock-in.',
     'price.launch.tier':'Launch','price.launch.when':'First 10 clients · <strong style="color:var(--cipher)">rate locked forever</strong>','price.launch.note1':'Available to the first 10 clients only.','price.launch.note2':'Your rate never increases — ever.',
@@ -549,7 +556,7 @@ const T = {
     'footer.changelog':'Changelog','footer.roadmap':'Roadmap','footer.security':'Security','footer.copy':'© 2026 Felipe Carvajal Brown · MaskOps is open-source under Mozilla Public License 2.0'
   },
   es: {
-    'hero.badge':'Open-source · MPL-2.0 · v0.2','hero.h1':'Enmascaramiento de PII a <em>velocidad Rust</em>.<br/>Aislado. Listo para GDPR.','hero.sub':'Un plugin nativo de Polars que enmascara datos sensibles dentro de tu pipeline — ninguna fila sale de tu infraestructura, sin overhead de Python por fila.','hero.copy':'copiar','hero.copied':'¡copiado!','hero.github_btn':'Ver en GitHub →',
+    'hero.badge':'Open-source · MPL-2.0 · v1.6.0','hero.h1':'Enmascaramiento de PII a <em>velocidad Rust</em>.<br/>Aislado. Listo para GDPR.','hero.sub':'Un plugin nativo de Polars que enmascara datos sensibles dentro de tu pipeline — ninguna fila sale de tu infraestructura, sin overhead de Python por fila.','hero.copy':'copiar','hero.copied':'¡copiado!','hero.github_btn':'Ver en GitHub →',
     'stats.faster':'más rápido que Presidio','stats.speed':'por 1 millón de filas','stats.air':'aislado de red','stats.gdpr':'Art. 4(5) conforme',
     'feat.label':'Por qué MaskOps','feat.h2':'Todo lo que tu pipeline necesita.<br/>Nada más.','feat.desc':'Diseñado para ingenieros que no pueden permitirse proveedores en la nube en su flujo de datos — o simplemente no los quieren.',
     'feat.1.title':'Aislado por Diseño','feat.1.desc':'Sin llamadas de red, nunca. Funciona offline, en CI, detrás de firewalls, dentro de VPCs. Tus datos nunca tocan un servidor externo — por arquitectura, no por política.',
@@ -561,6 +568,7 @@ const T = {
     'code.label':'Modo FPE','code.h2':'Pseudonimización reversible. Tu clave, tus datos.',
     'code.li1':'La clave FPE nunca sale de tu infraestructura — MaskOps nunca la ve','code.li2':'Los valores enmascarados mantienen el formato original: un RUT sigue siendo un RUT válido','code.li3':'Produce un registro real en 10 segundos para una auditoría regulatoria','code.li4':'Pseudonimización conforme GDPR Art. 4(5) — menor carga regulatoria que PII en bruto',
     'fpe.title':'Qué significa GDPR Art. 4(5) para tu equipo','fpe.desc':'Los datos pseudonimizados — donde la reidentificación requiere una clave almacenada por separado — siguen bajo el GDPR, pero con <span class="art">riesgo significativamente menor y menor carga de cumplimiento</span>. Bajo el Art. 32, la pseudonimización es una medida de seguridad explícitamente recomendada. El modo FPE de MaskOps es una implementación técnica directa de ese requisito. La clave se queda contigo. El regulador queda satisfecho. Tu equipo de análisis sigue trabajando.',
+    'fpe.note':'Sobre la criptografía: FF3-1 está propuesto para descontinuación en el borrador NIST SP 800-38G Rev.1. Documentamos abiertamente el estado, nuestras mitigaciones y la ruta de migración a FF1 — <a href="https://github.com/fcarvajalbrown/MaskOps/blob/main/docs/gdpr/fpe-ff3-1-nist-status.md" target="_blank" rel="noopener">leer la nota de seguridad →</a>',
     'comp.label':'Cobertura Regulatoria','comp.h2':'Diseñado para las leyes que tus clientes realmente enfrentan.','comp.desc':'Identificadores de PII vinculados a la regulación que los hace sensibles.',
     'price.label':'Planes de Retención','price.h2':'Precios simples y transparentes.','price.desc':'Comienza con un piloto gratuito de 3 semanas. Convierte a un retainer cuando estés listo. Sin comités de adquisición, sin bloqueo anual.',
     'price.launch.tier':'Lanzamiento','price.launch.when':'Primeros 10 clientes · <strong style="color:var(--cipher)">tarifa fijada para siempre</strong>','price.launch.note1':'Disponible solo para los primeros 10 clientes.','price.launch.note2':'Tu tarifa nunca aumenta — jamás.',
@@ -574,7 +582,7 @@ const T = {
     'footer.changelog':'Historial','footer.roadmap':'Hoja de Ruta','footer.security':'Seguridad','footer.copy':'© 2026 Felipe Carvajal Brown · MaskOps es open-source bajo Mozilla Public License 2.0'
   },
   'pt-BR': {
-    'hero.badge':'Open-source · MPL-2.0 · v0.2','hero.h1':'Mascaramento de PII em <em>velocidade Rust</em>.<br/>Isolado. Pronto para a LGPD.','hero.sub':'Um plugin nativo do Polars que mascara dados sensíveis dentro do seu pipeline — nenhuma linha sai da sua infraestrutura, sem overhead de Python por linha.','hero.copy':'copiar','hero.copied':'copiado!','hero.github_btn':'Ver no GitHub →',
+    'hero.badge':'Open-source · MPL-2.0 · v1.6.0','hero.h1':'Mascaramento de PII em <em>velocidade Rust</em>.<br/>Isolado. Pronto para a LGPD.','hero.sub':'Um plugin nativo do Polars que mascara dados sensíveis dentro do seu pipeline — nenhuma linha sai da sua infraestrutura, sem overhead de Python por linha.','hero.copy':'copiar','hero.copied':'copiado!','hero.github_btn':'Ver no GitHub →',
     'stats.faster':'mais rápido que o Presidio','stats.speed':'para 1 milhão de linhas','stats.air':'isolado da rede','stats.gdpr':'LGPD / Art. 4(5) conforme',
     'feat.label':'Por que MaskOps','feat.h2':'Tudo que seu pipeline precisa.<br/>Nada além disso.','feat.desc':'Criado para engenheiros que não podem ter fornecedores de nuvem no fluxo de dados — ou que simplesmente não os querem.',
     'feat.1.title':'Isolado por Design','feat.1.desc':'Sem chamadas de rede, nunca. Funciona offline, em CI, atrás de firewalls, em VPCs. Seus dados nunca tocam um servidor externo — por arquitetura, não por política.',
@@ -586,6 +594,7 @@ const T = {
     'code.label':'Modo FPE','code.h2':'Pseudonimização reversível. Sua chave, seus dados.',
     'code.li1':'A chave FPE nunca sai da sua infraestrutura — o MaskOps nunca a vê','code.li2':'Os valores mascarados mantêm o formato original: um CPF continua parecendo um CPF válido','code.li3':'Produza um registro real em 10 segundos para uma auditoria regulatória','code.li4':'Pseudonimização conforme LGPD/GDPR Art. 4(5) — menor carga regulatória que PII bruto',
     'fpe.title':'O que LGPD/GDPR Art. 4(5) significa para sua equipe','fpe.desc':'Dados pseudonimizados — onde a reidentificação requer uma chave mantida separadamente — ainda estão sob a LGPD/GDPR, mas com <span class="art">risco significativamente menor e menor carga de conformidade</span>. O MaskOps modo FPE é uma implementação técnica direta desse requisito. A chave fica com você. O regulador fica satisfeito. Sua equipe analytics continua trabalhando.',
+    'fpe.note':'Sobre a criptografia: o FF3-1 está proposto para descontinuação no rascunho NIST SP 800-38G Rev.1. Documentamos abertamente o status, nossas mitigações e o caminho de migração para o FF1 — <a href="https://github.com/fcarvajalbrown/MaskOps/blob/main/docs/gdpr/fpe-ff3-1-nist-status.md" target="_blank" rel="noopener">leia a nota de segurança →</a>',
     'comp.label':'Cobertura Regulatória','comp.h2':'Construído para as leis que seus clientes realmente enfrentam.','comp.desc':'Identificadores de PII vinculados à regulamentação que os torna sensíveis.',
     'price.label':'Planos de Retainer','price.h2':'Preços simples e transparentes.','price.desc':'Comece com um piloto gratuito de 3 semanas. Converta para um retainer quando estiver pronto. Sem comitês de compras, sem bloqueio anual.',
     'price.launch.tier':'Lançamento','price.launch.when':'Primeiros 10 clientes · <strong style="color:var(--cipher)">tarifa congelada para sempre</strong>','price.launch.note1':'Disponível apenas para os primeiros 10 clientes.','price.launch.note2':'Sua tarifa nunca aumenta — jamais.',
@@ -599,7 +608,7 @@ const T = {
     'footer.changelog':'Histórico','footer.roadmap':'Roteiro','footer.security':'Segurança','footer.copy':'© 2026 Felipe Carvajal Brown · MaskOps é open-source sob Mozilla Public License 2.0'
   },
   de: {
-    'hero.badge':'Open-source · MPL-2.0 · v0.2','hero.h1':'PII-Maskierung mit <em>Rust-Geschwindigkeit</em>.<br/>Air-Gapped. DSGVO-konform.','hero.sub':'Ein natives Polars-Plugin, das sensible Daten innerhalb Ihrer Pipeline maskiert — keine Zeile verlässt Ihre Infrastruktur, kein Python-Overhead pro Zeile.','hero.copy':'kopieren','hero.copied':'kopiert!','hero.github_btn':'Auf GitHub ansehen →',
+    'hero.badge':'Open-source · MPL-2.0 · v1.6.0','hero.h1':'PII-Maskierung mit <em>Rust-Geschwindigkeit</em>.<br/>Air-Gapped. DSGVO-konform.','hero.sub':'Ein natives Polars-Plugin, das sensible Daten innerhalb Ihrer Pipeline maskiert — keine Zeile verlässt Ihre Infrastruktur, kein Python-Overhead pro Zeile.','hero.copy':'kopieren','hero.copied':'kopiert!','hero.github_btn':'Auf GitHub ansehen →',
     'stats.faster':'schneller als Presidio','stats.speed':'für 1 Million Zeilen','stats.air':'air-gapped','stats.gdpr':'Art. 4(5) DSGVO konform',
     'feat.label':'Warum MaskOps','feat.h2':'Alles, was Ihre Datenpipeline braucht.<br/>Nichts mehr.','feat.desc':'Entwickelt für Ingenieure, die sich keine Cloud-Anbieter im Datenpfad leisten können — oder sie schlicht nicht wollen.',
     'feat.1.title':'Air-Gapped by Design','feat.1.desc':'Keine Netzwerkaufrufe, niemals. Läuft offline, in CI, hinter Firewalls, in VPCs. Ihre Daten berühren nie einen externen Server — durch Architektur, nicht durch Richtlinien.',
@@ -611,6 +620,7 @@ const T = {
     'code.label':'FPE-Modus','code.h2':'Reversible Pseudonymisierung. Ihr Schlüssel, Ihre Daten.',
     'code.li1':'Der FPE-Schlüssel verlässt nie Ihre Infrastruktur — MaskOps sieht ihn nie','code.li2':'Maskierte Werte behalten das Originalformat: ein Personalausweis bleibt wie ein gültiger Personalausweis','code.li3':'Stellen Sie einen echten Datensatz in 10 Sekunden für eine Behördenprüfung bereit','code.li4':'DSGVO Art. 4(5) konforme Pseudonymisierung — geringere Compliance-Last als rohe personenbezogene Daten',
     'fpe.title':'Was DSGVO Art. 4(5) für Ihr Team bedeutet','fpe.desc':'Pseudonymisierte Daten — bei denen die Reidentifizierung einen separat aufbewahrten Schlüssel erfordert — unterliegen weiterhin der DSGVO, aber mit <span class="art">deutlich reduziertem Risiko und geringerer Compliance-Last</span>. Gemäß Art. 32 ist Pseudonymisierung eine ausdrücklich empfohlene Sicherheitsmaßnahme. Der Schlüssel bleibt bei Ihnen. Die Behörde ist zufrieden. Ihr Analytics-Team arbeitet weiter.',
+    'fpe.note':'Zur Kryptografie: FF3-1 ist im NIST-Entwurf SP 800-38G Rev.1 zur Abkündigung vorgeschlagen. Wir dokumentieren den Status, unsere Gegenmaßnahmen und den FF1-Migrationspfad offen — <a href="https://github.com/fcarvajalbrown/MaskOps/blob/main/docs/gdpr/fpe-ff3-1-nist-status.md" target="_blank" rel="noopener">Sicherheitshinweis lesen →</a>',
     'comp.label':'Regulatorische Abdeckung','comp.h2':'Entwickelt für die Gesetze, mit denen Ihre Kunden konfrontiert sind.','comp.desc':'PII-Identifikatoren abgestimmt auf die Regulierung, die sie schützenswert macht.',
     'price.label':'Retainer-Pläne','price.h2':'Einfache, transparente Preise.','price.desc':'Starten Sie mit einem kostenlosen 3-Wochen-Piloten. Kein Beschaffungsausschuss, keine Jahresbindung.',
     'price.launch.tier':'Start','price.launch.when':'Erste 10 Kunden · <strong style="color:var(--cipher)">Preis dauerhaft eingefroren</strong>','price.launch.note1':'Nur für die ersten 10 Kunden verfügbar.','price.launch.note2':'Ihr Preis steigt nie — nie.',
@@ -624,7 +634,7 @@ const T = {
     'footer.changelog':'Änderungsprotokoll','footer.roadmap':'Roadmap','footer.security':'Sicherheit','footer.copy':'© 2026 Felipe Carvajal Brown · MaskOps ist Open-Source unter Mozilla Public License 2.0'
   },
   fr: {
-    'hero.badge':'Open-source · MPL-2.0 · v0.2','hero.h1':'Masquage des DCP à la <em>vitesse de Rust</em>.<br/>Isolé. Conforme au RGPD.','hero.sub':'Un plugin natif Polars qui masque les données sensibles à l\'intérieur de votre pipeline — aucune ligne ne quitte votre infrastructure, aucun overhead Python par ligne.','hero.copy':'copier','hero.copied':'copié !','hero.github_btn':'Voir sur GitHub →',
+    'hero.badge':'Open-source · MPL-2.0 · v1.6.0','hero.h1':'Masquage des DCP à la <em>vitesse de Rust</em>.<br/>Isolé. Conforme au RGPD.','hero.sub':'Un plugin natif Polars qui masque les données sensibles à l\'intérieur de votre pipeline — aucune ligne ne quitte votre infrastructure, aucun overhead Python par ligne.','hero.copy':'copier','hero.copied':'copié !','hero.github_btn':'Voir sur GitHub →',
     'stats.faster':'plus rapide que Presidio','stats.speed':'pour 1 million de lignes','stats.air':'isolé du réseau','stats.gdpr':'Art. 4(5) RGPD conforme',
     'feat.label':'Pourquoi MaskOps','feat.h2':'Tout ce dont votre pipeline a besoin.<br/>Rien de plus.','feat.desc':'Conçu pour les ingénieurs qui ne peuvent pas se permettre des fournisseurs cloud dans leur chemin de données — ou qui n\'en veulent simplement pas.',
     'feat.1.title':'Isolé par Conception','feat.1.desc':'Aucun appel réseau, jamais. Fonctionne hors ligne, en CI, derrière des pare-feux, dans des VPCs. Vos données ne touchent jamais un serveur externe — par architecture, pas par politique.',
@@ -636,6 +646,7 @@ const T = {
     'code.label':'Mode FPE','code.h2':'Pseudonymisation réversible. Votre clé, vos données.',
     'code.li1':'La clé FPE ne quitte jamais votre infrastructure — MaskOps ne la voit jamais','code.li2':'Les valeurs masquées conservent le format original : un IBAN reste un IBAN valide','code.li3':'Produisez un enregistrement réel en 10 secondes pour un audit réglementaire','code.li4':'Pseudonymisation conforme RGPD Art. 4(5) — charge réglementaire réduite par rapport aux DCP bruts',
     'fpe.title':'Ce que signifie le RGPD Art. 4(5) pour votre équipe','fpe.desc':'Les données pseudonymisées — où la réidentification nécessite une clé détenue séparément — restent sous le RGPD, mais avec <span class="art">un risque significativement réduit et une charge de conformité allégée</span>. En vertu de l\'Art. 32, la pseudonymisation est une mesure de sécurité explicitement recommandée. La clé reste avec vous. Le régulateur est satisfait. Votre équipe analytics continue de travailler.',
+    'fpe.note':'À propos de la cryptographie : FF3-1 est proposé à l\'abandon dans le projet NIST SP 800-38G Rev.1. Nous documentons ouvertement le statut, nos mesures d\'atténuation et la voie de migration vers FF1 — <a href="https://github.com/fcarvajalbrown/MaskOps/blob/main/docs/gdpr/fpe-ff3-1-nist-status.md" target="_blank" rel="noopener">lire la note de sécurité →</a>',
     'comp.label':'Couverture Réglementaire','comp.h2':'Conçu pour les lois auxquelles vos clients font face.','comp.desc':'Identifiants DCP associés à la réglementation qui les rend sensibles.',
     'price.label':'Plans de Retainer','price.h2':'Tarification simple et transparente.','price.desc':'Commencez par un pilote gratuit de 3 semaines. Convertissez en retainer quand vous êtes prêt. Pas de comité d\'achat, pas d\'engagement annuel.',
     'price.launch.tier':'Lancement','price.launch.when':'10 premiers clients · <strong style="color:var(--cipher)">tarif verrouillé à vie</strong>','price.launch.note1':'Disponible uniquement pour les 10 premiers clients.','price.launch.note2':'Votre tarif n\'augmente jamais — jamais.',
