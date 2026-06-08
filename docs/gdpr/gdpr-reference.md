@@ -114,6 +114,8 @@ The entire pseudonymization argument rests on key separation. The key must:
 
 MaskOps v1.8.0 (FPE key management helpers) directly addresses points 3 and 4.
 
+For the cryptographic standing of the FPE mode itself — the NIST SP 800-38G Rev.1 draft deprecation of FF3-1, the Beyne (2021) attack, and MaskOps' mitigations — see [FF3-1, NIST SP 800-38G, and MaskOps FPE](fpe-ff3-1-nist-status.md).
+
 ---
 
 ## Sources
