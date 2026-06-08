@@ -694,8 +694,8 @@ class TestEuropeanIDFixtures:
 
                 
 
-KEY  = b"\x00" * 32  
-TWEAK = b"\x00" * 7  
+KEY  = bytes(range(32))
+TWEAK = bytes([1, 2, 3, 4, 5, 6, 7])
 
 class TestMaskPiiFpe:
     def test_card_fpe_preserves_length(self):
@@ -1448,7 +1448,7 @@ class TestMaskUruguayCedula:
         assert self.VALID not in out
 
     def test_fpe_preserves_format(self):
-        key = b"\x00" * 32
+        key = bytes(range(32))
         tweak = b"\x00" * 7
         df = pl.DataFrame({"col": [self.VALID]})
         out = df.with_columns(
@@ -1521,7 +1521,7 @@ class TestMaskCanadaSIN:
         assert self.VALID_FORMATTED not in out
 
     def test_fpe_preserves_digit_count(self):
-        key = b"\x00" * 32
+        key = bytes(range(32))
         tweak = b"\x00" * 7
         df = pl.DataFrame({"col": [self.VALID_COMPACT]})
         out = df.with_columns(
@@ -1592,7 +1592,7 @@ class TestMaskAustraliaTFN:
         assert self.VALID_SPACED not in out
 
     def test_fpe_preserves_digit_count(self):
-        key = b"\x00" * 32
+        key = bytes(range(32))
         tweak = b"\x00" * 7
         df = pl.DataFrame({"col": [self.VALID_COMPACT]})
         out = df.with_columns(
@@ -1654,7 +1654,7 @@ class TestMaskPESEL:
         assert "*" * 11 in out
 
     def test_fpe_preserves_length(self):
-        key = b"\x00" * 32
+        key = bytes(range(32))
         tweak = b"\x00" * 7
         df = pl.DataFrame({"col": [self.VALID]})
         out = df.with_columns(maskops.mask_pii_fpe("col", key, tweak))["col"][0]
@@ -1712,7 +1712,7 @@ class TestMaskBSN:
         assert "*" * 9 in out
 
     def test_fpe_preserves_length(self):
-        key = b"\x00" * 32
+        key = bytes(range(32))
         tweak = b"\x00" * 7
         df = pl.DataFrame({"col": [self.VALID]})
         out = df.with_columns(maskops.mask_pii_fpe("col", key, tweak))["col"][0]
@@ -1779,7 +1779,7 @@ class TestMaskPersonnummer:
         assert self.VALID_SHORT not in out
 
     def test_fpe_preserves_format_short(self):
-        key = b"\x00" * 32
+        key = bytes(range(32))
         tweak = b"\x00" * 7
         df = pl.DataFrame({"col": [self.VALID_SHORT]})
         out = df.with_columns(maskops.mask_pii_fpe("col", key, tweak))["col"][0]
@@ -1911,7 +1911,7 @@ class TestMaskJapanMyNumber:
         assert self.VALID_COMPACT not in out
 
     def test_fpe_preserves_digit_count(self):
-        key = b"\x00" * 32
+        key = bytes(range(32))
         tweak = b"\x00" * 7
         df = pl.DataFrame({"col": [self.VALID_COMPACT]})
         out = df.with_columns(maskops.mask_pii_fpe("col", key, tweak))["col"][0]
@@ -1987,7 +1987,7 @@ class TestMaskKoreaRRN:
         assert self.VALID_FMT not in out
 
     def test_fpe_formatted_preserves_separator(self):
-        key = b"\x00" * 32
+        key = bytes(range(32))
         tweak = b"\x00" * 7
         df = pl.DataFrame({"col": [self.VALID_FMT]})
         out = df.with_columns(maskops.mask_pii_fpe("col", key, tweak))["col"][0]
@@ -1995,7 +1995,7 @@ class TestMaskKoreaRRN:
         assert len(out) == len(self.VALID_FMT)
 
     def test_fpe_compact_preserves_digit_count(self):
-        key = b"\x00" * 32
+        key = bytes(range(32))
         tweak = b"\x00" * 7
         df = pl.DataFrame({"col": [self.VALID_COMPACT]})
         out = df.with_columns(maskops.mask_pii_fpe("col", key, tweak))["col"][0]
@@ -2098,3 +2098,114 @@ class TestMaskPIIAudit:
         assert out["a"][0]["counts"]["email"] == 1
         assert out["a"][1]["counts"]["email"] == 2
         assert out["a"][2]["counts"]["email"] == 0
+
+
+KEY2  = bytes(range(32, 64))
+TWEAK2 = bytes([7, 6, 5, 4, 3, 2, 1])
+
+
+class TestFpeFf1Mode:
+    def test_ff1_preserves_length_and_digits(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        out = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK, mode="ff1"))["col"][0]
+        assert len(out) == 16
+        assert out.isdigit()
+
+    def test_ff1_differs_from_ff3(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        ff3 = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK, mode="ff3"))["col"][0]
+        ff1 = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK, mode="ff1"))["col"][0]
+        assert ff1 != ff3
+
+    def test_default_mode_is_ff3(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        default = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
+        ff3 = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK, mode="ff3"))["col"][0]
+        assert default == ff3
+
+    def test_ff1_differs_by_tweak(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        a = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK, mode="ff1"))["col"][0]
+        b = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK2, mode="ff1"))["col"][0]
+        assert a != b
+
+    def test_unknown_mode_raises(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        with pytest.raises(Exception):
+            df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK, mode="ff9"))
+
+
+class TestFpeRekey:
+    def _mask(self, val, key, tweak, mode):
+        df = pl.DataFrame({"col": [val]})
+        return df.with_columns(maskops.mask_pii_fpe("col", key, tweak, mode=mode))["col"][0]
+
+    def _rekey(self, token, ok, ot, nk, nt, mode):
+        df = pl.DataFrame({"col": [token]})
+        return df.with_columns(maskops.rekey_pii_fpe("col", ok, ot, nk, nt, mode=mode))["col"][0]
+
+    @pytest.mark.parametrize("mode", ["ff3", "ff1"])
+    def test_rekey_equals_direct_mask(self, mode):
+        token = self._mask("4111111111111111", KEY, TWEAK, mode)
+        rotated = self._rekey(token, KEY, TWEAK, KEY2, TWEAK2, mode)
+        direct = self._mask("4111111111111111", KEY2, TWEAK2, mode)
+        assert rotated == direct
+
+    @pytest.mark.parametrize("mode", ["ff3", "ff1"])
+    def test_rekey_is_reversible_full_circle(self, mode):
+        token = self._mask("4111111111111111", KEY, TWEAK, mode)
+        rotated = self._rekey(token, KEY, TWEAK, KEY2, TWEAK2, mode)
+        back = self._rekey(rotated, KEY2, TWEAK2, KEY, TWEAK, mode)
+        assert back == token
+
+    def test_non_token_passes_through(self):
+        out = self._rekey("hello world", KEY, TWEAK, KEY2, TWEAK2, "ff3")
+        assert out == "hello world"
+
+    def test_rekey_preserves_length(self):
+        token = self._mask("4111111111111111", KEY, TWEAK, "ff3")
+        rotated = self._rekey(token, KEY, TWEAK, KEY2, TWEAK2, "ff3")
+        assert len(rotated) == 16 and rotated.isdigit()
+
+
+class TestKeyManagement:
+    def test_validate_key_accepts_good(self):
+        assert maskops.validate_key(bytes(range(32))) == bytes(range(32))
+
+    def test_validate_key_rejects_length(self):
+        with pytest.raises(ValueError):
+            maskops.validate_key(bytes(16))
+
+    def test_validate_key_rejects_weak_repeated(self):
+        with pytest.raises(ValueError):
+            maskops.validate_key(b"\x00" * 32)
+
+    def test_validate_tweak_rejects_length(self):
+        with pytest.raises(ValueError):
+            maskops.validate_tweak(bytes(4))
+
+    def test_derive_key_is_deterministic(self):
+        a = maskops.derive_key(b"master-secret", "tenant-A")
+        b = maskops.derive_key(b"master-secret", "tenant-A")
+        assert a == b and len(a) == 32
+
+    def test_derive_key_context_separation(self):
+        a = maskops.derive_key(b"master-secret", "tenant-A")
+        b = maskops.derive_key(b"master-secret", "tenant-B")
+        assert a != b
+
+    def test_derive_tweak_is_deterministic_and_sized(self):
+        a = maskops.derive_tweak(b"master-secret", "tenant-A")
+        b = maskops.derive_tweak(b"master-secret", "tenant-A")
+        assert a == b and len(a) == 7
+
+    def test_derived_key_passes_validation(self):
+        k = maskops.derive_key(b"master-secret", "tenant-A")
+        assert maskops.validate_key(k) == k
+
+    def test_derived_key_usable_for_fpe(self):
+        k = maskops.derive_key(b"master-secret", "tenant-A")
+        t = maskops.derive_tweak(b"master-secret", "tenant-A")
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        out = df.with_columns(maskops.mask_pii_fpe("col", k, t))["col"][0]
+        assert out.isdigit() and len(out) == 16

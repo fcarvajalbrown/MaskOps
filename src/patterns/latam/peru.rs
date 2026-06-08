@@ -1,4 +1,4 @@
-
+﻿
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -36,7 +36,7 @@ pub fn mask_pe_dni_consistent(s: &str, hasher: &crate::patterns::consistent::Con
         .into_owned()
 }
 
-pub fn mask_pe_dni_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_pe_dni_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     PE_DNI_RE
         .replace_all(s, |caps: &regex::Captures| {
             match cipher.encrypt(&caps[0]) {

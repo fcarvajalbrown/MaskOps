@@ -1,4 +1,4 @@
-
+﻿
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -58,7 +58,7 @@ pub fn mask_ssn_consistent(s: &str, hasher: &crate::patterns::consistent::Consis
         .into_owned()
 }
 
-pub fn mask_ssn_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_ssn_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     SSN_RE
         .replace_all(s, |caps: &regex::Captures| {
             if !valid_ssn(&caps[1], &caps[2], &caps[3]) {

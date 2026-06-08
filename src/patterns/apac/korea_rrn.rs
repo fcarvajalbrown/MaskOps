@@ -1,4 +1,4 @@
-
+﻿
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -72,7 +72,7 @@ pub fn mask_rrn(s: &str) -> String {
     mask_rrn_counted(s).0
 }
 
-pub fn mask_rrn_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_rrn_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     let s = RRN_FMT_RE
         .replace_all(s, |caps: &regex::Captures| {
             let raw = &caps[0];

@@ -1,4 +1,4 @@
-
+﻿
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -57,7 +57,7 @@ pub fn mask_nhs_consistent(s: &str, hasher: &crate::patterns::consistent::Consis
         .into_owned()
 }
 
-pub fn mask_nhs_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_nhs_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     NHS_RE
         .replace_all(s, |caps: &regex::Captures| {
             if !valid_nhs(&caps[0]) {

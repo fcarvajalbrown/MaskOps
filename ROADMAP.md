@@ -4,7 +4,7 @@ MaskOps is the only open-source PII-masking engine that runs natively inside Pol
 
 **Market timing:** Chile's Ley 21.719 enters force on 1 December 2026, and Open Finance (NCG 514) phases in from July 2026 — both pushing regulated personal data through fintech pipelines and turning in-pipeline masking into a near-term compliance requirement across Latin America.
 
-> **Current version:** v1.7.0 — milestones v0.2–v1.7 shipped.
+> **Current version:** v1.8.0 — milestones v0.2–v1.8 shipped.
 > **Phase 1 — Foundation:** coverage + API stability. **Phase 2 — Enterprise:** audit, FPE, and configurable policy. **Phase 3 — Ecosystem:** integrations, standardization, long-term API stability. Coverage and infrastructure releases alternate each minor.
 
 ---
@@ -36,7 +36,7 @@ Goal: the enterprise surface — audit, reversible FPE, and configurable policy 
 - [x] **v1.5** — APAC: Japanese My Number, South Korean RRN
 - [x] **v1.6** — `mask_pii_audit` expression: masked value + per-family match counts in one pass
 - [x] **v1.7** — LATAM depth & Chile readiness: Brazilian CNPJ (legal-entity confidentiality masking) · masking manifest / RAT export (per-column PII family, regulation, mask mode, and match counts — feeds Ley 21.719's data-processing register and auditor evidence)
-- [ ] **v1.8** — FPE crypto & key management: key rotation, tweak derivation, validation · FF1 mode (NIST-surviving FPE alternative to FF3-1)
+- [x] **v1.8** — FPE crypto & key management: key rotation, tweak derivation, validation · FF1 mode (NIST-surviving FPE alternative to FF3-1)
 - [ ] **v1.9** — MEA: South African ID, Israeli ID number
 - [ ] **v2.0** — Enterprise release: configurable patterns + structured output + audit unified · migration guide
 

@@ -359,6 +359,9 @@ pytest tests/ -v
 - [x] `mask_pii_audit` expression — masks and reports per-family match counts in a single pass, returning a nested Struct (`masked` value + `counts`) for compliance auditing
 - [x] Brazilian CNPJ (legal-entity) — two-check-digit validated detection and masking, in asterisk, FPE, and consistent modes
 - [x] `masking_manifest` / `write_manifest` — per-column PII inventory with match counts, built-in family→regulation mapping, and mask mode, exported as a JSON RAT / data-processing register (Ley 21.719 Art. 30 evidence)
+- [x] FF1 mode (NIST SP 800-38G) alongside FF3-1 — `mask_pii_fpe(..., mode="ff1")`, reversible and length-preserving
+- [x] FPE key management — `derive_key` / `derive_tweak` (HKDF/HMAC, offline) and `validate_key` / `validate_tweak` weak-key guards
+- [x] `rekey_pii_fpe` — FPE key rotation on a token column without exposing plaintext
 - [ ] Performance sweep — Opus 4.8 deep review: bug hunting across all 31 pattern modules, regex optimization, allocation reduction, rayon parallelism, and benchmark refresh targeting positive per-family speedups vs Python baseline
 
 ## License

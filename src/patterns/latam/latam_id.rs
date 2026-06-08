@@ -1,4 +1,4 @@
-
+﻿
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -162,7 +162,7 @@ pub fn mask_curp(s: &str) -> String {
     mask_curp_counted(s).0
 }
 
-pub fn mask_rut_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_rut_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     RUT_RE
         .replace_all(s, |caps: &regex::Captures| {
             let rut = &caps[0];
@@ -181,7 +181,7 @@ pub fn mask_rut_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String
         .into_owned()
 }
 
-pub fn mask_cpf_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_cpf_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     CPF_RE
         .replace_all(s, |caps: &regex::Captures| {
             let cpf = &caps[0];
@@ -251,7 +251,7 @@ pub fn mask_arg_dni(s: &str) -> String {
     mask_arg_dni_counted(s).0
 }
 
-pub fn mask_arg_dni_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_arg_dni_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     ARG_DNI_RE
         .replace_all(s, |caps: &regex::Captures| {
             let m = caps.get(0).unwrap();
@@ -285,7 +285,7 @@ pub fn mask_co_cc(s: &str) -> String {
     mask_co_cc_counted(s).0
 }
 
-pub fn mask_co_cc_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_co_cc_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     CO_CC_RE
         .replace_all(s, |caps: &regex::Captures| {
             let m = caps.get(0).unwrap();
@@ -318,7 +318,7 @@ pub fn mask_co_nit(s: &str) -> String {
     mask_co_nit_counted(s).0
 }
 
-pub fn mask_co_nit_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_co_nit_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     CO_NIT_RE
         .replace_all(s, |caps: &regex::Captures| {
             if !valid_nit(&caps[1], &caps[2]) {

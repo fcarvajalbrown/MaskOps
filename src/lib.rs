@@ -10,9 +10,45 @@ use patterns::{mask_all, mask_all_fpe, contains_any_pii,
                mask_all_selected, mask_all_selected_fpe, contains_any_selected,
                mask_all_consistent, mask_all_selected_consistent,
                extract_all, ExtractResult, mask_all_audit};
-use patterns::{Ff3Cipher, KEY_LEN, TWEAK_LEN};
+use patterns::{Ff3Cipher, Ff1Cipher, FpeCipher, KEY_LEN, TWEAK_LEN};
 use patterns::ConsistentHasher;
 pub use patterns::fpe::Ff3Cipher as MaskopsFpe;
+
+fn read_key_tweak<'a>(
+    key_series: &'a Series,
+    tweak_series: &'a Series,
+    label: &str,
+) -> PolarsResult<([u8; KEY_LEN], [u8; TWEAK_LEN])> {
+    let key_bytes = key_series.binary()?
+        .get(0)
+        .ok_or_else(|| PolarsError::ComputeError(format!("{}: missing key", label).into()))?;
+    let tweak_bytes = tweak_series.binary()?
+        .get(0)
+        .ok_or_else(|| PolarsError::ComputeError(format!("{}: missing tweak", label).into()))?;
+    if key_bytes.len() != KEY_LEN {
+        return Err(PolarsError::ComputeError(
+            format!("{}: key must be {} bytes, got {}", label, KEY_LEN, key_bytes.len()).into()
+        ));
+    }
+    if tweak_bytes.len() != TWEAK_LEN {
+        return Err(PolarsError::ComputeError(
+            format!("{}: tweak must be {} bytes, got {}", label, TWEAK_LEN, tweak_bytes.len()).into()
+        ));
+    }
+    let key: [u8; KEY_LEN] = key_bytes.try_into().unwrap();
+    let tweak: [u8; TWEAK_LEN] = tweak_bytes.try_into().unwrap();
+    Ok((key, tweak))
+}
+
+fn build_cipher(key: [u8; KEY_LEN], tweak: [u8; TWEAK_LEN], mode: &str) -> PolarsResult<FpeCipher> {
+    match mode {
+        "ff3" | "" => Ok(FpeCipher::Ff3(Ff3Cipher::new(&key, &tweak))),
+        "ff1"      => Ok(FpeCipher::Ff1(Ff1Cipher::new(&key, &tweak))),
+        other => Err(PolarsError::ComputeError(
+            format!("mask_pii_fpe: unknown mode '{}', expected 'ff3' or 'ff1'", other).into()
+        )),
+    }
+}
 
 #[polars_expr(output_type=String)]
 fn mask_pii(inputs: &[Series]) -> PolarsResult<Series> {
@@ -46,36 +82,41 @@ fn mask_pii_fpe(inputs: &[Series]) -> PolarsResult<Series> {
 
     let key_series   = inputs[1].cast(&DataType::Binary)?;
     let tweak_series = inputs[2].cast(&DataType::Binary)?;
+    let (key, tweak) = read_key_tweak(&key_series, &tweak_series, "mask_pii_fpe")?;
 
-    let key_bytes = key_series.binary()?
-        .get(0)
-        .ok_or_else(|| PolarsError::ComputeError("mask_pii_fpe: missing key".into()))?;
-    let tweak_bytes = tweak_series.binary()?
-        .get(0)
-        .ok_or_else(|| PolarsError::ComputeError("mask_pii_fpe: missing tweak".into()))?;
+    let mode = if inputs.len() > 3 { inputs[3].str()?.get(0).unwrap_or("ff3") } else { "ff3" };
+    let cipher = build_cipher(key, tweak, mode)?;
 
-    if key_bytes.len() != KEY_LEN {
-        return Err(PolarsError::ComputeError(
-            format!("mask_pii_fpe: key must be {} bytes, got {}", KEY_LEN, key_bytes.len()).into()
-        ));
-    }
-    if tweak_bytes.len() != TWEAK_LEN {
-        return Err(PolarsError::ComputeError(
-            format!("mask_pii_fpe: tweak must be {} bytes, got {}", TWEAK_LEN, tweak_bytes.len()).into()
-        ));
-    }
-
-    let key:   [u8; KEY_LEN]   = key_bytes.try_into().unwrap();
-    let tweak: [u8; TWEAK_LEN] = tweak_bytes.try_into().unwrap();
-    let cipher = Ff3Cipher::new(&key, &tweak);
-
-    let out: StringChunked = if inputs.len() > 3 {
-        let pat_str = inputs[3].str()?.get(0).unwrap_or("");
+    let out: StringChunked = if inputs.len() > 4 {
+        let pat_str = inputs[4].str()?.get(0).unwrap_or("");
         let patterns: Vec<&str> = pat_str.split(',').filter(|s| !s.is_empty()).collect();
         ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_selected_fpe(s, &patterns, &cipher))))
     } else {
         ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_fpe(s, &cipher))))
     };
+    Ok(out.into_series())
+}
+
+#[polars_expr(output_type=String)]
+fn mask_pii_fpe_rekey(inputs: &[Series]) -> PolarsResult<Series> {
+    let ca = inputs[0].str()?;
+
+    let old_key_series   = inputs[1].cast(&DataType::Binary)?;
+    let old_tweak_series = inputs[2].cast(&DataType::Binary)?;
+    let new_key_series   = inputs[3].cast(&DataType::Binary)?;
+    let new_tweak_series = inputs[4].cast(&DataType::Binary)?;
+    let (old_key, old_tweak) = read_key_tweak(&old_key_series, &old_tweak_series, "mask_pii_fpe_rekey")?;
+    let (new_key, new_tweak) = read_key_tweak(&new_key_series, &new_tweak_series, "mask_pii_fpe_rekey")?;
+
+    let mode = if inputs.len() > 5 { inputs[5].str()?.get(0).unwrap_or("ff3") } else { "ff3" };
+    let old_cipher = build_cipher(old_key, old_tweak, mode)?;
+    let new_cipher = build_cipher(new_key, new_tweak, mode)?;
+    let cipher = FpeCipher::Rekey(Box::new(old_cipher), Box::new(new_cipher));
+
+    let out: StringChunked = ca.apply(|opt| opt.map(|s| match cipher.encrypt(s) {
+        Ok(rotated) => std::borrow::Cow::Owned(rotated),
+        Err(_) => std::borrow::Cow::Owned(s.to_string()),
+    }));
     Ok(out.into_series())
 }
 
@@ -477,6 +518,6 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
 
 #[pymodule]
 fn _maskops(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("__version__", "1.7.0")?;
+    m.add("__version__", "1.8.0")?;
     Ok(())
 }

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.8.0](https://github.com/fcarvajalbrown/MaskOps/compare/v1.7.0...v1.8.0) (2026-06-08)
+
+### Features
+
+* **fpe:** add FF1 mode (NIST SP 800-38G) as an alternative to FF3-1 — `mask_pii_fpe(..., mode="ff1")`; both modes are reversible and length-preserving
+* **fpe:** add `rekey_pii_fpe` — rotate the FPE key on a column of FPE tokens (decrypt-old + encrypt-new in one pass, plaintext never materialises as a column)
+* **keys:** add `derive_key` / `derive_tweak` (HKDF-SHA256 / HMAC-SHA256) for deterministic, offline per-tenant key and tweak derivation from one master secret
+* **keys:** add `validate_key` / `validate_tweak` — length checks plus a weak-key guard that rejects single-repeated-byte keys; now enforced by `mask_pii_fpe`
+
 ## [1.7.0](https://github.com/fcarvajalbrown/MaskOps/compare/v1.6.0...v1.7.0) (2026-06-08)
 
 ### Features
