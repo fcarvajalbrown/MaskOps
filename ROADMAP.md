@@ -74,11 +74,12 @@ Goal: integrations, official listings, and a stable long-term API that position 
 
 ---
 
----
+## Phase 4 — Horizon `v4.0`
 
-## Beyond v3.0
+Goal: the growth headroom beyond the Polars core — widen the addressable market once MaskOps is the established standard.
 
-- **GUI** — desktop application for non-technical users (municipalities, compliance officers). Planned for a post-v3.0 major release. Wraps the CLI + policy files into a visual interface for configuring masking rules and running batch jobs without writing code.
+- [ ] **pandas-compatible API** — expose the same Rust engine to pandas / PyArrow workflows, widening the addressable market from Polars-native teams to the far larger pandas ecosystem, with no second implementation of the core.
+- [ ] **GUI (optional)** — desktop interface wrapping the CLI + policy files for non-technical compliance users (municipalities, compliance officers): configure masking rules and run batch jobs without writing code.
 
 ---
 
