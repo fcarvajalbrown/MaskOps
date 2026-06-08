@@ -16,6 +16,7 @@ PII_FAMILIES = [
     "personnummer", "credit_card", "ssn", "us_passport", "rut", "cpf",
     "cnpj", "curp", "arg_dni", "co_cc", "co_nit", "ec_cedula", "pe_dni",
     "uy_ci", "npi", "mbi", "nhs", "sin", "tfn", "my_number", "rrn",
+    "za_id", "il_id",
 ]
 
 REGULATION = {
@@ -53,12 +54,15 @@ REGULATION = {
     "tfn": "Australia — Privacy Act 1988",
     "my_number": "Japan — APPI",
     "rrn": "South Korea — PIPA",
+    "za_id": "South Africa — POPIA",
+    "il_id": "Israel — PPL (Protection of Privacy Law)",
 }
 
 REVERSIBLE_FAMILIES = {
     "phone", "credit_card", "ssn", "rut", "cpf", "cnpj", "arg_dni",
     "co_cc", "co_nit", "ec_cedula", "pe_dni", "uy_ci", "npi", "nhs",
     "sin", "tfn", "pesel", "bsn", "personnummer", "my_number", "rrn",
+    "za_id", "il_id",
 }
 
 _MANIFEST_SCHEMA = {

@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.9.0](https://github.com/fcarvajalbrown/MaskOps/compare/v1.8.0...v1.9.0) (2026-06-08)
+
+### Features
+
+* **mea:** add South African ID (13-digit, Luhn + date-of-birth + citizenship validation, POPIA) — asterisk / FPE / consistent modes
+* **mea:** add Israeli ID / Teudat Zehut (9-digit weighted checksum, PPL) — asterisk / FPE / consistent modes; a no-adjacent-dash guard keeps it from masking the digit run inside dash-formatted IDs (e.g. Colombian NIT)
+
 ## [1.8.0](https://github.com/fcarvajalbrown/MaskOps/compare/v1.7.0...v1.8.0) (2026-06-08)
 
 ### Features

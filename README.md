@@ -362,6 +362,7 @@ pytest tests/ -v
 - [x] FF1 mode (NIST SP 800-38G) alongside FF3-1 — `mask_pii_fpe(..., mode="ff1")`, reversible and length-preserving
 - [x] FPE key management — `derive_key` / `derive_tweak` (HKDF/HMAC, offline) and `validate_key` / `validate_tweak` weak-key guards
 - [x] `rekey_pii_fpe` — FPE key rotation on a token column without exposing plaintext
+- [x] MEA identifiers — South African ID (Luhn + DOB + citizenship, POPIA) and Israeli ID / Teudat Zehut (weighted checksum, PPL)
 - [ ] Performance sweep — Opus 4.8 deep review: bug hunting across all 31 pattern modules, regex optimization, allocation reduction, rayon parallelism, and benchmark refresh targeting positive per-family speedups vs Python baseline
 
 ## License
