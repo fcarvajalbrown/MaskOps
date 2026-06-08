@@ -621,3 +621,92 @@ pub fn mask_all_audit(value: &str) -> (String, AuditCounts) {
 
     (s, c)
 }
+
+pub fn mask_all_audit_selected(value: &str, patterns: &[&str]) -> (String, AuditCounts) {
+    let sel = |name: &str| patterns.contains(&name);
+    let mut c = AuditCounts::default();
+    let mut s = value.to_string();
+
+    if sel("iban")            { let (ns, n) = mask_iban_counted(&s);            s = ns; c.iban = n; }
+    if sel("vat")             { let (ns, n) = mask_vat_counted(&s);             s = ns; c.vat = n; }
+    if sel("email")           { let (ns, n) = mask_email_counted(&s);           s = ns; c.email = n; }
+    if sel("ip")              { let (ns, n) = mask_ip_counted(&s);              s = ns; c.ip = n; }
+    if sel("curp")            { let (ns, n) = mask_curp_counted(&s);            s = ns; c.curp = n; }
+    if sel("dni")             { let (ns, n) = mask_dni_counted(&s);             s = ns; c.dni = n; }
+    if sel("nie")             { let (ns, n) = mask_nie_counted(&s);             s = ns; c.nie = n; }
+    if sel("nin")             { let (ns, n) = mask_nin_counted(&s);             s = ns; c.nin = n; }
+    if sel("personalausweis") { let (ns, n) = mask_personalausweis_counted(&s); s = ns; c.personalausweis = n; }
+    if sel("us_passport")     { let (ns, n) = mask_us_passport_counted(&s);     s = ns; c.us_passport = n; }
+    if sel("mbi")             { let (ns, n) = mask_mbi_counted(&s);             s = ns; c.mbi = n; }
+    if sel("nir")             { let (ns, n) = mask_nir_counted(&s);             s = ns; c.nir = n; }
+    if sel("codice_fiscale")  { let (ns, n) = mask_cf_counted(&s);              s = ns; c.codice_fiscale = n; }
+
+    if sel("phone")           { let (ns, n) = mask_phone_counted(&s);           s = ns; c.phone = n; }
+    if sel("rut")             { let (ns, n) = mask_rut_counted(&s);             s = ns; c.rut = n; }
+    if sel("cpf")             { let (ns, n) = mask_cpf_counted(&s);             s = ns; c.cpf = n; }
+    if sel("cnpj")            { let (ns, n) = mask_cnpj_counted(&s);            s = ns; c.cnpj = n; }
+    if sel("credit_card")     { let (ns, n) = mask_card_counted(&s);            s = ns; c.credit_card = n; }
+    if sel("ssn")             { let (ns, n) = mask_ssn_counted(&s);             s = ns; c.ssn = n; }
+    if sel("arg_dni")         { let (ns, n) = mask_arg_dni_counted(&s);         s = ns; c.arg_dni = n; }
+    if sel("co_cc")           { let (ns, n) = mask_co_cc_counted(&s);           s = ns; c.co_cc = n; }
+    if sel("co_nit")          { let (ns, n) = mask_co_nit_counted(&s);          s = ns; c.co_nit = n; }
+    if sel("personnummer")    { let (ns, n) = mask_personnummer_counted(&s);    s = ns; c.personnummer = n; }
+    if sel("ec_cedula")       { let (ns, n) = mask_ec_cedula_counted(&s);       s = ns; c.ec_cedula = n; }
+    if sel("pe_dni")          { let (ns, n) = mask_pe_dni_counted(&s);          s = ns; c.pe_dni = n; }
+    if sel("npi")             { let (ns, n) = mask_npi_counted(&s);             s = ns; c.npi = n; }
+    if sel("nhs")             { let (ns, n) = mask_nhs_counted(&s);             s = ns; c.nhs = n; }
+    if sel("uy_ci")           { let (ns, n) = mask_uy_ci_counted(&s);           s = ns; c.uy_ci = n; }
+    if sel("sin")             { let (ns, n) = mask_sin_counted(&s);             s = ns; c.sin = n; }
+    if sel("tfn")             { let (ns, n) = mask_tfn_counted(&s);             s = ns; c.tfn = n; }
+    if sel("pesel")           { let (ns, n) = mask_pesel_counted(&s);           s = ns; c.pesel = n; }
+    if sel("bsn")             { let (ns, n) = mask_bsn_counted(&s);             s = ns; c.bsn = n; }
+    if sel("my_number")       { let (ns, n) = mask_my_number_counted(&s);       s = ns; c.my_number = n; }
+    if sel("rrn")             { let (ns, n) = mask_rrn_counted(&s);             s = ns; c.rrn = n; }
+    if sel("za_id")           { let (ns, n) = mask_za_id_counted(&s);           s = ns; c.za_id = n; }
+    if sel("il_id")           { let (ns, n) = mask_il_id_counted(&s);           s = ns; c.il_id = n; }
+
+    (s, c)
+}
+
+pub fn extract_all_selected(value: &str, patterns: &[&str]) -> ExtractResult {
+    let sel = |name: &str| patterns.contains(&name);
+    let pick = |name: &str, f: &dyn Fn(&str) -> Option<String>| if sel(name) { f(value) } else { None };
+    ExtractResult {
+        email:           pick("email", &extract_email),
+        phone:           pick("phone", &extract_phone),
+        ip:              pick("ip", &extract_ip),
+        iban:            pick("iban", &extract_iban),
+        vat:             pick("vat", &extract_vat),
+        dni:             pick("dni", &extract_dni),
+        nie:             pick("nie", &extract_nie),
+        nin:             pick("nin", &extract_nin),
+        personalausweis: pick("personalausweis", &extract_personalausweis),
+        nir:             pick("nir", &extract_nir),
+        codice_fiscale:  pick("codice_fiscale", &extract_cf),
+        pesel:           pick("pesel", &extract_pesel),
+        bsn:             pick("bsn", &extract_bsn),
+        personnummer:    pick("personnummer", &extract_personnummer),
+        credit_card:     pick("credit_card", &extract_card),
+        ssn:             pick("ssn", &extract_ssn),
+        us_passport:     pick("us_passport", &extract_us_passport),
+        rut:             pick("rut", &extract_rut),
+        cpf:             pick("cpf", &extract_cpf),
+        cnpj:            pick("cnpj", &extract_cnpj),
+        curp:            pick("curp", &extract_curp),
+        arg_dni:         pick("arg_dni", &extract_arg_dni),
+        co_cc:           pick("co_cc", &extract_co_cc),
+        co_nit:          pick("co_nit", &extract_co_nit),
+        ec_cedula:       pick("ec_cedula", &extract_ec_cedula),
+        pe_dni:          pick("pe_dni", &extract_pe_dni),
+        uy_ci:           pick("uy_ci", &extract_uy_ci),
+        npi:             pick("npi", &extract_npi),
+        mbi:             pick("mbi", &extract_mbi),
+        nhs:             pick("nhs", &extract_nhs),
+        sin:             pick("sin", &extract_sin),
+        tfn:             pick("tfn", &extract_tfn),
+        my_number:       pick("my_number", &extract_my_number),
+        rrn:             pick("rrn", &extract_rrn),
+        za_id:           pick("za_id", &extract_za_id),
+        il_id:           pick("il_id", &extract_il_id),
+    }
+}

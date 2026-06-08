@@ -363,6 +363,7 @@ pytest tests/ -v
 - [x] FPE key management — `derive_key` / `derive_tweak` (HKDF/HMAC, offline) and `validate_key` / `validate_tweak` weak-key guards
 - [x] `rekey_pii_fpe` — FPE key rotation on a token column without exposing plaintext
 - [x] MEA identifiers — South African ID (Luhn + DOB + citizenship, POPIA) and Israeli ID / Teudat Zehut (weighted checksum, PPL)
+- [x] Unified `patterns=` selection across `extract_pii` and `mask_pii_audit` (v2.0 enterprise release) + migration guide
 - [ ] Performance sweep — Opus 4.8 deep review: bug hunting across all 31 pattern modules, regex optimization, allocation reduction, rayon parallelism, and benchmark refresh targeting positive per-family speedups vs Python baseline
 
 ## License

@@ -223,19 +223,59 @@ def rekey_pii_fpe(
         is_elementwise=True,
     )
 
-def extract_pii(expr: IntoExpr) -> pl.Expr:
+def extract_pii(expr: IntoExpr, patterns: list = None) -> pl.Expr:
+    """
+    Extract the first match per PII family into a Struct column (one field per family).
+
+    Parameters
+    ----------
+    expr : IntoExpr
+        A Polars column name (str) or expression resolving to a String series.
+    patterns : list[str] | None
+        Optional list of pattern names to extract. Same valid names as ``mask_pii``.
+        Omit to extract every family. Non-selected fields are returned as null.
+
+    Examples
+    --------
+    >>> df.with_columns(maskops.extract_pii("notes").alias("pii"))
+    >>> df.with_columns(maskops.extract_pii("notes", patterns=["email", "iban"]).alias("pii"))
+    """
+    args = [pl.col(expr) if isinstance(expr, str) else expr]
+    if patterns is not None:
+        args.append(pl.lit(",".join(patterns)))
     return register_plugin_function(
         plugin_path=_LIB,
         function_name="extract_pii",
-        args=[pl.col(expr) if isinstance(expr, str) else expr],
+        args=args,
         is_elementwise=True,
     )
 
-def mask_pii_audit(expr: IntoExpr) -> pl.Expr:
+def mask_pii_audit(expr: IntoExpr, patterns: list = None) -> pl.Expr:
+    """
+    Mask and report per-family match counts in one pass, as a nested Struct
+    (``masked`` value + ``counts`` sub-struct).
+
+    Parameters
+    ----------
+    expr : IntoExpr
+        A Polars column name (str) or expression resolving to a String series.
+    patterns : list[str] | None
+        Optional list of pattern names to mask and count. Same valid names as
+        ``mask_pii``. Omit to apply every family. When provided, only the selected
+        families are masked in ``masked`` and counted in ``counts``.
+
+    Examples
+    --------
+    >>> df.with_columns(maskops.mask_pii_audit("notes").alias("audit"))
+    >>> df.with_columns(maskops.mask_pii_audit("notes", patterns=["ssn", "credit_card"]).alias("audit"))
+    """
+    args = [pl.col(expr) if isinstance(expr, str) else expr]
+    if patterns is not None:
+        args.append(pl.lit(",".join(patterns)))
     return register_plugin_function(
         plugin_path=_LIB,
         function_name="mask_pii_audit",
-        args=[pl.col(expr) if isinstance(expr, str) else expr],
+        args=args,
         is_elementwise=True,
     )
 
