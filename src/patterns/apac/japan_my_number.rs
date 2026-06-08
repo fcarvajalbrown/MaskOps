@@ -1,4 +1,4 @@
-
+﻿
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -69,7 +69,7 @@ pub fn mask_my_number(s: &str) -> String {
     mask_my_number_counted(s).0
 }
 
-pub fn mask_my_number_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_my_number_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     let s = MN_SPACED_RE
         .replace_all(s, |caps: &regex::Captures| {
             let raw = &caps[0];

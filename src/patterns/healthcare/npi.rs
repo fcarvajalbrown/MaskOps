@@ -1,4 +1,4 @@
-
+﻿
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -60,7 +60,7 @@ pub fn mask_npi_consistent(s: &str, hasher: &crate::patterns::consistent::Consis
         .into_owned()
 }
 
-pub fn mask_npi_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_npi_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     NPI_RE
         .replace_all(s, |caps: &regex::Captures| {
             if !valid_npi(&caps[0]) {

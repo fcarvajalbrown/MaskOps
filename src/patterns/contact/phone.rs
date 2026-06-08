@@ -1,4 +1,4 @@
-
+﻿
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -78,7 +78,7 @@ pub fn mask_phone_consistent(value: &str, hasher: &crate::patterns::consistent::
         .into_owned()
 }
 
-pub fn mask_phone_fpe(value: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_phone_fpe(value: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     PHONE_RE
         .replace_all(value, |caps: &regex::Captures| {
             let full = caps.get(0).unwrap().as_str();

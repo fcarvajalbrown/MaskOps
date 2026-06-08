@@ -3,15 +3,15 @@
 use aes::Aes256;
 use aes::cipher::{BlockEncrypt, KeyInit, generic_array::GenericArray};
 
-const RADIX: u64 = 10;
+pub(crate) const RADIX: u64 = 10;
 
 pub const TWEAK_LEN: usize = 7;
 
 pub const KEY_LEN: usize = 32;
 
-const MIN_LEN: usize = 2;
+pub(crate) const MIN_LEN: usize = 2;
 
-const MAX_LEN: usize = 30;
+pub(crate) const MAX_LEN: usize = 30;
 
 pub struct Ff3Cipher {
     
@@ -203,7 +203,7 @@ impl std::fmt::Display for FpeError {
     }
 }
 
-fn parse_digits(s: &str) -> Result<Vec<u8>, FpeError> {
+pub(crate) fn parse_digits(s: &str) -> Result<Vec<u8>, FpeError> {
     let mut out = Vec::with_capacity(s.len());
     for c in s.chars() {
         match c.to_digit(10) {
@@ -215,14 +215,14 @@ fn parse_digits(s: &str) -> Result<Vec<u8>, FpeError> {
     Ok(out)
 }
 
-fn validate_len(n: usize) -> Result<(), FpeError> {
+pub(crate) fn validate_len(n: usize) -> Result<(), FpeError> {
     if n < MIN_LEN || n > MAX_LEN {
         return Err(FpeError::InvalidLength(n));
     }
     Ok(())
 }
 
-fn digits_to_string(digits: &[u8]) -> String {
+pub(crate) fn digits_to_string(digits: &[u8]) -> String {
     digits.iter().map(|d| char::from_digit(*d as u32, 10).unwrap()).collect()
 }
 
@@ -245,6 +245,32 @@ fn digits_of(mut n: u128, len: usize) -> Vec<u8> {
 
 fn bytes_to_u128_be(b: &[u8; 16]) -> u128 {
     u128::from_be_bytes(*b)
+}
+
+use crate::patterns::fpe_ff1::Ff1Cipher;
+
+pub enum FpeCipher {
+    Ff3(Ff3Cipher),
+    Ff1(Ff1Cipher),
+    Rekey(Box<FpeCipher>, Box<FpeCipher>),
+}
+
+impl FpeCipher {
+    pub fn encrypt(&self, plaintext: &str) -> Result<String, FpeError> {
+        match self {
+            FpeCipher::Ff3(c) => c.encrypt(plaintext),
+            FpeCipher::Ff1(c) => c.encrypt(plaintext),
+            FpeCipher::Rekey(old, new) => new.encrypt(&old.decrypt(plaintext)?),
+        }
+    }
+
+    pub fn decrypt(&self, ciphertext: &str) -> Result<String, FpeError> {
+        match self {
+            FpeCipher::Ff3(c) => c.decrypt(ciphertext),
+            FpeCipher::Ff1(c) => c.decrypt(ciphertext),
+            FpeCipher::Rekey(old, new) => old.encrypt(&new.decrypt(ciphertext)?),
+        }
+    }
 }
 
 #[cfg(test)]

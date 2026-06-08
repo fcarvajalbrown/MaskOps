@@ -1,4 +1,4 @@
-
+﻿
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -93,7 +93,7 @@ fn mask_sin_compact_asterisk_counted(s: &str) -> (String, u32) {
     (result, count)
 }
 
-pub fn mask_sin_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_sin_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     let s = SIN_FMT_RE
         .replace_all(s, |caps: &regex::Captures| {
             let raw = &caps[0];
@@ -108,7 +108,7 @@ pub fn mask_sin_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String
     mask_sin_compact_fpe(&s, cipher)
 }
 
-fn mask_sin_compact_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+fn mask_sin_compact_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     let mut result = String::with_capacity(s.len());
     let mut last = 0;
     for m in SIN_COMPACT_RE.find_iter(s) {

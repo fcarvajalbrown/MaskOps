@@ -1,4 +1,4 @@
-
+﻿
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -96,7 +96,7 @@ pub fn mask_card_consistent(s: &str, hasher: &crate::patterns::consistent::Consi
         .into_owned()
 }
 
-pub fn mask_card_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_card_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     CARD_RE
         .replace_all(s, |caps: &regex::Captures| {
             let raw = caps.get(0).unwrap().as_str();

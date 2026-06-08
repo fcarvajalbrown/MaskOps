@@ -1,4 +1,4 @@
-
+﻿
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -44,7 +44,7 @@ pub fn mask_uy_ci(s: &str) -> String {
     mask_uy_ci_counted(s).0
 }
 
-pub fn mask_uy_ci_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_uy_ci_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     UY_CI_RE
         .replace_all(s, |caps: &regex::Captures| {
             if !valid_uy_ci(&caps[0]) {

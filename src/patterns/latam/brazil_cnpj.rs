@@ -1,4 +1,4 @@
-
+﻿
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -65,7 +65,7 @@ pub fn mask_cnpj(s: &str) -> String {
     mask_cnpj_counted(s).0
 }
 
-pub fn mask_cnpj_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_cnpj_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     CNPJ_RE
         .replace_all(s, |caps: &regex::Captures| {
             let cnpj = &caps[0];

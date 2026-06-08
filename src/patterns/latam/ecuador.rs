@@ -1,4 +1,4 @@
-
+﻿
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -71,7 +71,7 @@ pub fn mask_ec_cedula_consistent(s: &str, hasher: &crate::patterns::consistent::
         .into_owned()
 }
 
-pub fn mask_ec_cedula_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_ec_cedula_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     EC_CEDULA_RE
         .replace_all(s, |caps: &regex::Captures| {
             if !valid_cedula(&caps[0]) {

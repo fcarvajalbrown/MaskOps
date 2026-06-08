@@ -7,6 +7,7 @@ pub mod healthcare;
 pub mod apac;
 pub mod country_codes;
 pub mod fpe;
+pub mod fpe_ff1;
 pub mod consistent;
 
 use crate::patterns::eu::iban::{mask_iban, contains_iban, extract_iban};
@@ -56,7 +57,8 @@ use crate::patterns::apac::{
     contains_my_number, mask_my_number, extract_my_number, mask_my_number_fpe, mask_my_number_consistent,
     contains_rrn, mask_rrn, extract_rrn, mask_rrn_fpe, mask_rrn_consistent,
 };
-pub use crate::patterns::fpe::{Ff3Cipher, KEY_LEN, TWEAK_LEN};
+pub use crate::patterns::fpe::{Ff3Cipher, FpeCipher, KEY_LEN, TWEAK_LEN};
+pub use crate::patterns::fpe_ff1::Ff1Cipher;
 pub use crate::patterns::consistent::ConsistentHasher;
 use crate::patterns::contact::phone::mask_phone_consistent;
 use crate::patterns::financial::credit_card::mask_card_consistent;
@@ -159,7 +161,7 @@ pub fn mask_digit(value: &str) -> String {
     s
 }
 
-pub fn mask_digit_fpe(value: &str, cipher: &Ff3Cipher) -> String {
+pub fn mask_digit_fpe(value: &str, cipher: &FpeCipher) -> String {
     let s = mask_phone_fpe(value, cipher);
     let s = mask_rut_fpe(&s, cipher);
     let s = mask_cpf_fpe(&s, cipher);
@@ -189,7 +191,7 @@ pub fn mask_all(value: &str) -> String {
     mask_digit(&s)
 }
 
-pub fn mask_all_fpe(value: &str, cipher: &Ff3Cipher) -> String {
+pub fn mask_all_fpe(value: &str, cipher: &FpeCipher) -> String {
     let s = mask_non_digit(value);
     mask_digit_fpe(&s, cipher)
 }
@@ -268,7 +270,7 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
     s
 }
 
-pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &Ff3Cipher) -> String {
+pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher) -> String {
     let mut s = value.to_string();
     for pat in patterns {
         s = match *pat {

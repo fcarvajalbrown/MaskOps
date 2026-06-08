@@ -1,4 +1,4 @@
-
+﻿
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -39,7 +39,7 @@ pub fn mask_bsn(s: &str) -> String {
     mask_bsn_counted(s).0
 }
 
-pub fn mask_bsn_fpe(s: &str, cipher: &crate::patterns::fpe::Ff3Cipher) -> String {
+pub fn mask_bsn_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
     BSN_RE
         .replace_all(s, |caps: &regex::Captures| {
             if !valid_bsn(&caps[0]) {
