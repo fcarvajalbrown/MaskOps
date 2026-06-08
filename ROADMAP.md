@@ -33,9 +33,9 @@ Goal: configurable patterns, structured output, and audit land individually then
 - [x] **v1.4** — Multi-column referential integrity: consistent masking across joined tables
 - [x] **v1.5** — APAC: Japanese My Number, South Korean RRN
 - [x] **v1.6** — `mask_pii_audit` expression: masked value + per-family match counts in one pass
-- [ ] **v1.7** — MEA: South African ID, Israeli ID number
-- [ ] **v1.8** — FPE key management helpers: rotation, tweak derivation, validation
-- [ ] **v1.9** — US driver's license (state-by-state) · date of birth patterns
+- [ ] **v1.7** — LATAM depth & Chile readiness: Brazilian CNPJ (legal-entity confidentiality masking) · masking manifest / RAT export (per-column PII family, regulation, mask mode, and match counts — feeds Ley 21.719's data-processing register and auditor evidence)
+- [ ] **v1.8** — FPE crypto & key management: key rotation, tweak derivation, validation · FF1 mode (NIST-surviving FPE alternative to FF3-1)
+- [ ] **v1.9** — MEA: South African ID, Israeli ID number
 - [ ] **v2.0** — Enterprise release: configurable patterns + structured output + audit unified · migration guide
 
 ---
@@ -50,7 +50,7 @@ Goal: integrations, hosted docs, official listings, clean API for long-term stab
 - [ ] **v2.4** — Arrow IPC + DuckDB compatibility
 - [ ] **v2.5** — Performance: `rayon` multi-column parallelism · SIMD investigation
 - [ ] **v2.6** — Listed on `ddotta/awesome-polars` · official Polars plugins page PR merged
-- [ ] **v2.7** — APAC depth: Singapore NRIC/FIN, Indian Aadhaar
+- [ ] **v2.7** — US driver's license (state-by-state) · date of birth patterns
 - [ ] **v2.8** — Advanced CLI: batch mode, multiple output formats (CSV, Arrow IPC, JSON)
 - [ ] **v2.9** — API review · deprecations · 3.0 migration guide
 - [ ] **v3.0** — Breaking changes from 2.9 review applied · stable typing · ecosystem complete
