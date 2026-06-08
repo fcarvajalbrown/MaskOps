@@ -1,9 +1,11 @@
 # Roadmap
 
-MaskOps follows a three-phase path from its initial public release to a production-grade standard for Polars PII masking.
+MaskOps is the only open-source PII-masking engine that runs natively inside Polars, fully air-gapped, with check-digit-validated coverage of Latin American identifiers (RUT, CPF, CURP, and more) alongside EU, US, and APAC families. This roadmap takes it from that position to a production-grade compliance standard for regulated data teams.
 
-> **Current version:** v1.6.0 — roadmap milestones v0.2–v1.6 complete
-> Coverage and infrastructure releases alternate each minor. Enterprise features land individually in 1.x and unify at 2.0.
+**Market timing:** Chile's Ley 21.719 enters force on 1 December 2026, and Open Finance (NCG 514) phases in from July 2026 — both pushing regulated personal data through fintech pipelines and turning in-pipeline masking into a near-term compliance requirement across Latin America.
+
+> **Current version:** v1.6.0 — milestones v0.2–v1.6 shipped.
+> **Phase 1 — Foundation:** coverage + API stability. **Phase 2 — Enterprise:** audit, FPE, and configurable policy. **Phase 3 — Ecosystem:** integrations, standardization, long-term API stability. Coverage and infrastructure releases alternate each minor.
 
 ---
 
