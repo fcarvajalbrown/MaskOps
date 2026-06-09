@@ -52,11 +52,6 @@
             "type": "command",
             "command": "echo '{\"systemMessage\":\"PR opened. ONLY if this PR ships a roadmap feature/fix: after merge, confirm the changelog, roadmap, and all five version files are bumped, then run python tools/release/release.py X.Y.Z --yes. For chore/docs/ci/tooling PRs, do nothing release-related — no tag, no release.\"}'",
             "if": "Bash(gh pr create*)"
-          },
-          {
-            "type": "command",
-            "command": "echo '{\"systemMessage\":\"Reminder: have you run /kimi-security, /kimi-optimize, and /kimi-review for this change?\"}'",
-            "if": "Bash(git push*)"
           }
         ]
       }

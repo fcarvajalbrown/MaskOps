@@ -9,7 +9,6 @@ coverage/
 
 .coverage
 coverage.xml
-.kimi/
 *.so
 *.pyd
 *.pdb
