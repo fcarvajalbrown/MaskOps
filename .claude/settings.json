@@ -10,47 +10,22 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '{\"continue\":false,\"stopReason\":\"Force push blocked — tell me first and wait for explicit confirmation.\"}'",
-            "if": "Bash(git push --force*)"
+            "command": "python tools/hooks/release_guard.py",
+            "if": "Bash(git push*)"
           },
           {
             "type": "command",
-            "command": "echo '{\"continue\":false,\"stopReason\":\"Force push blocked — tell me first and wait for explicit confirmation.\"}'",
-            "if": "Bash(git push -f*)"
+            "command": "python tools/hooks/release_guard.py",
+            "if": "Bash(git tag*)"
           },
           {
             "type": "command",
-            "command": "echo '{\"continue\":false,\"stopReason\":\"v* tags trigger PyPI publish — production action. Confirm the tag name explicitly before I proceed.\"}'",
-            "if": "Bash(git tag v*)"
-          },
-          {
-            "type": "command",
-            "command": "echo '{\"continue\":false,\"stopReason\":\"Annotated/signed tag — production release action if it is a v* tag. Releases must be deliberate roadmap events; confirm explicitly first.\"}'",
-            "if": "Bash(git tag -a*)"
-          },
-          {
-            "type": "command",
-            "command": "echo '{\"continue\":false,\"stopReason\":\"Annotated/signed tag — production release action if it is a v* tag. Releases must be deliberate roadmap events; confirm explicitly first.\"}'",
-            "if": "Bash(git tag -s*)"
-          },
-          {
-            "type": "command",
-            "command": "echo '{\"continue\":false,\"stopReason\":\"Pushing tags triggers the PyPI publish workflow — production action. Confirm the exact tag and that a roadmap stage actually shipped.\"}'",
-            "if": "Bash(git push*--tags*)"
-          },
-          {
-            "type": "command",
-            "command": "echo '{\"continue\":false,\"stopReason\":\"Pushing a v* tag triggers the PyPI publish workflow — production action. Confirm explicitly first.\"}'",
-            "if": "Bash(git push origin v*)"
-          },
-          {
-            "type": "command",
-            "command": "echo '{\"continue\":false,\"stopReason\":\"Creating a GitHub Release is a production release action. It must be a deliberate roadmap release — confirm explicitly first.\"}'",
+            "command": "python tools/hooks/release_guard.py",
             "if": "Bash(gh release create*)"
           },
           {
             "type": "command",
-            "command": "echo '{\"systemMessage\":\"PR opened. ONLY if this PR ships a roadmap feature/fix: after merge, confirm the changelog, roadmap, and all five version files are bumped, then run python tools/release/release.py X.Y.Z --yes. For chore/docs/ci/tooling PRs, do nothing release-related — no tag, no release.\"}'",
+            "command": "python tools/hooks/release_guard.py",
             "if": "Bash(gh pr create*)"
           }
         ]
