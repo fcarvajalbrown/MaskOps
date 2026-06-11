@@ -92,7 +92,7 @@ Never assume a `.venv` already exists. Always check with `ls .venv` or just re-r
 
 ```bash
 python tests/generate_fixtures.py  # must run first; creates fixture CSVs (gitignored)
-pytest tests/ -v                   # 97 tests across all PII families
+pytest tests/ -v                   # 394 tests across all PII families
 pytest tests/test_masking.py::TestMaskIBAN -v  # run a single class
 ```
 
