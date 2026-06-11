@@ -68,7 +68,7 @@ python tools/social/devto_post.py \
 
 ## Cooldown and cadence
 
-- Minimum 14 days between posts (enforced by the script — it will exit if too soon).
+- Minimum 5 days between posts (enforced by the script — it will exit if too soon). Rationale: ~80% of a post's reactions land in the first 4 days, so 5 days lets the previous post clear its visibility window before the next competes for the same audience.
 - A 21-day reminder fires automatically at the end of each Claude Code session via the Stop hook in `.claude/settings.json`. It only prints if >= 21 days have passed since the last post.
 - **Post at milestones only:** performance sweep results, v2.0.0, tutorials, benchmark comparisons. Not every release.
 

@@ -30,12 +30,14 @@ except ImportError:
 
 DEVTO_API = "https://dev.to/api/articles"
 HISTORY_FILE = Path(__file__).parent / "devto_history.json"
-MIN_DAYS_BETWEEN_POSTS = 14
+MIN_DAYS_BETWEEN_POSTS = 5
 
 RULES = """
 dev.to posting rules
 ====================
-1. WAIT      At least 14 days since the last post.
+1. WAIT      At least 5 days since the last post — ~80% of a post's reactions land
+             in the first 4 days, so 5 lets the previous one clear its window before
+             the next competes for the same audience.
 2. NO DUPE   Never republish the same article. Update the existing one instead.
 3. TAGS      Max 4 tags. Use: polars, rust, python, privacy, datascience, dataengineering.
 4. TYPE      Mix it up — announcements, tutorials, benchmarks, deep-dives.
