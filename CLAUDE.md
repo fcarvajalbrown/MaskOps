@@ -10,6 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Never assume** — if any detail is unclear, ask before implementing.
 
+**No emojis anywhere** — not in docs, commit messages, PR descriptions, code, or chat responses. Plain text only.
+
 **Never force-push** without telling the user and waiting for confirmation.
 
 **Creating `v*` tags is a production action** — it triggers the PyPI publish workflow. Treat it the same as a deployment: require explicit user approval before creating any tag that matches `v*`. "Proceed" or "go ahead" in context counts as approval.
