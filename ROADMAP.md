@@ -2,7 +2,7 @@
 
 MaskOps is the only open-source PII-masking engine that runs natively inside Polars, fully air-gapped, with check-digit-validated coverage of Latin American identifiers (RUT, CPF, CURP, and more) alongside EU, US, and APAC families. This roadmap takes it from that position to a production-grade compliance standard for regulated data teams.
 
-**Market timing:** Chile's Ley 21.719 enters force on 1 December 2026, and Open Finance (NCG 514) phases in from July 2026 — both pushing regulated personal data through fintech pipelines and turning in-pipeline masking into a near-term compliance requirement across Latin America.
+**Market timing:** Chile's Ley 21.719 enters force on 1 December 2026 — the primary near-term trigger — while Open Finance (CMF's Sistema de Finanzas Abiertas, NCG 514 as amended by NCG 569 on 1 June 2026) now phases in from July 2027. Both push regulated personal data through fintech pipelines and turn in-pipeline masking into a near-term compliance requirement across Latin America.
 
 > **Current version:** v2.0.0 — milestones v0.2–v2.0 shipped. Phase 1 (Foundation) and Phase 2 (Enterprise) complete.
 > **Phase 1 — Foundation:** coverage + API stability. **Phase 2 — Enterprise:** audit, FPE, and configurable policy. **Phase 3 — Ecosystem:** integrations, standardization, long-term API stability. Coverage and infrastructure releases alternate each minor.
@@ -47,7 +47,7 @@ Goal: the enterprise surface — audit, reversible FPE, and configurable policy 
 Goal: integrations, official listings, and a stable long-term API that position MaskOps as the default privacy layer in the Polars ecosystem.
 
 - [ ] **v2.1** — Python typing stubs (`.pyi`) · full mypy/pyright support
-- [ ] **v2.2** — GitHub Pages documentation site live
+- [ ] **v2.2** — Docs site re-check & refresh: audit the live GitHub Pages site against shipped v2.0 capabilities (audit expression, FF1/FF3-1 FPE, RAT/manifest export, MEA + APAC coverage), refresh benchmark numbers and copy, SEO/sitemap pass, fix stale links · pricing research (market rates for PII-masking / compliance tooling in Chile + Brazil) · go-to-market research (most convincing ways to get teams to adopt or contract the product)
 - [ ] **v2.3** — APAC depth: Singapore NRIC/FIN, Indian Aadhaar
 - [ ] **v2.4** — Arrow IPC + DuckDB compatibility
 - [ ] **v2.5** — Performance: `rayon` multi-column parallelism · SIMD investigation
