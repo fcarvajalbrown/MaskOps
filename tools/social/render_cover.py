@@ -1,12 +1,3 @@
-"""
-Render an SVG cover to PNG via headless Edge, embedding the local @font-face
-fonts as data URIs so the real Latin Modern face is baked in.
-
-Usage:
-    python tools/social/render_cover.py covers/maskops-2.0-benchmarks.svg
-    python tools/social/render_cover.py <svg> [out.png] [--scale 2]
-"""
-
 import base64
 import os
 import re

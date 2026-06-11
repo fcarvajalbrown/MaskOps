@@ -1,20 +1,4 @@
 #!/usr/bin/env python3
-"""
-Usage:
-    python tools/social/devto_post.py --title "..." --body article.md --tags polars,rust,python \
-        --description "keyword-rich ~150-char meta description" --cover https://.../cover.png
-    python tools/social/devto_post.py --dry-run --title "..." --body article.md
-    python tools/social/devto_post.py --history
-    python tools/social/devto_post.py --rules
-
-Credentials via env var:
-    DEVTO_API_KEY=your_api_key  (dev.to Settings > Account > API Keys)
-
-Body can be a path to a .md file or inline markdown passed as a string.
-Tags: comma-separated, max 4, lowercase. Good defaults: polars, rust, python, privacy.
-SEO: always pass --description and --cover; run --rules for the full SEO checklist.
-"""
-
 import argparse
 import json
 import os
