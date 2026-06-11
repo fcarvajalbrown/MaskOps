@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **NEXT SESSION (one-time):** Before anything else, read `nextsession.md` at the repo root and act on it. Then delete this blockquote line from this file.
+
 ## Rules
 
 **Always work sequentially** — one tool call at a time, never parallel, even for independent steps.
