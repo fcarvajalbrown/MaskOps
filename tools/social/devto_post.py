@@ -74,9 +74,11 @@ WRITING STYLE
 =============
 Albert Camus + Dijkstra: short declarative sentences, first-person but not self-absorbed,
 no sentiment, no hedging, no adjectives that don't earn their place.
-The story comes first — lead with the human context, then the technical content.
+The story comes first. Lead with the human context, then the technical content.
 State what happened. State what the thing does. State what it doesn't do. Stop.
 No "excited to share", no "thrilled to announce", no "journey". Say the thing.
+No em dashes. They are the top AI-writing tell. Use a period, comma, colon, or
+parentheses instead. The en dash in numeric ranges (11-163x) is fine.
 """
 
 
@@ -142,6 +144,17 @@ def publish(api_key: str, article: dict) -> dict:
     return resp.json()
 
 
+def update_article(api_key: str, article_id: str, article: dict) -> dict:
+    resp = requests.put(
+        f"{DEVTO_API}/{article_id}",
+        headers={"api-key": api_key, "Content-Type": "application/json"},
+        json={"article": article},
+    )
+    if resp.status_code not in (200, 201):
+        sys.exit(f"dev.to API error {resp.status_code}: {resp.text}")
+    return resp.json()
+
+
 def main():
     parser = argparse.ArgumentParser(description="Publish an article to dev.to.")
     parser.add_argument("--title", help="Article title")
@@ -152,6 +165,7 @@ def main():
     parser.add_argument("--canonical", help="canonical_url if the article lives elsewhere first")
     parser.add_argument("--dry-run", action="store_true", help="Print payload without publishing")
     parser.add_argument("--force", action="store_true", help="Override the cooldown for this publish")
+    parser.add_argument("--update", help="Update an existing article by ID instead of publishing (no cooldown)")
     parser.add_argument("--restart-cooldown", action="store_true", help="Reset the cooldown clock to start now, then exit")
     parser.add_argument("--rules", action="store_true", help="Print posting rules and exit")
     parser.add_argument("--history", action="store_true", help="Print post history and exit")
@@ -204,8 +218,13 @@ def main():
             print("[dry-run] Cooldown check passed.")
         return
 
+    if args.update:
+        result = update_article(api_key, args.update, article)
+        print(f"Updated: {result.get('url', '')}")
+        return
+
     if args.force:
-        print("WARNING: --force — bypassing cooldown.")
+        print("WARNING: --force, bypassing cooldown.")
     else:
         check_cooldown(history)
 

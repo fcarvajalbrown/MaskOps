@@ -31,6 +31,8 @@ State what happened. State what the thing does. State what it doesn't do. Stop.
 
 No "excited to share", no "thrilled to announce", no "journey". Say the thing.
 
+**No em dashes (—).** The em dash is the single most recognizable tell of AI writing. Detectors weight it, and readers notice. Never use one. Replace it with a period (most often), a comma, a colon, or parentheses. Restructure the sentence rather than reach for a dash. (The en dash `–` is fine inside numeric ranges like `11–163×`. That is standard typography, not a tell.)
+
 ---
 
 ## SEO & discoverability (do this on every post)
