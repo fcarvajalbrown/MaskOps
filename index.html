@@ -284,11 +284,12 @@
 <div class="stats">
   <div class="container">
     <div class="stats-inner">
-      <div class="stat-item"><div class="stat-value">4,000×</div><div class="stat-label" data-i18n="stats.faster">faster than Presidio</div></div>
-      <div class="stat-item"><div class="stat-value">3s</div><div class="stat-label" data-i18n="stats.speed">for 1 million rows</div></div>
+      <div class="stat-item"><div class="stat-value">340×</div><div class="stat-label" data-i18n="stats.faster">faster than Presidio</div></div>
+      <div class="stat-item"><div class="stat-value">1.7s</div><div class="stat-label" data-i18n="stats.speed">for 1 million rows</div></div>
       <div class="stat-item"><div class="stat-value">100%</div><div class="stat-label" data-i18n="stats.air">air-gapped</div></div>
       <div class="stat-item"><div class="stat-value">GDPR</div><div class="stat-label" data-i18n="stats.gdpr">Art. 4(5) compliant</div></div>
     </div>
+    <p data-i18n-html="stats.note" style="text-align:center;margin:18px auto 0;max-width:700px;font-size:12px;color:var(--muted);line-height:1.5">Like-for-like structured-PII masking (email, phone, IP, IBAN, card) vs Presidio on 1M rows. <a href="https://github.com/fcarvajalbrown/MaskOps/blob/main/benchmarks/RESULTS.md" target="_blank" rel="noopener">Methodology &amp; full numbers &rarr;</a></p>
   </div>
 </div>
 
@@ -537,7 +538,7 @@ masked = df.<span class="fn">with_columns</span>(
 const T = {
   en: {
     'hero.badge':'Open-source · MPL-2.0 · v2.0.0','hero.h1':'PII masking at <em>Rust speed</em>.<br/>Air-gapped. GDPR-ready.','hero.sub':'A native Polars plugin that masks sensitive data inside your pipeline — zero rows leave your infrastructure, zero Python overhead per row.','hero.copy':'copy','hero.copied':'copied!','hero.github_btn':'View on GitHub →',
-    'stats.faster':'faster than Presidio','stats.speed':'for 1 million rows','stats.air':'air-gapped','stats.gdpr':'Art. 4(5) compliant',
+    'stats.faster':'faster than Presidio','stats.speed':'for 1 million rows','stats.air':'air-gapped','stats.gdpr':'Art. 4(5) compliant','stats.note':'Like-for-like structured-PII masking (email, phone, IP, IBAN, card) vs Presidio on 1M rows. <a href="https://github.com/fcarvajalbrown/MaskOps/blob/main/benchmarks/RESULTS.md" target="_blank" rel="noopener">Methodology &amp; full numbers &rarr;</a>',
     'feat.label':'Why MaskOps','feat.h2':'Everything your data pipeline needs.<br/>Nothing it doesn\'t.','feat.desc':'Built for engineers who can\'t afford cloud vendors in their data path — or simply don\'t want them there.',
     'feat.1.title':'Air-Gapped by Design','feat.1.desc':'No network calls, ever. Runs offline, in CI, behind firewalls, inside VPCs. Your data never touches an external server — by architecture, not by policy.',
     'feat.2.title':'Format-Preserving Encryption','feat.2.desc':'FPE mode (FF3-1 AES-256) produces reversible pseudonymization under GDPR Art. 4(5). Same format, different value, decryptable only with your key — which MaskOps never sees.',
@@ -563,7 +564,7 @@ const T = {
   },
   es: {
     'hero.badge':'Open-source · MPL-2.0 · v2.0.0','hero.h1':'Enmascaramiento de PII a <em>velocidad Rust</em>.<br/>Aislado. Listo para GDPR.','hero.sub':'Un plugin nativo de Polars que enmascara datos sensibles dentro de tu pipeline — ninguna fila sale de tu infraestructura, sin overhead de Python por fila.','hero.copy':'copiar','hero.copied':'¡copiado!','hero.github_btn':'Ver en GitHub →',
-    'stats.faster':'más rápido que Presidio','stats.speed':'por 1 millón de filas','stats.air':'aislado de red','stats.gdpr':'Art. 4(5) conforme',
+    'stats.faster':'más rápido que Presidio','stats.speed':'por 1 millón de filas','stats.air':'aislado de red','stats.gdpr':'Art. 4(5) conforme','stats.note':'Enmascaramiento equivalente de PII estructurada (email, telefono, IP, IBAN, tarjeta) frente a Presidio sobre 1M de filas. <a href="https://github.com/fcarvajalbrown/MaskOps/blob/main/benchmarks/RESULTS.md" target="_blank" rel="noopener">Metodologia y cifras completas &rarr;</a>',
     'feat.label':'Por qué MaskOps','feat.h2':'Todo lo que tu pipeline necesita.<br/>Nada más.','feat.desc':'Diseñado para ingenieros que no pueden permitirse proveedores en la nube en su flujo de datos — o simplemente no los quieren.',
     'feat.1.title':'Aislado por Diseño','feat.1.desc':'Sin llamadas de red, nunca. Funciona offline, en CI, detrás de firewalls, dentro de VPCs. Tus datos nunca tocan un servidor externo — por arquitectura, no por política.',
     'feat.2.title':'Cifrado que Preserva el Formato','feat.2.desc':'El modo FPE (FF3-1 AES-256) produce pseudonimización reversible bajo GDPR Art. 4(5). Mismo formato, valor diferente, descifrable solo con tu clave — que MaskOps nunca ve.',
@@ -589,7 +590,7 @@ const T = {
   },
   'pt-BR': {
     'hero.badge':'Open-source · MPL-2.0 · v2.0.0','hero.h1':'Mascaramento de PII em <em>velocidade Rust</em>.<br/>Isolado. Pronto para a LGPD.','hero.sub':'Um plugin nativo do Polars que mascara dados sensíveis dentro do seu pipeline — nenhuma linha sai da sua infraestrutura, sem overhead de Python por linha.','hero.copy':'copiar','hero.copied':'copiado!','hero.github_btn':'Ver no GitHub →',
-    'stats.faster':'mais rápido que o Presidio','stats.speed':'para 1 milhão de linhas','stats.air':'isolado da rede','stats.gdpr':'LGPD / Art. 4(5) conforme',
+    'stats.faster':'mais rápido que o Presidio','stats.speed':'para 1 milhão de linhas','stats.air':'isolado da rede','stats.gdpr':'LGPD / Art. 4(5) conforme','stats.note':'Mascaramento equivalente de PII estruturada (e-mail, telefone, IP, IBAN, cartao) vs Presidio sobre 1M de linhas. <a href="https://github.com/fcarvajalbrown/MaskOps/blob/main/benchmarks/RESULTS.md" target="_blank" rel="noopener">Metodologia e numeros completos &rarr;</a>',
     'feat.label':'Por que MaskOps','feat.h2':'Tudo que seu pipeline precisa.<br/>Nada além disso.','feat.desc':'Criado para engenheiros que não podem ter fornecedores de nuvem no fluxo de dados — ou que simplesmente não os querem.',
     'feat.1.title':'Isolado por Design','feat.1.desc':'Sem chamadas de rede, nunca. Funciona offline, em CI, atrás de firewalls, em VPCs. Seus dados nunca tocam um servidor externo — por arquitetura, não por política.',
     'feat.2.title':'Criptografia com Preservação de Formato','feat.2.desc':'Modo FPE (FF3-1 AES-256) produz pseudonimização reversível conforme LGPD/GDPR Art. 4(5). Mesmo formato, valor diferente, decifrável apenas com sua chave — que o MaskOps nunca vê.',
@@ -615,7 +616,7 @@ const T = {
   },
   de: {
     'hero.badge':'Open-source · MPL-2.0 · v2.0.0','hero.h1':'PII-Maskierung mit <em>Rust-Geschwindigkeit</em>.<br/>Air-Gapped. DSGVO-konform.','hero.sub':'Ein natives Polars-Plugin, das sensible Daten innerhalb Ihrer Pipeline maskiert — keine Zeile verlässt Ihre Infrastruktur, kein Python-Overhead pro Zeile.','hero.copy':'kopieren','hero.copied':'kopiert!','hero.github_btn':'Auf GitHub ansehen →',
-    'stats.faster':'schneller als Presidio','stats.speed':'für 1 Million Zeilen','stats.air':'air-gapped','stats.gdpr':'Art. 4(5) DSGVO konform',
+    'stats.faster':'schneller als Presidio','stats.speed':'für 1 Million Zeilen','stats.air':'air-gapped','stats.gdpr':'Art. 4(5) DSGVO konform','stats.note':'Vergleichbare Maskierung strukturierter PII (E-Mail, Telefon, IP, IBAN, Karte) vs Presidio bei 1 Mio. Zeilen. <a href="https://github.com/fcarvajalbrown/MaskOps/blob/main/benchmarks/RESULTS.md" target="_blank" rel="noopener">Methodik &amp; vollstaendige Zahlen &rarr;</a>',
     'feat.label':'Warum MaskOps','feat.h2':'Alles, was Ihre Datenpipeline braucht.<br/>Nichts mehr.','feat.desc':'Entwickelt für Ingenieure, die sich keine Cloud-Anbieter im Datenpfad leisten können — oder sie schlicht nicht wollen.',
     'feat.1.title':'Air-Gapped by Design','feat.1.desc':'Keine Netzwerkaufrufe, niemals. Läuft offline, in CI, hinter Firewalls, in VPCs. Ihre Daten berühren nie einen externen Server — durch Architektur, nicht durch Richtlinien.',
     'feat.2.title':'Formaterhaltende Verschlüsselung','feat.2.desc':'FPE-Modus (FF3-1 AES-256) erzeugt reversible Pseudonymisierung gemäß DSGVO Art. 4(5). Gleiches Format, anderer Wert, entschlüsselbar nur mit Ihrem Schlüssel — den MaskOps nie sieht.',
@@ -641,7 +642,7 @@ const T = {
   },
   fr: {
     'hero.badge':'Open-source · MPL-2.0 · v2.0.0','hero.h1':'Masquage des DCP à la <em>vitesse de Rust</em>.<br/>Isolé. Conforme au RGPD.','hero.sub':'Un plugin natif Polars qui masque les données sensibles à l\'intérieur de votre pipeline — aucune ligne ne quitte votre infrastructure, aucun overhead Python par ligne.','hero.copy':'copier','hero.copied':'copié !','hero.github_btn':'Voir sur GitHub →',
-    'stats.faster':'plus rapide que Presidio','stats.speed':'pour 1 million de lignes','stats.air':'isolé du réseau','stats.gdpr':'Art. 4(5) RGPD conforme',
+    'stats.faster':'plus rapide que Presidio','stats.speed':'pour 1 million de lignes','stats.air':'isolé du réseau','stats.gdpr':'Art. 4(5) RGPD conforme','stats.note':'Masquage comparable de DCP structurees (e-mail, telephone, IP, IBAN, carte) vs Presidio sur 1M de lignes. <a href="https://github.com/fcarvajalbrown/MaskOps/blob/main/benchmarks/RESULTS.md" target="_blank" rel="noopener">Methodologie et chiffres complets &rarr;</a>',
     'feat.label':'Pourquoi MaskOps','feat.h2':'Tout ce dont votre pipeline a besoin.<br/>Rien de plus.','feat.desc':'Conçu pour les ingénieurs qui ne peuvent pas se permettre des fournisseurs cloud dans leur chemin de données — ou qui n\'en veulent simplement pas.',
     'feat.1.title':'Isolé par Conception','feat.1.desc':'Aucun appel réseau, jamais. Fonctionne hors ligne, en CI, derrière des pare-feux, dans des VPCs. Vos données ne touchent jamais un serveur externe — par architecture, pas par politique.',
     'feat.2.title':'Chiffrement Préservant le Format','feat.2.desc':'Mode FPE (FF3-1 AES-256) produit une pseudonymisation réversible conforme au RGPD Art. 4(5). Même format, valeur différente, déchiffrable uniquement avec votre clé — que MaskOps ne voit jamais.',
