@@ -25,7 +25,7 @@ Restart the terminal after running `setx`.
 
 Albert Camus + Dijkstra. Short declarative sentences. First-person but not self-absorbed. No sentiment, no hedging, no adjectives that don't earn their place.
 
-**The story comes first.** Lead with the human context — what you were doing, what interrupted it, what brought you back. Then the technical content. Readers trust honesty more than polish.
+**The story comes first.** Lead with the human context: what you were doing, what interrupted it, what brought you back. Then the technical content. Readers trust honesty more than polish.
 
 State what happened. State what the thing does. State what it doesn't do. Stop.
 
