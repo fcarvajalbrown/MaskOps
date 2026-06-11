@@ -78,6 +78,7 @@ Goal: integrations, official listings, and a stable long-term API that position 
 
 Goal: the growth headroom beyond the Polars core — widen the addressable market once MaskOps is the established standard.
 
+- [ ] **Optional NER layer (free-text names/locations)** — opt-in detection of PERSON / LOCATION / ORG in free text, as a separate layer *outside* the deterministic fast core: gazetteer-first to stay air-gapped and no-ML, with an optional ML module where higher recall is required. Closes the one capability gap versus ML tools like Presidio without sacrificing MaskOps' speed, determinism, or air-gap. Built when a client's data needs it, never bundled into the core masking path.
 - [ ] **pandas-compatible API** — expose the same Rust engine to pandas / PyArrow workflows, widening the addressable market from Polars-native teams to the far larger pandas ecosystem, with no second implementation of the core.
 - [ ] **GUI (optional)** — desktop interface wrapping the CLI + policy files for non-technical compliance users (municipalities, compliance officers): configure masking rules and run batch jobs without writing code.
 
