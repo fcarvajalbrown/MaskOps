@@ -92,7 +92,7 @@ python tools/social/devto_post.py \
   --tags polars,rust,python,privacy
 ```
 
-**6. Delete the draft file** after a confirmed successful publish. Draft files (`draft_*.md`) are temporary — they do not belong in the repo.
+**6. Archive the post, then delete the scratch draft.** Always keep an archived copy of every generated post — dev.to in `tools/social/devto/`, LinkedIn in `tools/social/linkedin/`, named `<YYYY-MM-DD>-<slug>.md` with a header carrying the published URL, tags, cover path, and description. After archiving, delete the working `draft_*.md` (those are scratch and don't belong in the repo; the archive does).
 
 ---
 
@@ -136,4 +136,9 @@ LinkedIn is the user's own channel ("my place"). It pairs with dev.to posts but 
 | `devto_post.py` | Publish articles to dev.to |
 | `devto_reminder.py` | Session-end reminder (run by Stop hook) |
 | `devto_history.json` | Runtime post history (gitignored) |
-| `draft_*.md` | Working drafts — deleted after publish |
+| `render_cover.py` | Render a cover SVG to PNG (fonts baked in) |
+| `draft_*.md` | Working scratch drafts — deleted after publish |
+| `devto/<date>-<slug>.md` | Archived published dev.to posts |
+| `linkedin/<date>-<slug>.md` | Archived LinkedIn posts (ES + EN) |
+| `covers/` | Cover SVGs + rendered PNGs |
+| `fonts/` | Latin Modern (Computer Modern) OTFs for covers |

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="627" viewBox="0 0 1200 627">
+  <style>
+    @font-face{font-family:'LM Roman';src:url('../fonts/lmroman10-regular.otf')}
+    @font-face{font-family:'LM Roman';font-style:italic;src:url('../fonts/lmroman10-italic.otf')}
+    text{font-family:'LM Roman','Latin Modern Roman',Georgia,'Times New Roman',serif;fill:#0F2318}
+  </style>
+  <rect width="1200" height="627" fill="#FBFBF6"/>
+  <g fill="#3DDB81">
+    <rect x="100" y="92" width="13" height="13"/>
+    <rect x="116" y="92" width="13" height="13"/>
+    <rect x="132" y="92" width="13" height="13"/>
+    <rect x="116" y="76" width="13" height="13"/>
+  </g>
+  <text x="98" y="208" font-size="76" font-style="italic">MaskOps 2.0</text>
+  <text x="100" y="264" font-size="33">Enmascarado de PII en Polars &#8212; Rust, sin red, listo para GDPR</text>
+  <line x1="100" y1="298" x2="902" y2="298" stroke="#2BA562" stroke-width="1.6"/>
+  <text x="100" y="360" font-size="29">Rendimiento vs. <tspan font-style="italic">re</tspan> de Python puro (1M filas):</text>
+  <text x="140" y="428" font-size="34">limpio<tspan dx="30" fill="#2BA562">11&#8211;163&#215;</tspan></text>
+  <text x="140" y="476" font-size="34">mixto<tspan dx="44" fill="#2BA562">1.2&#8211;3.2&#215;</tspan></text>
+  <text x="140" y="524" font-size="34">denso<tspan dx="42" fill="#2BA562">1.3&#8211;2.7&#215;</tspan></text>
+  <text x="100" y="586" font-size="21" fill="#6B88A3">github.com/fcarvajalbrown/MaskOps &#183; RUT / CPF / CURP con d&#237;gito verificador</text>
+</svg>
