@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Usage:
-    python tools/social/devto_post.py --title "..." --body article.md --tags polars,rust,python
+    python tools/social/devto_post.py --title "..." --body article.md --tags polars,rust,python \
+        --description "keyword-rich ~150-char meta description" --cover https://.../cover.png
     python tools/social/devto_post.py --dry-run --title "..." --body article.md
     python tools/social/devto_post.py --history
     python tools/social/devto_post.py --rules
@@ -11,6 +12,7 @@ Credentials via env var:
 
 Body can be a path to a .md file or inline markdown passed as a string.
 Tags: comma-separated, max 4, lowercase. Good defaults: polars, rust, python, privacy.
+SEO: always pass --description and --cover; run --rules for the full SEO checklist.
 """
 
 import argparse
@@ -46,6 +48,20 @@ dev.to posting rules
 6. ENGAGE    Reply to comments within 24 hours.
 7. CANONICAL If the content lives elsewhere first (GitHub, your site), set canonical_url.
 
+SEO / DISCOVERABILITY (do this every post — dev.to ranks well on Google)
+====================
+- TITLE       Front-load real search keywords (PII, Polars, Rust, Python, mask,
+              anonymize). A pure curiosity hook with no keywords ranks for nothing.
+- DESCRIPTION Always pass --description (~150 chars, keyword-rich). Without it dev.to
+              falls back to your first sentence, which is usually keyword-free.
+- COVER       Always pass --cover (URL, ~1000x420). More clicks + a real social card.
+- KEYWORDS    Work the high-intent phrases into the body: "PII masking in Polars",
+              "anonymize PII in Python", "Presidio alternative", "GDPR",
+              "RUT/CPF detection". These are what buyers and LATAM search for.
+- LINKS       Link the GitHub repo and the PyPI page — helps SEO and conversion.
+- TAGS        Balance reach feeds (rust, python, polars) with intent (privacy,
+              datascience). Max 4.
+
 TIMING (data-backed)
 ====================
 - Best days:  Monday, Tuesday, Wednesday. Avoid weekends.
@@ -74,17 +90,25 @@ def save_history(history: dict) -> None:
     HISTORY_FILE.write_text(json.dumps(history, indent=2))
 
 
+def cooldown_anchor(history: dict) -> datetime | None:
+    anchors = []
+    if history["posts"]:
+        anchors.append(datetime.fromisoformat(history["posts"][-1]["date"]))
+    if history.get("cooldown_anchor"):
+        anchors.append(datetime.fromisoformat(history["cooldown_anchor"]))
+    return max(anchors) if anchors else None
+
+
 def check_cooldown(history: dict) -> None:
-    if not history["posts"]:
+    anchor = cooldown_anchor(history)
+    if anchor is None:
         return
-    last = history["posts"][-1]
-    last_date = datetime.fromisoformat(last["date"])
-    days_ago = (datetime.now(timezone.utc) - last_date).days
+    days_ago = (datetime.now(timezone.utc) - anchor).days
     if days_ago < MIN_DAYS_BETWEEN_POSTS:
         wait = MIN_DAYS_BETWEEN_POSTS - days_ago
         sys.exit(
-            f"BLOCKED: Last post was {days_ago} days ago ('{last['title']}').\n"
-            f"Wait {wait} more day(s)."
+            f"BLOCKED: cooldown active (anchor {anchor.date()}, {days_ago}d ago).\n"
+            f"Wait {wait} more day(s), restart it with --restart-cooldown, or override with --force."
         )
 
 
@@ -95,11 +119,23 @@ def resolve_body(body_arg: str) -> str:
     return body_arg
 
 
-def publish(api_key: str, title: str, body: str, tags: list[str]) -> dict:
+def build_article(title: str, body: str, tags: list[str], description: str | None,
+                  cover_image: str | None, canonical_url: str | None) -> dict:
+    article = {"title": title, "body_markdown": body, "published": True, "tags": tags}
+    if description:
+        article["description"] = description
+    if cover_image:
+        article["main_image"] = cover_image
+    if canonical_url:
+        article["canonical_url"] = canonical_url
+    return article
+
+
+def publish(api_key: str, article: dict) -> dict:
     resp = requests.post(
         DEVTO_API,
         headers={"api-key": api_key, "Content-Type": "application/json"},
-        json={"article": {"title": title, "body_markdown": body, "published": True, "tags": tags}},
+        json={"article": article},
     )
     if resp.status_code not in (200, 201):
         sys.exit(f"dev.to API error {resp.status_code}: {resp.text}")
@@ -111,7 +147,12 @@ def main():
     parser.add_argument("--title", help="Article title")
     parser.add_argument("--body", help="Path to a .md file or inline markdown string")
     parser.add_argument("--tags", default="polars,rust,python,privacy", help="Comma-separated tags (max 4)")
+    parser.add_argument("--description", help="Meta description for SEO / social cards (~150 chars, keyword-rich)")
+    parser.add_argument("--cover", help="Cover image URL (dev.to main_image, ~1000x420)")
+    parser.add_argument("--canonical", help="canonical_url if the article lives elsewhere first")
     parser.add_argument("--dry-run", action="store_true", help="Print payload without publishing")
+    parser.add_argument("--force", action="store_true", help="Override the cooldown for this publish")
+    parser.add_argument("--restart-cooldown", action="store_true", help="Reset the cooldown clock to start now, then exit")
     parser.add_argument("--rules", action="store_true", help="Print posting rules and exit")
     parser.add_argument("--history", action="store_true", help="Print post history and exit")
     args = parser.parse_args()
@@ -121,6 +162,13 @@ def main():
         return
 
     history = load_history()
+
+    if args.restart_cooldown:
+        history["cooldown_anchor"] = datetime.now(timezone.utc).isoformat()
+        save_history(history)
+        print(f"Cooldown restarted now. Next post allowed in {MIN_DAYS_BETWEEN_POSTS} days "
+              f"(or publish immediately with --force).")
+        return
 
     if args.history:
         if not history["posts"]:
@@ -140,19 +188,29 @@ def main():
 
     tags = [t.strip() for t in args.tags.split(",")][:4]
     body = resolve_body(args.body)
+    article = build_article(args.title, body, tags, args.description, args.cover, args.canonical)
 
     if args.dry_run:
-        print(f"[dry-run] title: {args.title!r}")
-        print(f"[dry-run] tags:  {tags}")
-        print(f"[dry-run] body:  {len(body)} chars")
-        check_cooldown(history)
-        print("[dry-run] Cooldown check passed.")
+        print(f"[dry-run] title:       {args.title!r}")
+        print(f"[dry-run] tags:        {tags}")
+        print(f"[dry-run] description: {args.description!r}")
+        print(f"[dry-run] cover:       {args.cover!r}")
+        print(f"[dry-run] canonical:   {args.canonical!r}")
+        print(f"[dry-run] body:        {len(body)} chars")
+        if args.force:
+            print("[dry-run] --force: cooldown bypassed.")
+        else:
+            check_cooldown(history)
+            print("[dry-run] Cooldown check passed.")
         return
 
-    check_cooldown(history)
+    if args.force:
+        print("WARNING: --force — bypassing cooldown.")
+    else:
+        check_cooldown(history)
 
     print("Publishing to dev.to...")
-    result = publish(api_key, args.title, body, tags)
+    result = publish(api_key, article)
 
     url = result.get("url", "")
     history["posts"].append({

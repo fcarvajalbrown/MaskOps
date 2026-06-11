@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="420" viewBox="0 0 1000 420">
+  <style>
+    @font-face{font-family:'LM Roman';src:url('../fonts/lmroman10-regular.otf')}
+    @font-face{font-family:'LM Roman';font-style:italic;src:url('../fonts/lmroman10-italic.otf')}
+    text{font-family:'LM Roman','Latin Modern Roman',Georgia,'Times New Roman',serif;fill:#0F2318}
+  </style>
+  <rect width="1000" height="420" fill="#FBFBF6"/>
+  <g fill="#3DDB81">
+    <rect x="80" y="42" width="11" height="11"/>
+    <rect x="94" y="42" width="11" height="11"/>
+    <rect x="108" y="42" width="11" height="11"/>
+    <rect x="94" y="28" width="11" height="11"/>
+  </g>
+  <text x="78" y="132" font-size="60" font-style="italic">MaskOps 2.0</text>
+  <text x="80" y="176" font-size="28">PII masking in Polars &#8212; air-gapped, check-digit validated</text>
+  <line x1="80" y1="204" x2="694" y2="204" stroke="#2BA562" stroke-width="1.4"/>
+  <text x="80" y="252" font-size="24">Throughput vs. pure-Python <tspan font-style="italic">re</tspan>, 1M rows:</text>
+  <text x="116" y="298" font-size="27">clean<tspan dx="34" fill="#2BA562">11&#8211;163&#215;</tspan></text>
+  <text x="116" y="334" font-size="27">mixed<tspan dx="26" fill="#2BA562">1.2&#8211;3.2&#215;</tspan></text>
+  <text x="116" y="370" font-size="27">dense<tspan dx="30" fill="#2BA562">1.3&#8211;2.7&#215;</tspan></text>
+  <text x="566" y="372" font-size="19" fill="#6B88A3">github.com/fcarvajalbrown/MaskOps &#183; MPL-2.0</text>
+</svg>
