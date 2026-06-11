@@ -2,8 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **NEXT SESSION (one-time):** Before anything else, read `nextsession.md` at the repo root and act on it. Then delete this blockquote line from this file.
-
 ## Rules
 
 **Always work sequentially** — one tool call at a time, never parallel, even for independent steps.
@@ -165,6 +163,6 @@ Cut a release with the helper: **`python tools/release/release.py X.Y.Z`** is a 
 - v2.0.0 enterprise milestone
 - Any tutorial, deep-dive, or benchmark comparison angle
 
-Rules baked into the script: enforces 14-day cooldown, max 4 tags, Hemingway+Dijkstra prose. Run `--rules` to print full guidelines. Reminder fires automatically every 21 days via the Stop hook in settings.json.
+Rules baked into the script: enforces 5-day cooldown, max 4 tags, Camus+Dijkstra prose. Run `--rules` to print full guidelines. Reminder fires automatically every 21 days via the Stop hook in settings.json.
 
 **LinkedIn** — at v2.0.0, remind the user to publish a full LinkedIn article (not just a post): SEO keywords, publish timing, hashtags.
