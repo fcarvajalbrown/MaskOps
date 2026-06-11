@@ -126,6 +126,11 @@ where
     (out, count.get())
 }
 
+#[inline]
+pub fn has_pii_candidate(value: &str) -> bool {
+    value.bytes().any(|b| b.is_ascii_digit() || b == b'@')
+}
+
 pub fn mask_non_digit(value: &str) -> String {
     let s = mask_iban(value);
     let s = mask_vat(&s);
@@ -198,11 +203,17 @@ pub fn mask_digit_fpe(value: &str, cipher: &FpeCipher) -> String {
 }
 
 pub fn mask_all(value: &str) -> String {
+    if !has_pii_candidate(value) {
+        return value.to_string();
+    }
     let s = mask_non_digit(value);
     mask_digit(&s)
 }
 
 pub fn mask_all_fpe(value: &str, cipher: &FpeCipher) -> String {
+    if !has_pii_candidate(value) {
+        return value.to_string();
+    }
     let s = mask_non_digit(value);
     mask_digit_fpe(&s, cipher)
 }
@@ -235,11 +246,17 @@ pub fn mask_digit_consistent(value: &str, hasher: &ConsistentHasher) -> String {
 }
 
 pub fn mask_all_consistent(value: &str, hasher: &ConsistentHasher) -> String {
+    if !has_pii_candidate(value) {
+        return value.to_string();
+    }
     let s = mask_non_digit(value);
     mask_digit_consistent(&s, hasher)
 }
 
 pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
+    if !has_pii_candidate(value) {
+        return value.to_string();
+    }
     let mut s = value.to_string();
     for pat in patterns {
         s = match *pat {
@@ -286,6 +303,9 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
 }
 
 pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher) -> String {
+    if !has_pii_candidate(value) {
+        return value.to_string();
+    }
     let mut s = value.to_string();
     for pat in patterns {
         s = match *pat {
@@ -332,6 +352,9 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher)
 }
 
 pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &ConsistentHasher) -> String {
+    if !has_pii_candidate(value) {
+        return value.to_string();
+    }
     let mut s = value.to_string();
     for pat in patterns {
         s = match *pat {
@@ -378,6 +401,9 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
 }
 
 pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
+    if !has_pii_candidate(value) {
+        return false;
+    }
     patterns.iter().any(|pat| match *pat {
         "email"           => contains_email(value),
         "phone"           => contains_phone(value),
@@ -420,6 +446,9 @@ pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
 }
 
 pub fn contains_any_pii(value: &str) -> bool {
+    if !has_pii_candidate(value) {
+        return false;
+    }
     contains_iban(value)
         || contains_vat(value)
         || contains_email(value)
@@ -458,6 +487,7 @@ pub fn contains_any_pii(value: &str) -> bool {
         || contains_il_id(value)
 }
 
+#[derive(Default)]
 pub struct ExtractResult {
     pub email: Option<String>,
     pub phone: Option<String>,
@@ -498,6 +528,9 @@ pub struct ExtractResult {
 }
 
 pub fn extract_all(value: &str) -> ExtractResult {
+    if !has_pii_candidate(value) {
+        return ExtractResult::default();
+    }
     ExtractResult {
         email:          extract_email(value),
         phone:          extract_phone(value),
@@ -579,6 +612,9 @@ pub struct AuditCounts {
 }
 
 pub fn mask_all_audit(value: &str) -> (String, AuditCounts) {
+    if !has_pii_candidate(value) {
+        return (value.to_string(), AuditCounts::default());
+    }
     let mut c = AuditCounts::default();
 
     let (s, n) = mask_iban_counted(value);         c.iban = n;
@@ -623,6 +659,9 @@ pub fn mask_all_audit(value: &str) -> (String, AuditCounts) {
 }
 
 pub fn mask_all_audit_selected(value: &str, patterns: &[&str]) -> (String, AuditCounts) {
+    if !has_pii_candidate(value) {
+        return (value.to_string(), AuditCounts::default());
+    }
     let sel = |name: &str| patterns.contains(&name);
     let mut c = AuditCounts::default();
     let mut s = value.to_string();
@@ -669,6 +708,9 @@ pub fn mask_all_audit_selected(value: &str, patterns: &[&str]) -> (String, Audit
 }
 
 pub fn extract_all_selected(value: &str, patterns: &[&str]) -> ExtractResult {
+    if !has_pii_candidate(value) {
+        return ExtractResult::default();
+    }
     let sel = |name: &str| patterns.contains(&name);
     let pick = |name: &str, f: &dyn Fn(&str) -> Option<String>| if sel(name) { f(value) } else { None };
     ExtractResult {

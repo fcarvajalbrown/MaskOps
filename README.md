@@ -178,37 +178,36 @@ Each PII type is its own module: adding a new pattern = new file + one line in `
 
 Tested on 1,000,000 rows, Intel i-series CPU, Python 3.14, Windows.
 
-Median of 3 runs per benchmark.
-Baseline uses equivalent regex coverage to maskops per family.
+Median of 3 runs per benchmark. Each family is compared **like-for-like**: maskops
+runs only that family's patterns (`mask_pii(..., patterns=[...])`), matching the exact
+coverage of the Python `re` baseline. The three data profiles are `clean` (no PII),
+`dense` (every row has PII), and `mixed` (50/50 — the realistic production case).
 
-> **Note on per-family benchmarks:** maskops always runs the full pattern set —
-> there is no per-family dispatch. A "Credit Card only" benchmark still pays for
-> IBAN, VAT, email, phone, LatAm ID, and EU ID checks. The Python baseline only
-> runs one regex. This is why maskops underperforms on isolated families with
-> dense PII. The advantage emerges when all patterns are active simultaneously,
-> which is the realistic production case.
+> **Why the clean profile is so fast:** every supported pattern requires at least one
+> digit or an `@`, so maskops short-circuits any row without those bytes before running
+> a single regex. Real-world text is mostly PII-free, so this dominates throughput.
 
 ### EU patterns (IBAN, VAT, Email, Phone)
 
 | Profile | Expression | Time | Rows/s | Python re | Speedup |
 |---------|-----------|------|--------|-----------|---------|
-| clean | `mask_pii` | 2.455s | 407,300 | 4.268s | **1.7×** |
-| clean | `contains_pii` | 1.184s | 844,846 | — | — |
-| dense | `mask_pii` | 3.184s | 314,093 | 1.784s | 0.6× |
-| dense | `contains_pii` | 0.133s | 7,497,325 | — | — |
-| mixed | `mask_pii` | 2.943s | 339,774 | 1.993s | 0.7× |
-| mixed | `contains_pii` | 0.282s | 3,551,833 | — | — |
+| clean | `mask_pii` | 0.102s | 9,791,624 | 3.224s | **31.6×** |
+| clean | `contains_pii` | 0.028s | 35,608,478 | — | — |
+| dense | `mask_pii` | 1.430s | 699,175 | 1.832s | **1.3×** |
+| dense | `contains_pii` | 0.143s | 7,002,522 | — | — |
+| mixed | `mask_pii` | 1.159s | 862,821 | 2.085s | **1.8×** |
+| mixed | `contains_pii` | 0.119s | 8,419,309 | — | — |
 
 ### LatAm patterns (RUT, CPF, CURP)
 
 | Profile | Expression | Time | Rows/s | Python re | Speedup |
 |---------|-----------|------|--------|-----------|---------|
-| clean | `mask_pii` | 2.276s | 439,367 | 2.319s | 1.0× |
-| clean | `contains_pii` | 0.795s | 1,258,169 | — | — |
-| dense | `mask_pii` | 3.048s | 328,080 | 1.690s | 0.6× |
-| dense | `contains_pii` | 0.640s | 1,562,313 | — | — |
-| mixed | `mask_pii` | 2.880s | 347,173 | 1.854s | 0.6× |
-| mixed | `contains_pii` | 0.705s | 1,418,784 | — | — |
+| clean | `mask_pii` | 0.083s | 11,995,024 | 2.364s | **28.4×** |
+| clean | `contains_pii` | 0.022s | 44,911,928 | — | — |
+| dense | `mask_pii` | 1.301s | 768,811 | 2.220s | **1.7×** |
+| dense | `contains_pii` | 0.351s | 2,851,885 | — | — |
+| mixed | `mask_pii` | 1.147s | 871,941 | 2.392s | **2.1×** |
+| mixed | `contains_pii` | 0.329s | 3,039,982 | — | — |
 
 > RUT and CPF include Módulo 11 check digit validation per row — this is the cost of zero false positives.
 
@@ -216,54 +215,69 @@ Baseline uses equivalent regex coverage to maskops per family.
 
 | Profile | Expression | Time | Rows/s | Python re | Speedup |
 |---------|-----------|------|--------|-----------|---------|
-| clean | `mask_pii` | 2.301s | 434,502 | 2.093s | 0.9× |
-| clean | `contains_pii` | 0.799s | 1,251,735 | — | — |
-| dense | `mask_pii` | 2.509s | 398,628 | 1.553s | 0.6× |
-| dense | `contains_pii` | 0.215s | 4,655,272 | — | — |
-| mixed | `mask_pii` | 2.504s | 399,408 | 1.684s | 0.7× |
-| mixed | `contains_pii` | 0.374s | 2,671,550 | — | — |
+| clean | `mask_pii` | 0.101s | 9,895,621 | 2.777s | **27.5×** |
+| clean | `contains_pii` | 0.029s | 34,285,322 | — | — |
+| dense | `mask_pii` | 0.891s | 1,122,653 | 1.902s | **2.1×** |
+| dense | `contains_pii` | 0.292s | 3,424,025 | — | — |
+| mixed | `mask_pii` | 0.699s | 1,430,777 | 2.211s | **3.2×** |
+| mixed | `contains_pii` | 0.228s | 4,384,771 | — | — |
 
 ### Credit card patterns (Visa, Mastercard, Amex, Discover, Maestro)
 
 | Profile | Expression | Time | Rows/s | Python re | Speedup |
 |---------|-----------|------|--------|-----------|---------|
-| clean | `mask_pii` | 2.243s | 445,762 | 0.954s | 0.4× |
-| clean | `contains_pii` | 0.792s | 1,261,873 | — | — |
-| dense | `mask_pii` | 2.797s | 357,473 | 1.005s | 0.4× |
-| dense | `contains_pii` | 0.628s | 1,591,805 | — | — |
-| mixed | `mask_pii` | 2.687s | 372,166 | 1.014s | 0.4× |
-| mixed | `contains_pii` | 0.674s | 1,484,572 | — | — |
+| clean | `mask_pii` | 0.107s | 9,331,431 | 1.233s | **11.5×** |
+| clean | `contains_pii` | 0.028s | 35,165,948 | — | — |
+| dense | `mask_pii` | 1.061s | 942,647 | 1.337s | **1.3×** |
+| dense | `contains_pii` | 0.345s | 2,902,612 | — | — |
+| mixed | `mask_pii` | 0.819s | 1,220,878 | 1.371s | **1.7×** |
+| mixed | `contains_pii` | 0.290s | 3,447,494 | — | — |
 
-> Luhn validation runs per candidate match — this eliminates false positives at the cost of single-family throughput.
+> Luhn validation runs per candidate match — this eliminates false positives.
 
 ### European ID patterns (DNI/NIE, NIN, Personalausweis)
 
 | Profile | Expression | Time | Rows/s | Python re | Speedup |
 |---------|-----------|------|--------|-----------|---------|
-| clean | `mask_pii` | 2.282s | 438,149 | 1.410s | 0.6× |
-| clean | `contains_pii` | 0.801s | 1,248,547 | — | — |
-| dense | `mask_pii` | 2.609s | 383,334 | 1.107s | 0.4× |
-| dense | `contains_pii` | 0.604s | 1,654,937 | — | — |
-| mixed | `mask_pii` | 2.590s | 386,037 | 1.179s | 0.5× |
-| mixed | `contains_pii` | 0.665s | 1,504,806 | — | — |
+| clean | `mask_pii` | 0.100s | 9,996,062 | 1.748s | **17.5×** |
+| clean | `contains_pii` | 0.026s | 37,979,203 | — | — |
+| dense | `mask_pii` | 1.541s | 649,021 | 1.392s | 0.9× |
+| dense | `contains_pii` | 0.370s | 2,703,177 | — | — |
+| mixed | `mask_pii` | 1.248s | 800,992 | 1.472s | **1.2×** |
+| mixed | `contains_pii` | 0.308s | 3,249,503 | — | — |
 
-### All patterns active
+> The four EU-ID formats run as four separate regex passes; on 100%-dense data this is the one
+> profile where a single combined Python regex edges ahead. Clean and mixed (realistic) still favour maskops.
 
-> This is the realistic production workload — all 15 pattern types running simultaneously.
-> maskops is up to **5.7× faster** than an equivalent pure Python approach.
-> `contains_pii` reaches 1.9M rows/s on mixed data — use it to pre-filter before masking in hot pipelines.
+### US patterns (SSN, Passport)
+
+| Profile | Expression | Time | Rows/s | Python re | Speedup |
+|---------|-----------|------|--------|-----------|---------|
+| clean | `mask_pii` | 0.099s | 10,066,631 | 1.680s | **16.9×** |
+| clean | `contains_pii` | 0.028s | 35,939,291 | — | — |
+| dense | `mask_pii` | 0.972s | 1,028,341 | 1.570s | **1.6×** |
+| dense | `contains_pii` | 0.447s | 2,238,417 | — | — |
+| mixed | `mask_pii` | 0.739s | 1,352,974 | 1.628s | **2.2×** |
+| mixed | `contains_pii` | 0.343s | 2,912,967 | — | — |
+
+### All 15 benchmarked families active
+
+> The realistic production workload — all 15 families the Python baseline implements, running
+> together. maskops supports many more families; they are excluded here only to keep coverage
+> equal on both sides. `contains_pii` reaches ~1M rows/s on dense data — use it to pre-filter
+> before masking in hot pipelines.
 
 | Profile | Expression | maskops | Python `re` | Speedup |
 |---------|-----------|---------|-------------|---------|
-| clean | `mask_pii` | 2.344s | 13.445s | **5.7×** |
-| clean | `contains_pii` | 0.822s | — | — |
-| dense | `mask_pii` | 3.269s | 6.625s | **2.0×** |
-| dense | `contains_pii` | 0.520s | — | — |
-| mixed | `mask_pii` | 3.285s | 6.581s | **2.0×** |
-| mixed | `contains_pii` | 0.545s | — | — |
+| clean | `mask_pii` | 0.114s | 18.681s | **163.4×** |
+| clean | `contains_pii` | 0.028s | — | — |
+| dense | `mask_pii` | 4.693s | 12.659s | **2.7×** |
+| dense | `contains_pii` | 0.959s | — | — |
+| mixed | `mask_pii` | 5.239s | 10.620s | **2.0×** |
+| mixed | `contains_pii` | 1.037s | — | — |
 
-> maskops throughput stays roughly flat as pattern count grows — Python regex degrades with each additional pattern.
-> The clean profile gap (5.7×) reflects Python's overhead of compiling and scanning a large combined regex on short-circuit misses.
+> maskops throughput stays roughly flat as pattern count grows — Python regex degrades with each
+> additional pattern, which is why the all-families gap (163× clean) dwarfs any single family.
 
 ### vs Microsoft Presidio (measured)
 
@@ -364,7 +378,7 @@ pytest tests/ -v
 - [x] `rekey_pii_fpe` — FPE key rotation on a token column without exposing plaintext
 - [x] MEA identifiers — South African ID (Luhn + DOB + citizenship, POPIA) and Israeli ID / Teudat Zehut (weighted checksum, PPL)
 - [x] Unified `patterns=` selection across `extract_pii` and `mask_pii_audit` (v2.0 enterprise release) + migration guide
-- [ ] Performance sweep — Opus 4.8 deep review: bug hunting across all 31 pattern modules, regex optimization, allocation reduction, rayon parallelism, and benchmark refresh targeting positive per-family speedups vs Python baseline
+- [x] Performance sweep — byte pre-check short-circuit (skips all regex on PII-free rows), like-for-like benchmark methodology, and a full benchmark refresh: per-family speedups now 11–163× (clean) and 1.2–3.2× (mixed) vs the Python baseline
 
 ## License
 

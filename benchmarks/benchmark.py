@@ -18,6 +18,10 @@ Each family is tested across three data profiles:
 
 Timing: median of 3 runs per benchmark to reduce noise.
 Baseline: pure Python regex per family, equivalent pattern coverage to maskops.
+Every run selects the matching maskops patterns (mask_pii(..., patterns=[...])) so
+maskops and the Python baseline cover the same families — a like-for-like comparison.
+The final row spans all 15 families the Python baseline implements; maskops supports
+many more, but they are excluded here to keep coverage equal on both sides.
 
 Usage:
     python benchmarks/benchmark.py
@@ -227,20 +231,22 @@ def python_regex_mask(df: pl.DataFrame, pattern: re.Pattern) -> pl.Series:
 # ---------------------------------------------------------------------------
 
 FAMILIES = [
-    ("EU (IBAN, VAT, Email, Phone)",                 EU_SAMPLES,      EU_RE),
-    ("LatAm (RUT, CPF, CURP)",                       LATAM_SAMPLES,   LATAM_RE),
-    ("Network (IP)",                                  NETWORK_SAMPLES, NETWORK_RE),
-    ("Credit Card (Visa/MC/Amex/Discover/Maestro)",  CARD_SAMPLES,    CARD_RE),
-    ("European ID (DNI/NIE/NIN/Personalausweis)",    EU_ID_SAMPLES,   EU_ID_RE),
-    ("US (SSN, Passport)",                           US_SAMPLES,      US_RE),
-    ("All patterns",                                  ALL_SAMPLES,     ALL_RE),
+    ("EU (IBAN, VAT, Email, Phone)",                 EU_SAMPLES,      EU_RE,      ["iban", "vat", "email", "phone"]),
+    ("LatAm (RUT, CPF, CURP)",                       LATAM_SAMPLES,   LATAM_RE,   ["rut", "cpf", "curp"]),
+    ("Network (IP)",                                  NETWORK_SAMPLES, NETWORK_RE, ["ip"]),
+    ("Credit Card (Visa/MC/Amex/Discover/Maestro)",  CARD_SAMPLES,    CARD_RE,    ["credit_card"]),
+    ("European ID (DNI/NIE/NIN/Personalausweis)",    EU_ID_SAMPLES,   EU_ID_RE,   ["dni", "nie", "nin", "personalausweis"]),
+    ("US (SSN, Passport)",                           US_SAMPLES,      US_RE,      ["ssn", "us_passport"]),
+    ("All benchmarked patterns (15 families)",        ALL_SAMPLES,     ALL_RE,
+        ["iban", "vat", "email", "phone", "rut", "cpf", "curp", "ip",
+         "credit_card", "dni", "nie", "nin", "personalausweis", "ssn", "us_passport"]),
 ]
 
 def main():
     """Run all benchmarks and print results to stdout."""
     print(f"\nmaskops benchmark — {ROWS:,} rows, median of {RUNS} runs")
 
-    for family_name, samples, baseline_re in FAMILIES:
+    for family_name, samples, baseline_re, patterns in FAMILIES:
         print(f"\n{'='*75}")
         print(f"Family: {family_name}")
         print(f"{'='*75}")
@@ -252,9 +258,9 @@ def main():
             print(f"  {'-'*70}")
 
             t_mask    = bench("mask_pii (maskops)",
-                              lambda df=df: df.with_columns(maskops.mask_pii("text")))
+                              lambda df=df, p=patterns: df.with_columns(maskops.mask_pii("text", patterns=p)))
             t_contains = bench("contains_pii (maskops)",
-                               lambda df=df: df.with_columns(maskops.contains_pii("text")))
+                               lambda df=df, p=patterns: df.with_columns(maskops.contains_pii("text", patterns=p)))
             t_baseline = bench("mask_pii baseline (pure Python re)",
                                lambda df=df, r=baseline_re: python_regex_mask(df, r))
 
