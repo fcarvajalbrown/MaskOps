@@ -26,3 +26,5 @@ tools/social/devto_history.json
 
 # Confidential business/sales/acquisition material — local only, never push
 docs/business/
+docs/cold-emails/
+docs/sales-coach/
