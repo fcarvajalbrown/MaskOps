@@ -10,3 +10,7 @@ Email **fcarvajalbrown@protonmail.com** with:
 - Potential impact
 
 You'll receive a response within 7 days. If the issue is confirmed, a fix will be released as soon as reasonably possible.
+
+## Security and trust reference
+
+For a full vendor-security-review reference — architecture, SBOMs, cryptography, and compliance posture — see [`docs/security/trust.md`](docs/security/trust.md).
