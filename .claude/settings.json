@@ -37,6 +37,10 @@
           {
             "type": "command",
             "command": "python tools/social/devto_reminder.py"
+          },
+          {
+            "type": "command",
+            "command": "python tools/hooks/stale_check.py"
           }
         ]
       }
