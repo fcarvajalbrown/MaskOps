@@ -105,7 +105,7 @@ pytest tests/test_masking.py::TestMaskIBAN -v  # run a single class
 ## Architecture
 
 ```
-src/lib.rs                    # Polars expression registration (mask_pii, contains_pii, mask_pii_fpe)
+src/lib.rs                    # Polars expression registration (mask_pii, contains_pii, mask_pii_fpe, mask_pii_fpe_rekey, mask_pii_consistent, extract_pii, mask_pii_audit)
 src/patterns/mod.rs           # Aggregators: mask_all(), mask_all_fpe(), contains_any_pii()
 src/patterns/<family>.rs      # One file per PII type
 maskops/__init__.py           # Python API — wraps register_plugin_function
@@ -133,7 +133,7 @@ Hard rules — never break these in any code change:
 2. **Key separation is mandatory** — the FPE key must never be stored alongside masked data. Client owns the key. MaskOps never sees it.
 3. **Asterisk masking is irreversible** — do not add any recovery mechanism.
 4. **No network calls, ever** — MaskOps must remain 100% air-gappable.
-5. **New patterns must declare compliance category** in their module docstring: which regulation, FPE or asterisk-only, and what validation prevents false positives.
+5. **New patterns must be named and scoped to their compliance category** — which regulation, FPE or asterisk-only, and what validation prevents false positives. No comments; names and types carry this.
 
 ## CI notes
 
@@ -159,10 +159,9 @@ Cut a release with the helper: **`python tools/release/release.py X.Y.Z`** is a 
 ## Release marketing reminders
 
 **dev.to** — script at `tools/social/devto_post.py`, run it here in Claude Code (not via CI). Remind at milestones only — not every release:
-- Performance sweep results (benchmark numbers are a strong hook)
-- v2.0.0 enterprise milestone
-- Any tutorial, deep-dive, or benchmark comparison angle
+- Tutorial, deep-dive, or benchmark comparison angle
+- Major version releases (v3.0+)
 
 Rules baked into the script: enforces 5-day cooldown, max 4 tags, Camus+Dijkstra prose. Run `--rules` to print full guidelines. Reminder fires automatically every 21 days via the Stop hook in settings.json.
 
-**LinkedIn** — at v2.0.0, remind the user to publish a full LinkedIn article (not just a post): SEO keywords, publish timing, hashtags.
+**LinkedIn** — at major milestones (v3.0+), remind the user to publish a full LinkedIn article (not just a post): SEO keywords, publish timing, hashtags.
