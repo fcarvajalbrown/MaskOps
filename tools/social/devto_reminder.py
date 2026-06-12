@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 HISTORY_FILE = Path(__file__).parent / "devto_history.json"
-REMIND_AFTER_DAYS = 21
+REMIND_AFTER_DAYS = 14
 
 def main():
     if not HISTORY_FILE.exists():

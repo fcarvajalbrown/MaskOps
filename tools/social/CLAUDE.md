@@ -102,8 +102,10 @@ python tools/social/devto_post.py \
 
 - Minimum 5 days between posts (enforced by the script — it will exit if too soon). Rationale: ~80% of a post's reactions land in the first 4 days, so 5 days lets the previous post clear its visibility window before the next competes for the same audience.
 - **The user owns the cooldown clock.** `python tools/social/devto_post.py --restart-cooldown` resets the anchor to now (use when the user says "restart/reset the cooldown" or "the cooldown starts now"). `--force` overrides the cooldown for a single publish. Never re-argue an old post date as a blocker — if the user wants to post, use `--force`; if they want a fresh clock, use `--restart-cooldown`.
-- A 21-day reminder fires automatically at the end of each Claude Code session via the Stop hook in `.claude/settings.json`. It only prints if >= 21 days have passed since the last post.
-- **Post at milestones only:** performance sweep results, v2.0.0, tutorials, benchmark comparisons. Not every release.
+- A 14-day "you've gone quiet" reminder fires automatically at the end of each Claude Code session via the Stop hook in `.claude/settings.json`. It only prints if >= 14 days have passed since the last post, and only on a Mon/Tue/Wed. It is a nudge against multi-month silence, not a call to post on a schedule.
+- **Post at milestones only:** tutorials, benchmark comparisons, deep-dives, major releases. Not every release.
+- **Ceiling: one post per 1-2 weeks, never more.** Three posts a week (e.g. Mon/Wed/Fri) is too much for milestone deep-dives: it breaks the 5-day cooldown, cannibalizes each post's 4-day visibility window, exhausts material, and burns out a solo author. ~80% of reactions land in the first 4 days, so a fresh post competes with the previous one's peak.
+- **Keep milestones as the trigger, but backfill with evergreen angles** so the rhythm is steady instead of randomly spaced. Maintain a small backlog of evergreen pieces (a tutorial, the "Presidio alternative for LATAM" comparison, a GDPR / Ley 21.719 explainer) to fill gaps between real milestones rather than inventing milestones or going silent for months.
 
 ## Timing (data-backed)
 
