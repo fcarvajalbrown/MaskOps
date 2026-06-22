@@ -37,6 +37,7 @@ jobs:
         with:
           name: wheels-linux-${{ matrix.target }}-py${{ matrix.python }}
           path: dist
+          retention-days: 1
 
   macos:
     runs-on: macos-latest
@@ -60,6 +61,7 @@ jobs:
         with:
           name: wheels-macos-${{ matrix.target }}-py${{ matrix.python }}
           path: dist
+          retention-days: 1
 
   windows:
     runs-on: windows-latest
@@ -81,6 +83,7 @@ jobs:
         with:
           name: wheels-windows-x86_64-py${{ matrix.python }}
           path: dist
+          retention-days: 1
 
   sdist:
     runs-on: ubuntu-latest
@@ -96,6 +99,7 @@ jobs:
         with:
           name: sdist
           path: dist
+          retention-days: 1
 
   publish:
     needs: [linux, macos, windows, sdist]
