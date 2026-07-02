@@ -121,10 +121,32 @@ fn mask_pii_fpe_rekey(inputs: &[Series]) -> PolarsResult<Series> {
     let new_cipher = build_cipher(new_key, new_tweak, mode)?;
     let cipher = FpeCipher::Rekey(Box::new(old_cipher), Box::new(new_cipher));
 
-    let out: StringChunked = ca.apply(|opt| opt.map(|s| match cipher.encrypt(s) {
-        Ok(rotated) => std::borrow::Cow::Owned(rotated),
-        Err(_) => std::borrow::Cow::Owned(s.to_string()),
-    }));
+    let pattern: Option<String> = if inputs.len() > 6 {
+        inputs[6].str()?.get(0).filter(|s| !s.is_empty()).map(|s| s.to_string())
+    } else {
+        None
+    };
+    if let Some(p) = &pattern {
+        patterns::rekey::validate_rekey_pattern(p)
+            .map_err(|e| PolarsError::ComputeError(format!("mask_pii_fpe_rekey: {}", e).into()))?;
+    }
+
+    let pat = pattern.as_deref();
+    let mut out: Vec<Option<String>> = Vec::with_capacity(ca.len());
+    for opt in ca.into_iter() {
+        match opt {
+            None => out.push(None),
+            Some(s) => match patterns::rekey::rekey_cell(s, pat, &cipher) {
+                Ok(rotated) => out.push(Some(rotated)),
+                Err(e) => {
+                    return Err(PolarsError::ComputeError(
+                        format!("mask_pii_fpe_rekey: cannot rotate value {:?}: {}", s, e).into(),
+                    ))
+                }
+            },
+        }
+    }
+    let out: StringChunked = StringChunked::from_iter_options("".into(), out.into_iter());
     Ok(out.into_series())
 }
 

@@ -196,21 +196,27 @@ def rekey_pii_fpe(
     new_key: bytes,
     new_tweak: bytes,
     mode: str = "ff3",
+    pattern: str = None,
 ) -> pl.Expr:
     """
     Rotate the FPE key on a column of FPE tokens without exposing plaintext.
 
     Operates cell-by-cell on a dedicated identifier column whose values are single
-    FPE ciphertexts (e.g. the output of ``mask_pii_fpe`` over a bare ``card_number``
-    column). Each digit cell is decrypted with the old key/tweak and re-encrypted with
-    the new key/tweak in one pass; the plaintext exists only transiently inside the Rust
-    kernel, never as a column. Cells that are not all-digit FPE tokens pass through
-    unchanged. The result is identical to masking the original plaintext under the new
-    key/tweak — so rotation is exact, not approximate.
+    FPE tokens produced by ``mask_pii_fpe``. Each cell's encrypted digits are decrypted
+    with the old key/tweak and re-encrypted with the new key/tweak in one pass; the
+    plaintext exists only transiently inside the Rust kernel, never as a column. The
+    result is identical to masking the original plaintext under the new key/tweak — so
+    rotation is exact, not approximate. If a cell cannot be rotated (e.g. a digit run
+    shorter than the FPE minimum), the call raises rather than silently passing it
+    through unrotated.
 
-    Note: because MaskOps FPE does not preserve issuer prefixes or check digits, tokens
-    embedded in free text cannot be re-detected after masking. Rotate the dedicated
-    identifier column, not free-text columns.
+    Because MaskOps FPE tokens cannot be re-detected by pattern validation after masking
+    (an encrypted SSN no longer passes SSN checks), rekey needs to be told the column's
+    token family via ``pattern`` whenever the family leaves some digits unencrypted —
+    ``"rut"`` and ``"co_nit"`` keep a check digit, ``"phone"`` keeps the country prefix.
+    For families that encrypt every digit (cards, cpf, cnpj, ssn, npi, ...) the default
+    (``pattern=None``, whole-cell digits) rotates correctly; passing the family name is
+    still accepted and harmless.
 
     Parameters
     ----------
@@ -222,10 +228,15 @@ def rekey_pii_fpe(
         The key/tweak to re-encrypt under.
     mode : str
         FPE algorithm, ``"ff3"`` or ``"ff1"``. Must match the mode used to mask.
+    pattern : str | None
+        The token family in the column. Required for ``"rut"``, ``"co_nit"``, and
+        ``"phone"`` (which keep some digits unencrypted); optional for all other digit
+        families. Must be a digit family; non-digit patterns raise.
 
     Examples
     --------
     >>> df.with_columns(maskops.rekey_pii_fpe("card_number", k1, t1, k2, t2))
+    >>> df.with_columns(maskops.rekey_pii_fpe("rut", k1, t1, k2, t2, pattern="rut"))
     """
     for k in (old_key, new_key):
         validate_key(k)
@@ -239,6 +250,8 @@ def rekey_pii_fpe(
         pl.lit(new_tweak, dtype=pl.Binary),
         pl.lit(mode),
     ]
+    if pattern is not None:
+        args.append(pl.lit(pattern))
     return register_plugin_function(
         plugin_path=_LIB,
         function_name="mask_pii_fpe_rekey",

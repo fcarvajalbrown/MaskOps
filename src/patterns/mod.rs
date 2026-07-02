@@ -10,6 +10,7 @@ pub mod country_codes;
 pub mod fpe;
 pub mod fpe_ff1;
 pub mod consistent;
+pub mod rekey;
 
 use crate::patterns::eu::iban::{mask_iban, contains_iban, extract_iban};
 use crate::patterns::eu::vat::{mask_vat, contains_vat, extract_vat};

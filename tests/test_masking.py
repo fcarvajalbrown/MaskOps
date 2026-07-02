@@ -2289,6 +2289,33 @@ class TestFpeRekey:
         rotated = self._rekey(token, KEY, TWEAK, KEY2, TWEAK2, "ff3")
         assert len(rotated) == 16 and rotated.isdigit()
 
+    @pytest.mark.parametrize("mode", ["ff3", "ff1"])
+    def test_rekey_separator_bearing_ssn_token(self, mode):
+        token = self._mask("123-45-6789", KEY, TWEAK, mode)
+        assert "-" in token and token != "123-45-6789"
+        rotated = self._rekey(token, KEY, TWEAK, KEY2, TWEAK2, mode)
+        direct = self._mask("123-45-6789", KEY2, TWEAK2, mode)
+        assert rotated == direct
+
+    def test_rekey_rut_keeps_check_digit(self):
+        masked = self._mask("12.345.678-5", KEY, TWEAK, "ff3")
+        assert masked.endswith("-5") and masked != "12.345.678-5"
+        rotated = pl.DataFrame({"col": [masked]}).with_columns(
+            maskops.rekey_pii_fpe("col", KEY, TWEAK, KEY2, TWEAK2, pattern="rut")
+        )["col"][0]
+        direct = self._mask("12.345.678-5", KEY2, TWEAK2, "ff3")
+        assert rotated == direct
+
+    def test_rekey_non_digit_family_raises(self):
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown rekey pattern"):
+            self._rekey_pattern("4111111111111111", "email")
+
+    def _rekey_pattern(self, token, pattern):
+        df = pl.DataFrame({"col": [token]})
+        return df.with_columns(
+            maskops.rekey_pii_fpe("col", KEY, TWEAK, KEY2, TWEAK2, pattern=pattern)
+        )["col"][0]
+
 
 class TestKeyManagement:
     def test_validate_key_accepts_good(self):
