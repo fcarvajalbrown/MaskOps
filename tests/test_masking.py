@@ -1308,6 +1308,31 @@ class TestUnknownPatternNames:
         result = df.with_columns(maskops.mask_pii("col", patterns=["email"]))["col"][0]
         assert "a@b.com" not in result
 
+class TestPythonArgValidation:
+    def test_misspelled_consistent_mode_raises(self):
+        with pytest.raises(ValueError, match="unknown mode 'consistant'"):
+            maskops.mask_pii("col", mode="consistant", salt="secret")
+
+    def test_fpe_as_mask_pii_mode_raises(self):
+        with pytest.raises(ValueError, match="mask_pii_fpe"):
+            maskops.mask_pii("col", mode="fpe")
+
+    def test_salt_with_default_mode_raises(self):
+        with pytest.raises(ValueError, match="salt"):
+            maskops.mask_pii("col", salt="secret")
+
+    def test_empty_patterns_list_raises(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            maskops.mask_pii("col", patterns=[])
+
+    def test_empty_patterns_list_contains_raises(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            maskops.contains_pii("col", patterns=[])
+
+    def test_empty_patterns_list_fpe_raises(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            maskops.mask_pii_fpe("col", KEY, TWEAK, patterns=[])
+
 class TestMaskPiiConsistent:
     """Deterministic hash-based pseudonymization via mode='consistent'."""
 

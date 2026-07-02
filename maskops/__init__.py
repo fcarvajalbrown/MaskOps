@@ -15,6 +15,13 @@ from maskops._keys import validate_key, validate_tweak, derive_key, derive_tweak
 
 _LIB = Path(__file__).parent
 
+_VALID_MASK_MODES = ("asterisk", "consistent")
+
+
+def _validate_patterns_arg(patterns, label):
+    if patterns is not None and len(patterns) == 0:
+        raise ValueError(f"{label}: patterns must be a non-empty list, or None to apply all patterns")
+
 def mask_pii(
     expr: IntoExpr,
     patterns: list = None,
@@ -33,7 +40,13 @@ def mask_pii(
         ``email``, ``phone``, ``ip``, ``iban``, ``vat``, ``dni``, ``nie``,
         ``nin``, ``personalausweis``, ``us_passport``, ``curp``, ``rut``,
         ``cpf``, ``cnpj``, ``ssn``, ``arg_dni``, ``co_cc``, ``co_nit``, ``ec_cedula``,
-        ``credit_card``, ``npi``, ``mbi``, ``nhs``, ``pe_dni``.
+        ``credit_card``, ``npi``, ``mbi``, ``nhs``, ``pe_dni``, ``nir``,
+        ``codice_fiscale``, ``uy_ci``, ``sin``, ``tfn``, ``pesel``, ``bsn``,
+        ``personnummer``, ``my_number``, ``rrn``, ``za_id``, ``il_id``.
+        Unknown names raise a ``ComputeError``.
+        Note: ``pe_dni`` in the default (all-patterns) run masks 8-digit numbers
+        only near DNI context words; selecting it explicitly masks every bare
+        8-digit number.
     mode : str
         Masking mode. ``"asterisk"`` (default): irreversible redaction.
         ``"consistent"``: deterministic HMAC-SHA256 pseudonymization — requires ``salt``.
@@ -55,6 +68,14 @@ def mask_pii(
     ...     maskops.mask_pii("reference_id", mode="consistent", salt="my-secret"),
     ... )
     """
+    if mode not in _VALID_MASK_MODES:
+        raise ValueError(
+            f"mask_pii: unknown mode '{mode}', expected 'asterisk' or 'consistent'"
+            " (for FPE use mask_pii_fpe)"
+        )
+    if salt is not None and mode != "consistent":
+        raise ValueError("mask_pii: salt is only used with mode='consistent'")
+    _validate_patterns_arg(patterns, "mask_pii")
     if mode == "consistent":
         if salt is None:
             raise ValueError("mask_pii: mode='consistent' requires a salt")
@@ -98,6 +119,7 @@ def contains_pii(expr: IntoExpr, patterns: list = None) -> pl.Expr:
     >>> df.filter(maskops.contains_pii("notes"))
     >>> df.filter(maskops.contains_pii("notes", patterns=["email", "ssn"]))
     """
+    _validate_patterns_arg(patterns, "contains_pii")
     args = [pl.col(expr) if isinstance(expr, str) else expr]
     if patterns is not None:
         args.append(pl.lit(",".join(patterns)))
@@ -151,6 +173,7 @@ def mask_pii_fpe(
     """
     validate_key(key)
     validate_tweak(tweak)
+    _validate_patterns_arg(patterns, "mask_pii_fpe")
     args = [
         pl.col(expr) if isinstance(expr, str) else expr,
         pl.lit(key, dtype=pl.Binary),
@@ -240,6 +263,7 @@ def extract_pii(expr: IntoExpr, patterns: list = None) -> pl.Expr:
     >>> df.with_columns(maskops.extract_pii("notes").alias("pii"))
     >>> df.with_columns(maskops.extract_pii("notes", patterns=["email", "iban"]).alias("pii"))
     """
+    _validate_patterns_arg(patterns, "extract_pii")
     args = [pl.col(expr) if isinstance(expr, str) else expr]
     if patterns is not None:
         args.append(pl.lit(",".join(patterns)))
@@ -269,6 +293,7 @@ def mask_pii_audit(expr: IntoExpr, patterns: list = None) -> pl.Expr:
     >>> df.with_columns(maskops.mask_pii_audit("notes").alias("audit"))
     >>> df.with_columns(maskops.mask_pii_audit("notes", patterns=["ssn", "credit_card"]).alias("audit"))
     """
+    _validate_patterns_arg(patterns, "mask_pii_audit")
     args = [pl.col(expr) if isinstance(expr, str) else expr]
     if patterns is not None:
         args.append(pl.lit(",".join(patterns)))
