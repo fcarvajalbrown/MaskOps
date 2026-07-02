@@ -44,6 +44,8 @@ use crate::patterns::latam::latam_id::{
 use crate::patterns::latam::{
     contains_ec_cedula, mask_ec_cedula, extract_ec_cedula, mask_ec_cedula_fpe,
     contains_pe_dni, mask_pe_dni, extract_pe_dni, mask_pe_dni_fpe,
+    contains_pe_dni_bare, mask_pe_dni_bare, extract_pe_dni_bare,
+    mask_pe_dni_bare_fpe, mask_pe_dni_bare_consistent,
     contains_uy_ci, mask_uy_ci, extract_uy_ci, mask_uy_ci_fpe, mask_uy_ci_consistent,
     contains_cnpj, mask_cnpj, extract_cnpj, mask_cnpj_fpe, mask_cnpj_consistent,
 };
@@ -99,7 +101,7 @@ use crate::patterns::latam::latam_id::{
     mask_arg_dni_counted, mask_co_cc_counted, mask_co_nit_counted,
 };
 use crate::patterns::latam::ecuador::mask_ec_cedula_counted;
-use crate::patterns::latam::peru::mask_pe_dni_counted;
+use crate::patterns::latam::peru::{mask_pe_dni_counted, mask_pe_dni_bare_counted};
 use crate::patterns::latam::uruguay::mask_uy_ci_counted;
 use crate::patterns::latam::brazil_cnpj::mask_cnpj_counted;
 use crate::patterns::apac::canada_sin::mask_sin_counted;
@@ -300,7 +302,7 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
             "npi"             => mask_npi(&s),
             "mbi"             => mask_mbi(&s),
             "nhs"             => mask_nhs(&s),
-            "pe_dni"          => mask_pe_dni(&s),
+            "pe_dni"          => mask_pe_dni_bare(&s),
             "nir"             => mask_nir(&s),
             "codice_fiscale"  => mask_cf(&s),
             "uy_ci"           => mask_uy_ci(&s),
@@ -352,7 +354,7 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher)
             "npi"             => mask_npi_fpe(&s, cipher),
             "mbi"             => mask_mbi(&s),  
             "nhs"             => mask_nhs_fpe(&s, cipher),
-            "pe_dni"          => mask_pe_dni_fpe(&s, cipher),
+            "pe_dni"          => mask_pe_dni_bare_fpe(&s, cipher),
             "nir"             => mask_nir(&s),       
             "codice_fiscale"  => mask_cf(&s),        
             "uy_ci"           => mask_uy_ci_fpe(&s, cipher),
@@ -404,7 +406,7 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
             "npi"             => mask_npi_consistent(&s, hasher),
             "mbi"             => mask_mbi(&s),
             "nhs"             => mask_nhs_consistent(&s, hasher),
-            "pe_dni"          => mask_pe_dni_consistent(&s, hasher),
+            "pe_dni"          => mask_pe_dni_bare_consistent(&s, hasher),
             "nir"             => mask_nir(&s),       
             "codice_fiscale"  => mask_cf(&s),        
             "uy_ci"           => mask_uy_ci_consistent(&s, hasher),
@@ -453,7 +455,7 @@ pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
         "npi"             => contains_npi(value),
         "mbi"             => contains_mbi(value),
         "nhs"             => contains_nhs(value),
-        "pe_dni"          => contains_pe_dni(value),
+        "pe_dni"          => contains_pe_dni_bare(value),
         "nir"             => contains_nir(value),
         "codice_fiscale"  => contains_cf(value),
         "uy_ci"           => contains_uy_ci(value),
@@ -727,7 +729,7 @@ pub fn mask_all_audit_selected(value: &str, patterns: &[&str]) -> (String, Audit
     if sel("co_nit")          { let (ns, n) = mask_co_nit_counted(&s);          s = ns; c.co_nit = n; }
     if sel("personnummer")    { let (ns, n) = mask_personnummer_counted(&s);    s = ns; c.personnummer = n; }
     if sel("ec_cedula")       { let (ns, n) = mask_ec_cedula_counted(&s);       s = ns; c.ec_cedula = n; }
-    if sel("pe_dni")          { let (ns, n) = mask_pe_dni_counted(&s);          s = ns; c.pe_dni = n; }
+    if sel("pe_dni")          { let (ns, n) = mask_pe_dni_bare_counted(&s);     s = ns; c.pe_dni = n; }
     if sel("npi")             { let (ns, n) = mask_npi_counted(&s);             s = ns; c.npi = n; }
     if sel("nhs")             { let (ns, n) = mask_nhs_counted(&s);             s = ns; c.nhs = n; }
     if sel("uy_ci")           { let (ns, n) = mask_uy_ci_counted(&s);           s = ns; c.uy_ci = n; }
@@ -778,7 +780,7 @@ pub fn extract_all_selected(value: &str, patterns: &[&str]) -> ExtractResult {
         co_cc:           pick("co_cc", &extract_co_cc),
         co_nit:          pick("co_nit", &extract_co_nit),
         ec_cedula:       pick("ec_cedula", &extract_ec_cedula),
-        pe_dni:          pick("pe_dni", &extract_pe_dni),
+        pe_dni:          pick("pe_dni", &extract_pe_dni_bare),
         uy_ci:           pick("uy_ci", &extract_uy_ci),
         npi:             pick("npi", &extract_npi),
         mbi:             pick("mbi", &extract_mbi),

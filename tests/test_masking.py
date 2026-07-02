@@ -1250,15 +1250,32 @@ class TestMaskPeDNI:
         assert "********" in result
 
     def test_contains_pii_detects_pe_dni(self):
-        df = pl.DataFrame({"col": ["12345678", "nothing"]})
+        df = pl.DataFrame({"col": ["DNI 12345678", "12345678", "nothing"]})
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
-        assert result == [True, False]
+        assert result == [True, False, False]
 
     def test_pe_dni_fpe_no_asterisks(self):
-        df = pl.DataFrame({"col": ["12345678"]})
+        df = pl.DataFrame({"col": ["DNI 12345678"]})
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert "*" not in result
-        assert result != "12345678"
+        assert "12345678" not in result
+        assert result.startswith("DNI ")
+
+    def test_date_like_number_untouched_by_default(self):
+        original = "processed 20250630 in batch 45821903"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_explicit_selection_masks_bare_numbers(self):
+        df = pl.DataFrame({"col": ["invoice 12345678"]})
+        result = df.with_columns(maskops.mask_pii("col", patterns=["pe_dni"]))["col"][0]
+        assert result == "invoice ********"
+
+    def test_explicit_selection_contains_bare_numbers(self):
+        df = pl.DataFrame({"col": ["12345678", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col", patterns=["pe_dni"]))["col"].to_list()
+        assert result == [True, False]
 
 class TestMaskPiiConsistent:
     """Deterministic hash-based pseudonymization via mode='consistent'."""
