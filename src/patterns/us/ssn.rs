@@ -43,32 +43,41 @@ pub fn mask_ssn(s: &str) -> String {
     mask_ssn_counted(s).0
 }
 
-pub fn mask_ssn_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+fn mask_ssn_with(
+    s: &str,
+    claims: &crate::patterns::TokenClaims,
+    encrypt: &dyn Fn(&str) -> Option<String>,
+) -> String {
     SSN_RE
         .replace_all(s, |caps: &regex::Captures| {
-            if !valid_ssn(&caps[1], &caps[2], &caps[3]) {
+            let m = caps.get(0).unwrap();
+            if !valid_ssn(&caps[1], &caps[2], &caps[3]) || !claims.is_free(m.start(), m.end()) {
                 return caps[0].to_string();
             }
             let digits = format!("{}{}{}", &caps[1], &caps[2], &caps[3]);
-            match hasher.encrypt(&digits) {
-                Ok(hashed) => format!("{}-{}-{}", &hashed[..3], &hashed[3..5], &hashed[5..]),
-                Err(_)     => caps[0].to_string(),
+            match encrypt(&digits) {
+                Some(enc) => {
+                    claims.claim(m.start(), m.end());
+                    format!("{}-{}-{}", &enc[..3], &enc[3..5], &enc[5..])
+                }
+                None => caps[0].to_string(),
             }
         })
         .into_owned()
 }
 
-pub fn mask_ssn_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    SSN_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_ssn(&caps[1], &caps[2], &caps[3]) {
-                return caps[0].to_string();
-            }
-            let digits = format!("{}{}{}", &caps[1], &caps[2], &caps[3]);
-            match cipher.encrypt(&digits) {
-                Ok(enc) => format!("{}-{}-{}", &enc[..3], &enc[3..5], &enc[5..]),
-                Err(_) => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_ssn_consistent(
+    s: &str,
+    hasher: &crate::patterns::consistent::ConsistentHasher,
+    claims: &crate::patterns::TokenClaims,
+) -> String {
+    mask_ssn_with(s, claims, &|d| hasher.encrypt(d).ok())
+}
+
+pub fn mask_ssn_fpe(
+    s: &str,
+    cipher: &crate::patterns::fpe::FpeCipher,
+    claims: &crate::patterns::TokenClaims,
+) -> String {
+    mask_ssn_with(s, claims, &|d| cipher.encrypt(d).ok())
 }

@@ -317,6 +317,12 @@ class TestMaskCNPJ:
     def test_cnpj_consistent_deterministic(self):
         df = pl.DataFrame({"col": ["11.222.333/0001-81", "11222333000181"]})
         out = df.with_columns(maskops.mask_pii("col", mode="consistent", salt="s"))["col"].to_list()
+        digits0 = "".join(c for c in out[0] if c.isdigit())
+        assert digits0 == out[1]
+
+    def test_cnpj_consistent_same_format_identical(self):
+        df = pl.DataFrame({"col": ["11222333000181", "11222333000181"]})
+        out = df.with_columns(maskops.mask_pii("col", mode="consistent", salt="s"))["col"].to_list()
         assert out[0] == out[1]
 
     def test_invalid_cnpj_prefix_not_masked_as_co_cc(self):
@@ -1124,11 +1130,10 @@ class TestPatternSelection:
         assert "john@example.com" not in selected_all
         assert "123-45-6789" not in selected_all
 
-    def test_unknown_pattern_ignored(self):
-        original = "john@example.com"
-        df = pl.DataFrame({"col": [original]})
-        result = df.with_columns(maskops.mask_pii("col", patterns=["nonexistent_pattern"]))["col"][0]
-        assert result == original  
+    def test_unknown_pattern_raises(self):
+        df = pl.DataFrame({"col": ["john@example.com"]})
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown pattern 'nonexistent_pattern'"):
+            df.with_columns(maskops.mask_pii("col", patterns=["nonexistent_pattern"]))
 
     def test_contains_pii_pattern_filter(self):
         df = pl.DataFrame({"col": ["john@example.com", "123-45-6789", "nothing"]})

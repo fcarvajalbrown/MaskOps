@@ -162,40 +162,64 @@ pub fn mask_curp(s: &str) -> String {
     mask_curp_counted(s).0
 }
 
-pub fn mask_rut_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
+fn mask_rut_with(
+    s: &str,
+    claims: &crate::patterns::TokenClaims,
+    encrypt: &dyn Fn(&str) -> Option<String>,
+) -> String {
     RUT_RE
         .replace_all(s, |caps: &regex::Captures| {
-            let rut = &caps[0];
-            if !valid_rut(rut) {
+            let m = caps.get(0).unwrap();
+            let rut = m.as_str();
+            if !valid_rut(rut) || !claims.is_free(m.start(), m.end()) {
                 return rut.to_string();
             }
             let clean: String = rut.chars().filter(|c| c.is_alphanumeric()).collect();
             let body = &clean[..clean.len() - 1];
             let dv   = &clean[clean.len() - 1..];
+            let body_template = &rut[..rut.len() - 2];
 
-            match cipher.encrypt(body) {
-                Ok(encrypted) => format!("{}-{}", encrypted, dv),
-                Err(_)        => rut.to_string(),
+            match encrypt(body) {
+                Some(encrypted) => {
+                    claims.claim(m.start(), m.end());
+                    format!("{}-{}", crate::patterns::reinsert_digits(body_template, &encrypted), dv)
+                }
+                None => rut.to_string(),
             }
         })
         .into_owned()
 }
 
-pub fn mask_cpf_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
+pub fn mask_rut_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    mask_rut_with(s, claims, &|d| cipher.encrypt(d).ok())
+}
+
+fn mask_cpf_with(
+    s: &str,
+    claims: &crate::patterns::TokenClaims,
+    encrypt: &dyn Fn(&str) -> Option<String>,
+) -> String {
     CPF_RE
         .replace_all(s, |caps: &regex::Captures| {
-            let cpf = &caps[0];
-            if !valid_cpf(cpf) {
+            let m = caps.get(0).unwrap();
+            let cpf = m.as_str();
+            if !valid_cpf(cpf) || !claims.is_free(m.start(), m.end()) {
                 return cpf.to_string();
             }
             let digits: String = cpf.chars().filter(|c| c.is_ascii_digit()).collect();
-
-            match cipher.encrypt(&digits) {
-                Ok(encrypted) => encrypted,
-                Err(_)        => cpf.to_string(),
+            match encrypt(&digits) {
+                Some(encrypted) => {
+                    claims.claim(m.start(), m.end());
+                    crate::patterns::reinsert_digits(cpf, &encrypted)
+                }
+                None => cpf.to_string(),
             }
         })
         .into_owned()
+}
+
+pub fn mask_cpf_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    mask_cpf_with(s, claims, &|d| cipher.encrypt(d).ok())
 }
 
 fn followed_by_id_suffix(s: &str, end: usize) -> bool {
@@ -251,20 +275,9 @@ pub fn mask_arg_dni(s: &str) -> String {
     mask_arg_dni_counted(s).0
 }
 
-pub fn mask_arg_dni_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    ARG_DNI_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let m = caps.get(0).unwrap();
-            if part_of_larger_id(s, m.end()) {
-                return m.as_str().to_string();
-            }
-            let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
-            match cipher.encrypt(&digits) {
-                Ok(enc) => enc,
-                Err(_)  => m.as_str().to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_arg_dni_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&ARG_DNI_RE, s, claims,
+        &|_, _, end| !part_of_larger_id(s, end), &|d| cipher.encrypt(d).ok())
 }
 
 pub fn contains_co_cc(s: &str) -> bool {
@@ -285,20 +298,9 @@ pub fn mask_co_cc(s: &str) -> String {
     mask_co_cc_counted(s).0
 }
 
-pub fn mask_co_cc_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    CO_CC_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let m = caps.get(0).unwrap();
-            if part_of_larger_id(s, m.end()) {
-                return m.as_str().to_string();
-            }
-            let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
-            match cipher.encrypt(&digits) {
-                Ok(enc) => enc,
-                Err(_)  => m.as_str().to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_co_cc_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&CO_CC_RE, s, claims,
+        &|_, _, end| !part_of_larger_id(s, end), &|d| cipher.encrypt(d).ok())
 }
 
 pub fn contains_co_nit(s: &str) -> bool {
@@ -318,96 +320,50 @@ pub fn mask_co_nit(s: &str) -> String {
     mask_co_nit_counted(s).0
 }
 
-pub fn mask_co_nit_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
+fn mask_co_nit_with(
+    s: &str,
+    claims: &crate::patterns::TokenClaims,
+    encrypt: &dyn Fn(&str) -> Option<String>,
+) -> String {
     CO_NIT_RE
         .replace_all(s, |caps: &regex::Captures| {
-            if !valid_nit(&caps[1], &caps[2]) {
+            let m = caps.get(0).unwrap();
+            if !valid_nit(&caps[1], &caps[2]) || !claims.is_free(m.start(), m.end()) {
                 return caps[0].to_string();
             }
-            match cipher.encrypt(&caps[1]) {
-                Ok(enc) => format!("{}-{}", enc, &caps[2]),
-                Err(_)  => caps[0].to_string(),
+            match encrypt(&caps[1]) {
+                Some(enc) => {
+                    claims.claim(m.start(), m.end());
+                    format!("{}-{}", enc, &caps[2])
+                }
+                None => caps[0].to_string(),
             }
         })
         .into_owned()
 }
 
-pub fn mask_rut_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    RUT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let rut = &caps[0];
-            if !valid_rut(rut) {
-                return rut.to_string();
-            }
-            let clean: String = rut.chars().filter(|c| c.is_alphanumeric()).collect();
-            let body = &clean[..clean.len() - 1];
-            let dv   = &clean[clean.len() - 1..];
-            match hasher.encrypt(body) {
-                Ok(hashed) => format!("{}-{}", hashed, dv),
-                Err(_)     => rut.to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_co_nit_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    mask_co_nit_with(s, claims, &|d| cipher.encrypt(d).ok())
 }
 
-pub fn mask_cpf_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    CPF_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let cpf = &caps[0];
-            if !valid_cpf(cpf) {
-                return cpf.to_string();
-            }
-            let digits: String = cpf.chars().filter(|c| c.is_ascii_digit()).collect();
-            match hasher.encrypt(&digits) {
-                Ok(hashed) => hashed,
-                Err(_)     => cpf.to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_rut_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    mask_rut_with(s, claims, &|d| hasher.encrypt(d).ok())
 }
 
-pub fn mask_arg_dni_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    ARG_DNI_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let m = caps.get(0).unwrap();
-            if part_of_larger_id(s, m.end()) {
-                return m.as_str().to_string();
-            }
-            let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
-            match hasher.encrypt(&digits) {
-                Ok(hashed) => hashed,
-                Err(_)     => m.as_str().to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_cpf_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    mask_cpf_with(s, claims, &|d| hasher.encrypt(d).ok())
 }
 
-pub fn mask_co_cc_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    CO_CC_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let m = caps.get(0).unwrap();
-            if part_of_larger_id(s, m.end()) {
-                return m.as_str().to_string();
-            }
-            let digits: String = m.as_str().chars().filter(|c| c.is_ascii_digit()).collect();
-            match hasher.encrypt(&digits) {
-                Ok(hashed) => hashed,
-                Err(_)     => m.as_str().to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_arg_dni_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&ARG_DNI_RE, s, claims,
+        &|_, _, end| !part_of_larger_id(s, end), &|d| hasher.encrypt(d).ok())
 }
 
-pub fn mask_co_nit_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    CO_NIT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_nit(&caps[1], &caps[2]) {
-                return caps[0].to_string();
-            }
-            match hasher.encrypt(&caps[1]) {
-                Ok(hashed) => format!("{}-{}", hashed, &caps[2]),
-                Err(_)     => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_co_cc_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&CO_CC_RE, s, claims,
+        &|_, _, end| !part_of_larger_id(s, end), &|d| hasher.encrypt(d).ok())
+}
+
+pub fn mask_co_nit_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    mask_co_nit_with(s, claims, &|d| hasher.encrypt(d).ok())
 }

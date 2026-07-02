@@ -86,13 +86,18 @@ pub fn mask_za_id(s: &str) -> String {
     mask_za_id_counted(s).0
 }
 
-pub fn mask_za_id_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    transform(s, |d| Some(cipher.encrypt(d).unwrap_or_else(|_| d.to_string()))).0
+pub fn mask_za_id_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&ZA_ID_RE, s, claims,
+        &|t, start, end| valid_za_id(t) && boundary_ok(s, start, end),
+        &|d| cipher.encrypt(d).ok())
 }
 
 pub fn mask_za_id_consistent(
     s: &str,
     hasher: &crate::patterns::consistent::ConsistentHasher,
+    claims: &crate::patterns::TokenClaims,
 ) -> String {
-    transform(s, |d| Some(hasher.encrypt(d).unwrap_or_else(|_| d.to_string()))).0
+    crate::patterns::mask_family(&ZA_ID_RE, s, claims,
+        &|t, start, end| valid_za_id(t) && boundary_ok(s, start, end),
+        &|d| hasher.encrypt(d).ok())
 }

@@ -76,36 +76,22 @@ pub fn mask_pe_dni_bare(s: &str) -> String {
     mask_pe_dni_bare_counted(s).0
 }
 
-fn encrypt_matches(
-    s: &str,
-    require_context: bool,
-    encrypt: &dyn Fn(&str) -> Option<String>,
-) -> String {
-    PE_DNI_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let m = caps.get(0).unwrap();
-            if require_context && !has_dni_context(s, m.start(), m.end()) {
-                return m.as_str().to_string();
-            }
-            encrypt(m.as_str()).unwrap_or_else(|| m.as_str().to_string())
-        })
-        .into_owned()
+pub fn mask_pe_dni_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&PE_DNI_RE, s, claims,
+        &|_, start, end| has_dni_context(s, start, end), &|d| hasher.encrypt(d).ok())
 }
 
-pub fn mask_pe_dni_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    encrypt_matches(s, true, &|t| hasher.encrypt(t).ok())
+pub fn mask_pe_dni_bare_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&PE_DNI_RE, s, claims, &|_, _, _| true, &|d| hasher.encrypt(d).ok())
 }
 
-pub fn mask_pe_dni_bare_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    encrypt_matches(s, false, &|t| hasher.encrypt(t).ok())
+pub fn mask_pe_dni_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&PE_DNI_RE, s, claims,
+        &|_, start, end| has_dni_context(s, start, end), &|d| cipher.encrypt(d).ok())
 }
 
-pub fn mask_pe_dni_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    encrypt_matches(s, true, &|t| cipher.encrypt(t).ok())
-}
-
-pub fn mask_pe_dni_bare_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    encrypt_matches(s, false, &|t| cipher.encrypt(t).ok())
+pub fn mask_pe_dni_bare_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&PE_DNI_RE, s, claims, &|_, _, _| true, &|d| cipher.encrypt(d).ok())
 }
 
 #[cfg(test)]

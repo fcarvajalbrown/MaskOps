@@ -147,6 +147,57 @@ where
     (out, count.get())
 }
 
+pub struct TokenClaims {
+    claimed: std::cell::RefCell<Vec<(usize, usize)>>,
+}
+
+impl TokenClaims {
+    pub fn new() -> Self {
+        Self { claimed: std::cell::RefCell::new(Vec::new()) }
+    }
+
+    pub fn is_free(&self, start: usize, end: usize) -> bool {
+        !self.claimed.borrow().iter().any(|(s, e)| start < *e && *s < end)
+    }
+
+    pub fn claim(&self, start: usize, end: usize) {
+        self.claimed.borrow_mut().push((start, end));
+    }
+}
+
+pub fn reinsert_digits(template: &str, digits: &str) -> String {
+    let mut it = digits.chars();
+    template
+        .chars()
+        .map(|c| if c.is_ascii_digit() { it.next().unwrap_or(c) } else { c })
+        .collect()
+}
+
+pub fn mask_family(
+    re: &regex::Regex,
+    s: &str,
+    claims: &TokenClaims,
+    valid: &dyn Fn(&str, usize, usize) -> bool,
+    encrypt: &dyn Fn(&str) -> Option<String>,
+) -> String {
+    re.replace_all(s, |caps: &regex::Captures| {
+        let m = caps.get(0).unwrap();
+        let tok = m.as_str();
+        if !claims.is_free(m.start(), m.end()) || !valid(tok, m.start(), m.end()) {
+            return tok.to_string();
+        }
+        let digits: String = tok.chars().filter(|c| c.is_ascii_digit()).collect();
+        match encrypt(&digits) {
+            Some(enc) => {
+                claims.claim(m.start(), m.end());
+                reinsert_digits(tok, &enc)
+            }
+            None => tok.to_string(),
+        }
+    })
+    .into_owned()
+}
+
 #[inline]
 pub fn has_pii_candidate(value: &str) -> bool {
     value.bytes().any(|b| b.is_ascii_digit() || b == b'@')
@@ -202,29 +253,30 @@ pub fn mask_digit(value: &str) -> String {
 }
 
 pub fn mask_digit_fpe(value: &str, cipher: &FpeCipher) -> String {
-    let s = mask_phone_fpe(value, cipher);
-    let s = mask_rut_fpe(&s, cipher);
-    let s = mask_cpf_fpe(&s, cipher);
-    let s = mask_cnpj_fpe(&s, cipher);
-    let s = mask_card_fpe(&s, cipher);
-    let s = mask_ssn_fpe(&s, cipher);
-    let s = mask_arg_dni_fpe(&s, cipher);
-    let s = mask_co_cc_fpe(&s, cipher);
-    let s = mask_co_nit_fpe(&s, cipher);
-    let s = mask_personnummer_fpe(&s, cipher);
-    let s = mask_ec_cedula_fpe(&s, cipher);
-    let s = mask_pe_dni_fpe(&s, cipher);
-    let s = mask_npi_fpe(&s, cipher);
-    let s = mask_nhs_fpe(&s, cipher);
-    let s = mask_uy_ci_fpe(&s, cipher);
-    let s = mask_sin_fpe(&s, cipher);
-    let s = mask_tfn_fpe(&s, cipher);
-    let s = mask_pesel_fpe(&s, cipher);
-    let s = mask_bsn_fpe(&s, cipher);
-    let s = mask_my_number_fpe(&s, cipher);
-    let s = mask_rrn_fpe(&s, cipher);
-    let s = mask_za_id_fpe(&s, cipher);
-    let s = mask_il_id_fpe(&s, cipher);
+    let claims = TokenClaims::new();
+    let s = mask_phone_fpe(value, cipher, &claims);
+    let s = mask_rut_fpe(&s, cipher, &claims);
+    let s = mask_cpf_fpe(&s, cipher, &claims);
+    let s = mask_cnpj_fpe(&s, cipher, &claims);
+    let s = mask_card_fpe(&s, cipher, &claims);
+    let s = mask_ssn_fpe(&s, cipher, &claims);
+    let s = mask_arg_dni_fpe(&s, cipher, &claims);
+    let s = mask_co_cc_fpe(&s, cipher, &claims);
+    let s = mask_co_nit_fpe(&s, cipher, &claims);
+    let s = mask_personnummer_fpe(&s, cipher, &claims);
+    let s = mask_ec_cedula_fpe(&s, cipher, &claims);
+    let s = mask_pe_dni_fpe(&s, cipher, &claims);
+    let s = mask_npi_fpe(&s, cipher, &claims);
+    let s = mask_nhs_fpe(&s, cipher, &claims);
+    let s = mask_uy_ci_fpe(&s, cipher, &claims);
+    let s = mask_sin_fpe(&s, cipher, &claims);
+    let s = mask_tfn_fpe(&s, cipher, &claims);
+    let s = mask_pesel_fpe(&s, cipher, &claims);
+    let s = mask_bsn_fpe(&s, cipher, &claims);
+    let s = mask_my_number_fpe(&s, cipher, &claims);
+    let s = mask_rrn_fpe(&s, cipher, &claims);
+    let s = mask_za_id_fpe(&s, cipher, &claims);
+    let s = mask_il_id_fpe(&s, cipher, &claims);
     s
 }
 
@@ -251,29 +303,30 @@ pub fn mask_all_fpe(value: &str, cipher: &FpeCipher) -> String {
 }
 
 pub fn mask_digit_consistent(value: &str, hasher: &ConsistentHasher) -> String {
-    let s = mask_phone_consistent(value, hasher);
-    let s = mask_rut_consistent(&s, hasher);
-    let s = mask_cpf_consistent(&s, hasher);
-    let s = mask_cnpj_consistent(&s, hasher);
-    let s = mask_card_consistent(&s, hasher);
-    let s = mask_ssn_consistent(&s, hasher);
-    let s = mask_arg_dni_consistent(&s, hasher);
-    let s = mask_co_cc_consistent(&s, hasher);
-    let s = mask_co_nit_consistent(&s, hasher);
-    let s = mask_personnummer_consistent(&s, hasher);
-    let s = mask_ec_cedula_consistent(&s, hasher);
-    let s = mask_pe_dni_consistent(&s, hasher);
-    let s = mask_npi_consistent(&s, hasher);
-    let s = mask_nhs_consistent(&s, hasher);
-    let s = mask_uy_ci_consistent(&s, hasher);
-    let s = mask_sin_consistent(&s, hasher);
-    let s = mask_tfn_consistent(&s, hasher);
-    let s = mask_pesel_consistent(&s, hasher);
-    let s = mask_bsn_consistent(&s, hasher);
-    let s = mask_my_number_consistent(&s, hasher);
-    let s = mask_rrn_consistent(&s, hasher);
-    let s = mask_za_id_consistent(&s, hasher);
-    let s = mask_il_id_consistent(&s, hasher);
+    let claims = TokenClaims::new();
+    let s = mask_phone_consistent(value, hasher, &claims);
+    let s = mask_rut_consistent(&s, hasher, &claims);
+    let s = mask_cpf_consistent(&s, hasher, &claims);
+    let s = mask_cnpj_consistent(&s, hasher, &claims);
+    let s = mask_card_consistent(&s, hasher, &claims);
+    let s = mask_ssn_consistent(&s, hasher, &claims);
+    let s = mask_arg_dni_consistent(&s, hasher, &claims);
+    let s = mask_co_cc_consistent(&s, hasher, &claims);
+    let s = mask_co_nit_consistent(&s, hasher, &claims);
+    let s = mask_personnummer_consistent(&s, hasher, &claims);
+    let s = mask_ec_cedula_consistent(&s, hasher, &claims);
+    let s = mask_pe_dni_consistent(&s, hasher, &claims);
+    let s = mask_npi_consistent(&s, hasher, &claims);
+    let s = mask_nhs_consistent(&s, hasher, &claims);
+    let s = mask_uy_ci_consistent(&s, hasher, &claims);
+    let s = mask_sin_consistent(&s, hasher, &claims);
+    let s = mask_tfn_consistent(&s, hasher, &claims);
+    let s = mask_pesel_consistent(&s, hasher, &claims);
+    let s = mask_bsn_consistent(&s, hasher, &claims);
+    let s = mask_my_number_consistent(&s, hasher, &claims);
+    let s = mask_rrn_consistent(&s, hasher, &claims);
+    let s = mask_za_id_consistent(&s, hasher, &claims);
+    let s = mask_il_id_consistent(&s, hasher, &claims);
     s
 }
 
@@ -347,11 +400,12 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher)
         }
         return value.to_string();
     }
+    let claims = TokenClaims::new();
     let mut s = value.to_string();
     for pat in patterns {
         s = match *pat {
             "email"           => mask_email(&s),
-            "phone"           => mask_phone_fpe(&s, cipher),
+            "phone"           => mask_phone_fpe(&s, cipher, &claims),
             "ip"              => mask_ip(&s),
             "iban"            => mask_iban(&s),
             "vat"             => mask_vat(&s),
@@ -361,31 +415,31 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher)
             "personalausweis" => mask_personalausweis(&s),
             "us_passport"     => mask_us_passport(&s),
             "curp"            => mask_curp(&s),
-            "rut"             => mask_rut_fpe(&s, cipher),
-            "cpf"             => mask_cpf_fpe(&s, cipher),
-            "cnpj"            => mask_cnpj_fpe(&s, cipher),
-            "ssn"             => mask_ssn_fpe(&s, cipher),
-            "arg_dni"         => mask_arg_dni_fpe(&s, cipher),
-            "co_cc"           => mask_co_cc_fpe(&s, cipher),
-            "co_nit"          => mask_co_nit_fpe(&s, cipher),
-            "ec_cedula"       => mask_ec_cedula_fpe(&s, cipher),
-            "credit_card"     => mask_card_fpe(&s, cipher),
-            "npi"             => mask_npi_fpe(&s, cipher),
-            "mbi"             => mask_mbi(&s),  
-            "nhs"             => mask_nhs_fpe(&s, cipher),
-            "pe_dni"          => mask_pe_dni_bare_fpe(&s, cipher),
-            "nir"             => mask_nir(&s),       
-            "codice_fiscale"  => mask_cf(&s),        
-            "uy_ci"           => mask_uy_ci_fpe(&s, cipher),
-            "sin"             => mask_sin_fpe(&s, cipher),
-            "tfn"             => mask_tfn_fpe(&s, cipher),
-            "pesel"           => mask_pesel_fpe(&s, cipher),
-            "bsn"             => mask_bsn_fpe(&s, cipher),
-            "personnummer"    => mask_personnummer_fpe(&s, cipher),
-            "my_number"       => mask_my_number_fpe(&s, cipher),
-            "rrn"             => mask_rrn_fpe(&s, cipher),
-            "za_id"           => mask_za_id_fpe(&s, cipher),
-            "il_id"           => mask_il_id_fpe(&s, cipher),
+            "rut"             => mask_rut_fpe(&s, cipher, &claims),
+            "cpf"             => mask_cpf_fpe(&s, cipher, &claims),
+            "cnpj"            => mask_cnpj_fpe(&s, cipher, &claims),
+            "ssn"             => mask_ssn_fpe(&s, cipher, &claims),
+            "arg_dni"         => mask_arg_dni_fpe(&s, cipher, &claims),
+            "co_cc"           => mask_co_cc_fpe(&s, cipher, &claims),
+            "co_nit"          => mask_co_nit_fpe(&s, cipher, &claims),
+            "ec_cedula"       => mask_ec_cedula_fpe(&s, cipher, &claims),
+            "credit_card"     => mask_card_fpe(&s, cipher, &claims),
+            "npi"             => mask_npi_fpe(&s, cipher, &claims),
+            "mbi"             => mask_mbi(&s),
+            "nhs"             => mask_nhs_fpe(&s, cipher, &claims),
+            "pe_dni"          => mask_pe_dni_bare_fpe(&s, cipher, &claims),
+            "nir"             => mask_nir(&s),
+            "codice_fiscale"  => mask_cf(&s),
+            "uy_ci"           => mask_uy_ci_fpe(&s, cipher, &claims),
+            "sin"             => mask_sin_fpe(&s, cipher, &claims),
+            "tfn"             => mask_tfn_fpe(&s, cipher, &claims),
+            "pesel"           => mask_pesel_fpe(&s, cipher, &claims),
+            "bsn"             => mask_bsn_fpe(&s, cipher, &claims),
+            "personnummer"    => mask_personnummer_fpe(&s, cipher, &claims),
+            "my_number"       => mask_my_number_fpe(&s, cipher, &claims),
+            "rrn"             => mask_rrn_fpe(&s, cipher, &claims),
+            "za_id"           => mask_za_id_fpe(&s, cipher, &claims),
+            "il_id"           => mask_il_id_fpe(&s, cipher, &claims),
             _                 => s,
         };
     }
@@ -399,11 +453,12 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
         }
         return value.to_string();
     }
+    let claims = TokenClaims::new();
     let mut s = value.to_string();
     for pat in patterns {
         s = match *pat {
             "email"           => mask_email(&s),
-            "phone"           => mask_phone_consistent(&s, hasher),
+            "phone"           => mask_phone_consistent(&s, hasher, &claims),
             "ip"              => mask_ip(&s),
             "iban"            => mask_iban(&s),
             "vat"             => mask_vat(&s),
@@ -413,31 +468,31 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
             "personalausweis" => mask_personalausweis(&s),
             "us_passport"     => mask_us_passport(&s),
             "curp"            => mask_curp(&s),
-            "rut"             => mask_rut_consistent(&s, hasher),
-            "cpf"             => mask_cpf_consistent(&s, hasher),
-            "cnpj"            => mask_cnpj_consistent(&s, hasher),
-            "ssn"             => mask_ssn_consistent(&s, hasher),
-            "arg_dni"         => mask_arg_dni_consistent(&s, hasher),
-            "co_cc"           => mask_co_cc_consistent(&s, hasher),
-            "co_nit"          => mask_co_nit_consistent(&s, hasher),
-            "ec_cedula"       => mask_ec_cedula_consistent(&s, hasher),
-            "credit_card"     => mask_card_consistent(&s, hasher),
-            "npi"             => mask_npi_consistent(&s, hasher),
+            "rut"             => mask_rut_consistent(&s, hasher, &claims),
+            "cpf"             => mask_cpf_consistent(&s, hasher, &claims),
+            "cnpj"            => mask_cnpj_consistent(&s, hasher, &claims),
+            "ssn"             => mask_ssn_consistent(&s, hasher, &claims),
+            "arg_dni"         => mask_arg_dni_consistent(&s, hasher, &claims),
+            "co_cc"           => mask_co_cc_consistent(&s, hasher, &claims),
+            "co_nit"          => mask_co_nit_consistent(&s, hasher, &claims),
+            "ec_cedula"       => mask_ec_cedula_consistent(&s, hasher, &claims),
+            "credit_card"     => mask_card_consistent(&s, hasher, &claims),
+            "npi"             => mask_npi_consistent(&s, hasher, &claims),
             "mbi"             => mask_mbi(&s),
-            "nhs"             => mask_nhs_consistent(&s, hasher),
-            "pe_dni"          => mask_pe_dni_bare_consistent(&s, hasher),
-            "nir"             => mask_nir(&s),       
-            "codice_fiscale"  => mask_cf(&s),        
-            "uy_ci"           => mask_uy_ci_consistent(&s, hasher),
-            "sin"             => mask_sin_consistent(&s, hasher),
-            "tfn"             => mask_tfn_consistent(&s, hasher),
-            "pesel"           => mask_pesel_consistent(&s, hasher),
-            "bsn"             => mask_bsn_consistent(&s, hasher),
-            "personnummer"    => mask_personnummer_consistent(&s, hasher),
-            "my_number"       => mask_my_number_consistent(&s, hasher),
-            "rrn"             => mask_rrn_consistent(&s, hasher),
-            "za_id"           => mask_za_id_consistent(&s, hasher),
-            "il_id"           => mask_il_id_consistent(&s, hasher),
+            "nhs"             => mask_nhs_consistent(&s, hasher, &claims),
+            "pe_dni"          => mask_pe_dni_bare_consistent(&s, hasher, &claims),
+            "nir"             => mask_nir(&s),
+            "codice_fiscale"  => mask_cf(&s),
+            "uy_ci"           => mask_uy_ci_consistent(&s, hasher, &claims),
+            "sin"             => mask_sin_consistent(&s, hasher, &claims),
+            "tfn"             => mask_tfn_consistent(&s, hasher, &claims),
+            "pesel"           => mask_pesel_consistent(&s, hasher, &claims),
+            "bsn"             => mask_bsn_consistent(&s, hasher, &claims),
+            "personnummer"    => mask_personnummer_consistent(&s, hasher, &claims),
+            "my_number"       => mask_my_number_consistent(&s, hasher, &claims),
+            "rrn"             => mask_rrn_consistent(&s, hasher, &claims),
+            "za_id"           => mask_za_id_consistent(&s, hasher, &claims),
+            "il_id"           => mask_il_id_consistent(&s, hasher, &claims),
             _                 => s,
         };
     }
@@ -810,5 +865,44 @@ pub fn extract_all_selected(value: &str, patterns: &[&str]) -> ExtractResult {
         rrn:             pick("rrn", &extract_rrn),
         za_id:           pick("za_id", &extract_za_id),
         il_id:           pick("il_id", &extract_il_id),
+    }
+}
+
+#[cfg(test)]
+mod cascade_tests {
+    use super::*;
+    use crate::patterns::fpe::Ff3Cipher;
+
+    fn cipher() -> FpeCipher {
+        FpeCipher::Ff3(Ff3Cipher::new(&[0u8; 32], &[0u8; 7]))
+    }
+
+    #[test]
+    fn test_arg_dni_encrypted_once_not_twice() {
+        let c = cipher();
+        let masked = mask_all_fpe("cliente 12.345.678 activo", &c);
+        let digits: String = masked.chars().filter(|ch| ch.is_ascii_digit()).collect();
+        assert!(masked.contains('.'), "separators must be preserved: {}", masked);
+        assert_eq!(c.decrypt(&digits).unwrap(), "12345678", "arg_dni was double-encrypted");
+    }
+
+    #[test]
+    fn test_bare_cpf_encrypted_once_not_twice() {
+        let c = cipher();
+        let masked = mask_all_fpe("52998224725", &c);
+        let digits: String = masked.chars().filter(|ch| ch.is_ascii_digit()).collect();
+        assert_eq!(digits.len(), 11);
+        assert_eq!(c.decrypt(&digits).unwrap(), "52998224725", "cpf was double-encrypted");
+    }
+
+    #[test]
+    fn test_consistent_arg_dni_not_double_hashed() {
+        let hasher = ConsistentHasher::new("salt");
+        let once = {
+            let claims = TokenClaims::new();
+            mask_arg_dni_consistent("12.345.678", &hasher, &claims)
+        };
+        let pipeline = mask_all_consistent("12.345.678", &hasher);
+        assert_eq!(once, pipeline, "consistent arg_dni changed after full pipeline (double-processed)");
     }
 }

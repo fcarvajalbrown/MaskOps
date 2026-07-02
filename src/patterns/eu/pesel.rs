@@ -42,30 +42,10 @@ pub fn mask_pesel(s: &str) -> String {
     mask_pesel_counted(s).0
 }
 
-pub fn mask_pesel_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    PESEL_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_pesel(&caps[0]) {
-                return caps[0].to_string();
-            }
-            match cipher.encrypt(&caps[0]) {
-                Ok(enc) => enc,
-                Err(_)  => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_pesel_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&PESEL_RE, s, claims, &|t, _, _| valid_pesel(t), &|d| cipher.encrypt(d).ok())
 }
 
-pub fn mask_pesel_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    PESEL_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_pesel(&caps[0]) {
-                return caps[0].to_string();
-            }
-            match hasher.encrypt(&caps[0]) {
-                Ok(hashed) => hashed,
-                Err(_)     => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_pesel_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&PESEL_RE, s, claims, &|t, _, _| valid_pesel(t), &|d| hasher.encrypt(d).ok())
 }

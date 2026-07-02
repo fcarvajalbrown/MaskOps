@@ -39,30 +39,10 @@ pub fn mask_bsn(s: &str) -> String {
     mask_bsn_counted(s).0
 }
 
-pub fn mask_bsn_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    BSN_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_bsn(&caps[0]) {
-                return caps[0].to_string();
-            }
-            match cipher.encrypt(&caps[0]) {
-                Ok(enc) => enc,
-                Err(_)  => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_bsn_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&BSN_RE, s, claims, &|t, _, _| valid_bsn(t), &|d| cipher.encrypt(d).ok())
 }
 
-pub fn mask_bsn_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    BSN_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_bsn(&caps[0]) {
-                return caps[0].to_string();
-            }
-            match hasher.encrypt(&caps[0]) {
-                Ok(hashed) => hashed,
-                Err(_)     => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_bsn_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&BSN_RE, s, claims, &|t, _, _| valid_bsn(t), &|d| hasher.encrypt(d).ok())
 }

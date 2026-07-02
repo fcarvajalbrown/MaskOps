@@ -65,54 +65,14 @@ pub fn mask_personnummer(s: &str) -> String {
     mask_personnummer_counted(s).0
 }
 
-pub fn mask_personnummer_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    let s = SHORT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let sep = if raw.contains('+') { '+' } else { '-' };
-            let d = short_digits(raw);
-            if !luhn_valid(&d) { return raw.to_string(); }
-            match cipher.encrypt(&d) {
-                Ok(enc) => format!("{}{}{}", &enc[..6], sep, &enc[6..]),
-                Err(_)  => raw.to_string(),
-            }
-        })
-        .into_owned();
-    LONG_RE
-        .replace_all(&s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let all: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !luhn_valid(&long_digits(raw)) { return raw.to_string(); }
-            match cipher.encrypt(&all) {
-                Ok(enc) => format!("{}-{}", &enc[..8], &enc[8..]),
-                Err(_)  => raw.to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_personnummer_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    let enc = |d: &str| cipher.encrypt(d).ok();
+    let s = crate::patterns::mask_family(&SHORT_RE, s, claims, &|t, _, _| luhn_valid(&short_digits(t)), &enc);
+    crate::patterns::mask_family(&LONG_RE, &s, claims, &|t, _, _| luhn_valid(&long_digits(t)), &enc)
 }
 
-pub fn mask_personnummer_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    let s = SHORT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let sep = if raw.contains('+') { '+' } else { '-' };
-            let d = short_digits(raw);
-            if !luhn_valid(&d) { return raw.to_string(); }
-            match hasher.encrypt(&d) {
-                Ok(hashed) => format!("{}{}{}", &hashed[..6], sep, &hashed[6..]),
-                Err(_)     => raw.to_string(),
-            }
-        })
-        .into_owned();
-    LONG_RE
-        .replace_all(&s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let all: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !luhn_valid(&long_digits(raw)) { return raw.to_string(); }
-            match hasher.encrypt(&all) {
-                Ok(hashed) => format!("{}-{}", &hashed[..8], &hashed[8..]),
-                Err(_)     => raw.to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_personnummer_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    let enc = |d: &str| hasher.encrypt(d).ok();
+    let s = crate::patterns::mask_family(&SHORT_RE, s, claims, &|t, _, _| luhn_valid(&short_digits(t)), &enc);
+    crate::patterns::mask_family(&LONG_RE, &s, claims, &|t, _, _| luhn_valid(&long_digits(t)), &enc)
 }
