@@ -36,6 +36,23 @@ class TestMaskIBAN:
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result == original
 
+    def test_print_format_iban_masked(self):
+        df = pl.DataFrame({"col": ["pay DE89 3704 0044 0532 0130 00 now"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == "pay DE89 **** **** **** **** ** now"
+
+    def test_invalid_checksum_iban_untouched(self):
+        original = "DE89370400440532013001"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_long_iban_masked(self):
+        df = pl.DataFrame({"col": ["LC55HEMM000100010012001200023015"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.startswith("LC55")
+        assert "HEMM" not in result
+
     def test_null_passthrough(self):
         df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
