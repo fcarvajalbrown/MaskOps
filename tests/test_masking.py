@@ -168,6 +168,23 @@ class TestMaskIP:
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
 
+    def test_compressed_ipv6_masked(self):
+        df = pl.DataFrame({"col": ["client 2001:db8::1 connected"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "2001:db8::1" not in result
+        assert "****" in result
+        assert "connected" in result
+
+    def test_letter_only_ipv6_masked(self):
+        df = pl.DataFrame({"col": ["fdab:beef:cafe:face:feed:deaf:beef:fade"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "feed:deaf:beef:fade" not in result
+
+    def test_contains_pii_detects_compressed_ipv6(self):
+        df = pl.DataFrame({"col": ["fe80::1", "meeting at 12:30 today", "std::env"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False, False]
+
 class TestMaskRUT:
     def test_rut_body_masked(self):
         df = pl.DataFrame({"col": ["76.354.771-K"]})

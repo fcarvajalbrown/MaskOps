@@ -131,6 +131,11 @@ pub fn has_pii_candidate(value: &str) -> bool {
     value.bytes().any(|b| b.is_ascii_digit() || b == b'@')
 }
 
+#[inline]
+pub fn has_letter_only_ipv6_candidate(value: &str) -> bool {
+    value.bytes().filter(|b| *b == b':').count() >= 2
+}
+
 pub fn mask_non_digit(value: &str) -> String {
     let s = mask_iban(value);
     let s = mask_vat(&s);
@@ -204,6 +209,9 @@ pub fn mask_digit_fpe(value: &str, cipher: &FpeCipher) -> String {
 
 pub fn mask_all(value: &str) -> String {
     if !has_pii_candidate(value) {
+        if has_letter_only_ipv6_candidate(value) {
+            return mask_ip(value);
+        }
         return value.to_string();
     }
     let s = mask_non_digit(value);
@@ -212,6 +220,9 @@ pub fn mask_all(value: &str) -> String {
 
 pub fn mask_all_fpe(value: &str, cipher: &FpeCipher) -> String {
     if !has_pii_candidate(value) {
+        if has_letter_only_ipv6_candidate(value) {
+            return mask_ip(value);
+        }
         return value.to_string();
     }
     let s = mask_non_digit(value);
@@ -247,6 +258,9 @@ pub fn mask_digit_consistent(value: &str, hasher: &ConsistentHasher) -> String {
 
 pub fn mask_all_consistent(value: &str, hasher: &ConsistentHasher) -> String {
     if !has_pii_candidate(value) {
+        if has_letter_only_ipv6_candidate(value) {
+            return mask_ip(value);
+        }
         return value.to_string();
     }
     let s = mask_non_digit(value);
@@ -255,6 +269,9 @@ pub fn mask_all_consistent(value: &str, hasher: &ConsistentHasher) -> String {
 
 pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
     if !has_pii_candidate(value) {
+        if patterns.contains(&"ip") && has_letter_only_ipv6_candidate(value) {
+            return mask_ip(value);
+        }
         return value.to_string();
     }
     let mut s = value.to_string();
@@ -304,6 +321,9 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
 
 pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher) -> String {
     if !has_pii_candidate(value) {
+        if patterns.contains(&"ip") && has_letter_only_ipv6_candidate(value) {
+            return mask_ip(value);
+        }
         return value.to_string();
     }
     let mut s = value.to_string();
@@ -353,6 +373,9 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher)
 
 pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &ConsistentHasher) -> String {
     if !has_pii_candidate(value) {
+        if patterns.contains(&"ip") && has_letter_only_ipv6_candidate(value) {
+            return mask_ip(value);
+        }
         return value.to_string();
     }
     let mut s = value.to_string();
@@ -402,7 +425,9 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
 
 pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
     if !has_pii_candidate(value) {
-        return false;
+        return patterns.contains(&"ip")
+            && has_letter_only_ipv6_candidate(value)
+            && contains_ip(value);
     }
     patterns.iter().any(|pat| match *pat {
         "email"           => contains_email(value),
@@ -447,7 +472,7 @@ pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
 
 pub fn contains_any_pii(value: &str) -> bool {
     if !has_pii_candidate(value) {
-        return false;
+        return has_letter_only_ipv6_candidate(value) && contains_ip(value);
     }
     contains_iban(value)
         || contains_vat(value)
@@ -529,6 +554,9 @@ pub struct ExtractResult {
 
 pub fn extract_all(value: &str) -> ExtractResult {
     if !has_pii_candidate(value) {
+        if has_letter_only_ipv6_candidate(value) {
+            return ExtractResult { ip: extract_ip(value), ..ExtractResult::default() };
+        }
         return ExtractResult::default();
     }
     ExtractResult {
@@ -613,6 +641,10 @@ pub struct AuditCounts {
 
 pub fn mask_all_audit(value: &str) -> (String, AuditCounts) {
     if !has_pii_candidate(value) {
+        if has_letter_only_ipv6_candidate(value) {
+            let (s, n) = mask_ip_counted(value);
+            return (s, AuditCounts { ip: n, ..AuditCounts::default() });
+        }
         return (value.to_string(), AuditCounts::default());
     }
     let mut c = AuditCounts::default();
@@ -660,6 +692,10 @@ pub fn mask_all_audit(value: &str) -> (String, AuditCounts) {
 
 pub fn mask_all_audit_selected(value: &str, patterns: &[&str]) -> (String, AuditCounts) {
     if !has_pii_candidate(value) {
+        if patterns.contains(&"ip") && has_letter_only_ipv6_candidate(value) {
+            let (s, n) = mask_ip_counted(value);
+            return (s, AuditCounts { ip: n, ..AuditCounts::default() });
+        }
         return (value.to_string(), AuditCounts::default());
     }
     let sel = |name: &str| patterns.contains(&name);
@@ -709,6 +745,9 @@ pub fn mask_all_audit_selected(value: &str, patterns: &[&str]) -> (String, Audit
 
 pub fn extract_all_selected(value: &str, patterns: &[&str]) -> ExtractResult {
     if !has_pii_candidate(value) {
+        if patterns.contains(&"ip") && has_letter_only_ipv6_candidate(value) {
+            return ExtractResult { ip: extract_ip(value), ..ExtractResult::default() };
+        }
         return ExtractResult::default();
     }
     let sel = |name: &str| patterns.contains(&name);
