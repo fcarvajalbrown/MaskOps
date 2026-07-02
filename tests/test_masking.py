@@ -36,6 +36,23 @@ class TestMaskIBAN:
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
         assert result == original
 
+    def test_print_format_iban_masked(self):
+        df = pl.DataFrame({"col": ["pay DE89 3704 0044 0532 0130 00 now"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == "pay DE89 **** **** **** **** ** now"
+
+    def test_invalid_checksum_iban_untouched(self):
+        original = "DE89370400440532013001"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_long_iban_masked(self):
+        df = pl.DataFrame({"col": ["LC55HEMM000100010012001200023015"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result.startswith("LC55")
+        assert "HEMM" not in result
+
     def test_null_passthrough(self):
         df = pl.DataFrame({"col": [None]}, schema={"col": pl.String})
         result = df.with_columns(maskops.mask_pii("col"))["col"][0]
@@ -168,6 +185,23 @@ class TestMaskIP:
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
         assert result == [True, False]
 
+    def test_compressed_ipv6_masked(self):
+        df = pl.DataFrame({"col": ["client 2001:db8::1 connected"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "2001:db8::1" not in result
+        assert "****" in result
+        assert "connected" in result
+
+    def test_letter_only_ipv6_masked(self):
+        df = pl.DataFrame({"col": ["fdab:beef:cafe:face:feed:deaf:beef:fade"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert "feed:deaf:beef:fade" not in result
+
+    def test_contains_pii_detects_compressed_ipv6(self):
+        df = pl.DataFrame({"col": ["fe80::1", "meeting at 12:30 today", "std::env"]})
+        result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
+        assert result == [True, False, False]
+
 class TestMaskRUT:
     def test_rut_body_masked(self):
         df = pl.DataFrame({"col": ["76.354.771-K"]})
@@ -282,6 +316,12 @@ class TestMaskCNPJ:
 
     def test_cnpj_consistent_deterministic(self):
         df = pl.DataFrame({"col": ["11.222.333/0001-81", "11222333000181"]})
+        out = df.with_columns(maskops.mask_pii("col", mode="consistent", salt="s"))["col"].to_list()
+        digits0 = "".join(c for c in out[0] if c.isdigit())
+        assert digits0 == out[1]
+
+    def test_cnpj_consistent_same_format_identical(self):
+        df = pl.DataFrame({"col": ["11222333000181", "11222333000181"]})
         out = df.with_columns(maskops.mask_pii("col", mode="consistent", salt="s"))["col"].to_list()
         assert out[0] == out[1]
 
@@ -1090,11 +1130,10 @@ class TestPatternSelection:
         assert "john@example.com" not in selected_all
         assert "123-45-6789" not in selected_all
 
-    def test_unknown_pattern_ignored(self):
-        original = "john@example.com"
-        df = pl.DataFrame({"col": [original]})
-        result = df.with_columns(maskops.mask_pii("col", patterns=["nonexistent_pattern"]))["col"][0]
-        assert result == original  
+    def test_unknown_pattern_raises(self):
+        df = pl.DataFrame({"col": ["john@example.com"]})
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown pattern 'nonexistent_pattern'"):
+            df.with_columns(maskops.mask_pii("col", patterns=["nonexistent_pattern"]))
 
     def test_contains_pii_pattern_filter(self):
         df = pl.DataFrame({"col": ["john@example.com", "123-45-6789", "nothing"]})
@@ -1165,6 +1204,16 @@ class TestMaskMBI:
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert result == "***********"
 
+    def test_mbi_with_digit_in_position_6_masked(self):
+        df = pl.DataFrame({"col": ["1EG4T25MK73"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == "***********"
+
+    def test_non_mbi_with_digits_in_positions_8_9_untouched(self):
+        df = pl.DataFrame({"col": ["1EG4TE51273"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == "1EG4TE51273"
+
 class TestMaskNHS:
     
     def test_valid_nhs_masked(self):
@@ -1206,15 +1255,88 @@ class TestMaskPeDNI:
         assert "********" in result
 
     def test_contains_pii_detects_pe_dni(self):
-        df = pl.DataFrame({"col": ["12345678", "nothing"]})
+        df = pl.DataFrame({"col": ["DNI 12345678", "12345678", "nothing"]})
         result = df.with_columns(maskops.contains_pii("col"))["col"].to_list()
-        assert result == [True, False]
+        assert result == [True, False, False]
 
     def test_pe_dni_fpe_no_asterisks(self):
-        df = pl.DataFrame({"col": ["12345678"]})
+        df = pl.DataFrame({"col": ["DNI 12345678"]})
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert "*" not in result
-        assert result != "12345678"
+        assert "12345678" not in result
+        assert result.startswith("DNI ")
+
+    def test_date_like_number_untouched_by_default(self):
+        original = "processed 20250630 in batch 45821903"
+        df = pl.DataFrame({"col": [original]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == original
+
+    def test_explicit_selection_masks_bare_numbers(self):
+        df = pl.DataFrame({"col": ["invoice 12345678"]})
+        result = df.with_columns(maskops.mask_pii("col", patterns=["pe_dni"]))["col"][0]
+        assert result == "invoice ********"
+
+    def test_explicit_selection_contains_bare_numbers(self):
+        df = pl.DataFrame({"col": ["12345678", "nothing"]})
+        result = df.with_columns(maskops.contains_pii("col", patterns=["pe_dni"]))["col"].to_list()
+        assert result == [True, False]
+
+class TestUnknownPatternNames:
+    def test_mask_pii_unknown_pattern_raises(self):
+        df = pl.DataFrame({"col": ["a@b.com and 4111111111111111"]})
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown pattern 'credit-card'"):
+            df.with_columns(maskops.mask_pii("col", patterns=["email", "credit-card"]))
+
+    def test_contains_pii_unknown_pattern_raises(self):
+        df = pl.DataFrame({"col": ["a@b.com"]})
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown pattern"):
+            df.with_columns(maskops.contains_pii("col", patterns=["emial"]))
+
+    def test_mask_pii_fpe_unknown_pattern_raises(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown pattern"):
+            df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK, patterns=["creditcard"]))
+
+    def test_extract_pii_unknown_pattern_raises(self):
+        df = pl.DataFrame({"col": ["a@b.com"]})
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown pattern"):
+            df.with_columns(maskops.extract_pii("col", patterns=["mail"]).alias("pii"))
+
+    def test_mask_pii_audit_unknown_pattern_raises(self):
+        df = pl.DataFrame({"col": ["a@b.com"]})
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown pattern"):
+            df.with_columns(maskops.mask_pii_audit("col", patterns=["ssn ", "email"]).alias("audit"))
+
+    def test_valid_patterns_still_work(self):
+        df = pl.DataFrame({"col": ["a@b.com"]})
+        result = df.with_columns(maskops.mask_pii("col", patterns=["email"]))["col"][0]
+        assert "a@b.com" not in result
+
+class TestPythonArgValidation:
+    def test_misspelled_consistent_mode_raises(self):
+        with pytest.raises(ValueError, match="unknown mode 'consistant'"):
+            maskops.mask_pii("col", mode="consistant", salt="secret")
+
+    def test_fpe_as_mask_pii_mode_raises(self):
+        with pytest.raises(ValueError, match="mask_pii_fpe"):
+            maskops.mask_pii("col", mode="fpe")
+
+    def test_salt_with_default_mode_raises(self):
+        with pytest.raises(ValueError, match="salt"):
+            maskops.mask_pii("col", salt="secret")
+
+    def test_empty_patterns_list_raises(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            maskops.mask_pii("col", patterns=[])
+
+    def test_empty_patterns_list_contains_raises(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            maskops.contains_pii("col", patterns=[])
+
+    def test_empty_patterns_list_fpe_raises(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            maskops.mask_pii_fpe("col", KEY, TWEAK, patterns=[])
 
 class TestMaskPiiConsistent:
     """Deterministic hash-based pseudonymization via mode='consistent'."""
@@ -2166,6 +2288,33 @@ class TestFpeRekey:
         token = self._mask("4111111111111111", KEY, TWEAK, "ff3")
         rotated = self._rekey(token, KEY, TWEAK, KEY2, TWEAK2, "ff3")
         assert len(rotated) == 16 and rotated.isdigit()
+
+    @pytest.mark.parametrize("mode", ["ff3", "ff1"])
+    def test_rekey_separator_bearing_ssn_token(self, mode):
+        token = self._mask("123-45-6789", KEY, TWEAK, mode)
+        assert "-" in token and token != "123-45-6789"
+        rotated = self._rekey(token, KEY, TWEAK, KEY2, TWEAK2, mode)
+        direct = self._mask("123-45-6789", KEY2, TWEAK2, mode)
+        assert rotated == direct
+
+    def test_rekey_rut_keeps_check_digit(self):
+        masked = self._mask("12.345.678-5", KEY, TWEAK, "ff3")
+        assert masked.endswith("-5") and masked != "12.345.678-5"
+        rotated = pl.DataFrame({"col": [masked]}).with_columns(
+            maskops.rekey_pii_fpe("col", KEY, TWEAK, KEY2, TWEAK2, pattern="rut")
+        )["col"][0]
+        direct = self._mask("12.345.678-5", KEY2, TWEAK2, "ff3")
+        assert rotated == direct
+
+    def test_rekey_non_digit_family_raises(self):
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown rekey pattern"):
+            self._rekey_pattern("4111111111111111", "email")
+
+    def _rekey_pattern(self, token, pattern):
+        df = pl.DataFrame({"col": [token]})
+        return df.with_columns(
+            maskops.rekey_pii_fpe("col", KEY, TWEAK, KEY2, TWEAK2, pattern=pattern)
+        )["col"][0]
 
 
 class TestKeyManagement:

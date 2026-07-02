@@ -64,48 +64,19 @@ pub fn mask_tfn(s: &str) -> String {
     mask_tfn_counted(s).0
 }
 
-pub fn mask_tfn_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    let s = TFN_SPACED_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !valid_tfn(&d) { return raw.to_string(); }
-            match cipher.encrypt(&d) {
-                Ok(enc) => format!("{} {} {}", &enc[..3], &enc[3..6], &enc[6..]),
-                Err(_) => raw.to_string(),
-            }
-        })
-        .into_owned();
-    TFN_COMPACT_RE
-        .replace_all(&s, |caps: &regex::Captures| {
-            if !valid_tfn(&caps[0]) { return caps[0].to_string(); }
-            match cipher.encrypt(&caps[0]) {
-                Ok(enc) => enc,
-                Err(_) => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+fn tfn_valid(t: &str) -> bool {
+    let d: String = t.chars().filter(|c| c.is_ascii_digit()).collect();
+    valid_tfn(&d)
 }
 
-pub fn mask_tfn_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    let s = TFN_SPACED_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !valid_tfn(&d) { return raw.to_string(); }
-            match hasher.encrypt(&d) {
-                Ok(hashed) => format!("{} {} {}", &hashed[..3], &hashed[3..6], &hashed[6..]),
-                Err(_) => raw.to_string(),
-            }
-        })
-        .into_owned();
-    TFN_COMPACT_RE
-        .replace_all(&s, |caps: &regex::Captures| {
-            if !valid_tfn(&caps[0]) { return caps[0].to_string(); }
-            match hasher.encrypt(&caps[0]) {
-                Ok(hashed) => hashed,
-                Err(_) => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_tfn_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    let enc = |d: &str| cipher.encrypt(d).ok();
+    let s = crate::patterns::mask_family(&TFN_SPACED_RE, s, claims, &|t, _, _| tfn_valid(t), &enc);
+    crate::patterns::mask_family(&TFN_COMPACT_RE, &s, claims, &|t, _, _| tfn_valid(t), &enc)
+}
+
+pub fn mask_tfn_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    let enc = |d: &str| hasher.encrypt(d).ok();
+    let s = crate::patterns::mask_family(&TFN_SPACED_RE, s, claims, &|t, _, _| tfn_valid(t), &enc);
+    crate::patterns::mask_family(&TFN_COMPACT_RE, &s, claims, &|t, _, _| tfn_valid(t), &enc)
 }

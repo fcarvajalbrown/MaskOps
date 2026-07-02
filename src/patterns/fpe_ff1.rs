@@ -194,7 +194,7 @@ mod tests {
     #[test]
     fn test_roundtrip_all_lengths() {
         let cipher = test_cipher();
-        for len in [2, 6, 9, 11, 13, 16, 20, 30] {
+        for len in [6, 9, 11, 13, 16, 20, 30] {
             let input: String = "1234567890".chars().cycle().take(len).collect();
             let ct = cipher.encrypt(&input).unwrap();
             assert_eq!(ct.len(), len);
@@ -231,5 +231,23 @@ mod tests {
     #[test]
     fn test_invalid_character_rejected() {
         assert!(test_cipher().encrypt("12X4567").is_err());
+    }
+
+    #[test]
+    fn test_ff1_matches_nist_sp80038g_samples() {
+        let key: [u8; KEY_LEN] = [
+            0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6,
+            0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C,
+            0xEF, 0x43, 0x59, 0xD8, 0xD5, 0x80, 0xAA, 0x4F,
+            0x7F, 0x03, 0x6D, 0x6F, 0x04, 0xFC, 0x6A, 0x94,
+        ];
+        let sample7 = Ff1Cipher::new(&key, &[]);
+        assert_eq!(sample7.encrypt("0123456789").unwrap(), "6657667009");
+        assert_eq!(sample7.decrypt("6657667009").unwrap(), "0123456789");
+
+        let tweak8: [u8; 10] = [0x39, 0x38, 0x37, 0x36, 0x35, 0x34, 0x33, 0x32, 0x31, 0x30];
+        let sample8 = Ff1Cipher::new(&key, &tweak8);
+        assert_eq!(sample8.encrypt("0123456789").unwrap(), "1001623463");
+        assert_eq!(sample8.decrypt("1001623463").unwrap(), "0123456789");
     }
 }

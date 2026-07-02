@@ -69,61 +69,23 @@ pub fn mask_my_number(s: &str) -> String {
     mask_my_number_counted(s).0
 }
 
-pub fn mask_my_number_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    let s = MN_SPACED_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !valid_my_number(&d) {
-                return raw.to_string();
-            }
-            let sep: char = raw.chars().nth(4).unwrap_or(' ');
-            match cipher.encrypt(&d) {
-                Ok(enc) => format!("{}{}{}{}{}", &enc[..4], sep, &enc[4..8], sep, &enc[8..]),
-                Err(_) => raw.to_string(),
-            }
-        })
-        .into_owned();
-    MN_COMPACT_RE
-        .replace_all(&s, |caps: &regex::Captures| {
-            if !valid_my_number(&caps[0]) {
-                return caps[0].to_string();
-            }
-            match cipher.encrypt(&caps[0]) {
-                Ok(enc) => enc,
-                Err(_) => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+fn mn_valid(t: &str) -> bool {
+    let d: String = t.chars().filter(|c| c.is_ascii_digit()).collect();
+    valid_my_number(&d)
+}
+
+pub fn mask_my_number_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    let enc = |d: &str| cipher.encrypt(d).ok();
+    let s = crate::patterns::mask_family(&MN_SPACED_RE, s, claims, &|t, _, _| mn_valid(t), &enc);
+    crate::patterns::mask_family(&MN_COMPACT_RE, &s, claims, &|t, _, _| mn_valid(t), &enc)
 }
 
 pub fn mask_my_number_consistent(
     s: &str,
     hasher: &crate::patterns::consistent::ConsistentHasher,
+    claims: &crate::patterns::TokenClaims,
 ) -> String {
-    let s = MN_SPACED_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !valid_my_number(&d) {
-                return raw.to_string();
-            }
-            let sep: char = raw.chars().nth(4).unwrap_or(' ');
-            match hasher.encrypt(&d) {
-                Ok(hashed) => format!("{}{}{}{}{}", &hashed[..4], sep, &hashed[4..8], sep, &hashed[8..]),
-                Err(_) => raw.to_string(),
-            }
-        })
-        .into_owned();
-    MN_COMPACT_RE
-        .replace_all(&s, |caps: &regex::Captures| {
-            if !valid_my_number(&caps[0]) {
-                return caps[0].to_string();
-            }
-            match hasher.encrypt(&caps[0]) {
-                Ok(hashed) => hashed,
-                Err(_) => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+    let enc = |d: &str| hasher.encrypt(d).ok();
+    let s = crate::patterns::mask_family(&MN_SPACED_RE, s, claims, &|t, _, _| mn_valid(t), &enc);
+    crate::patterns::mask_family(&MN_COMPACT_RE, &s, claims, &|t, _, _| mn_valid(t), &enc)
 }

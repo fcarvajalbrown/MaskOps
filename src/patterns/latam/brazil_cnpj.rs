@@ -65,34 +65,10 @@ pub fn mask_cnpj(s: &str) -> String {
     mask_cnpj_counted(s).0
 }
 
-pub fn mask_cnpj_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    CNPJ_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let cnpj = &caps[0];
-            if !valid_cnpj(cnpj) {
-                return cnpj.to_string();
-            }
-            let digits: String = cnpj.chars().filter(|c| c.is_ascii_digit()).collect();
-            match cipher.encrypt(&digits) {
-                Ok(enc) => enc,
-                Err(_)  => cnpj.to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_cnpj_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&CNPJ_RE, s, claims, &|t, _, _| valid_cnpj(t), &|d| cipher.encrypt(d).ok())
 }
 
-pub fn mask_cnpj_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    CNPJ_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let cnpj = &caps[0];
-            if !valid_cnpj(cnpj) {
-                return cnpj.to_string();
-            }
-            let digits: String = cnpj.chars().filter(|c| c.is_ascii_digit()).collect();
-            match hasher.encrypt(&digits) {
-                Ok(hashed) => hashed,
-                Err(_)     => cnpj.to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_cnpj_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&CNPJ_RE, s, claims, &|t, _, _| valid_cnpj(t), &|d| hasher.encrypt(d).ok())
 }

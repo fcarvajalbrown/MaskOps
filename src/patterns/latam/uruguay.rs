@@ -44,34 +44,10 @@ pub fn mask_uy_ci(s: &str) -> String {
     mask_uy_ci_counted(s).0
 }
 
-pub fn mask_uy_ci_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    UY_CI_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_uy_ci(&caps[0]) {
-                return caps[0].to_string();
-            }
-            let digits: String = caps[0].chars().filter(|c| c.is_ascii_digit()).collect();
-            match cipher.encrypt(&digits) {
-                Ok(enc) => format!("{}.{}.{}-{}",
-                    &enc[..1], &enc[1..4], &enc[4..7], &enc[7..]),
-                Err(_) => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_uy_ci_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&UY_CI_RE, s, claims, &|t, _, _| valid_uy_ci(t), &|d| cipher.encrypt(d).ok())
 }
 
-pub fn mask_uy_ci_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    UY_CI_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            if !valid_uy_ci(&caps[0]) {
-                return caps[0].to_string();
-            }
-            let digits: String = caps[0].chars().filter(|c| c.is_ascii_digit()).collect();
-            match hasher.encrypt(&digits) {
-                Ok(hashed) => format!("{}.{}.{}-{}",
-                    &hashed[..1], &hashed[1..4], &hashed[4..7], &hashed[7..]),
-                Err(_) => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+pub fn mask_uy_ci_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    crate::patterns::mask_family(&UY_CI_RE, s, claims, &|t, _, _| valid_uy_ci(t), &|d| hasher.encrypt(d).ok())
 }

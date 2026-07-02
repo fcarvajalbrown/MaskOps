@@ -72,59 +72,23 @@ pub fn mask_rrn(s: &str) -> String {
     mask_rrn_counted(s).0
 }
 
-pub fn mask_rrn_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    let s = RRN_FMT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !valid_rrn(&d) {
-                return raw.to_string();
-            }
-            match cipher.encrypt(&d) {
-                Ok(enc) => format!("{}-{}", &enc[..6], &enc[6..]),
-                Err(_) => raw.to_string(),
-            }
-        })
-        .into_owned();
-    RRN_COMPACT_RE
-        .replace_all(&s, |caps: &regex::Captures| {
-            if !valid_rrn(&caps[0]) {
-                return caps[0].to_string();
-            }
-            match cipher.encrypt(&caps[0]) {
-                Ok(enc) => enc,
-                Err(_) => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+fn rrn_valid(t: &str) -> bool {
+    let d: String = t.chars().filter(|c| c.is_ascii_digit()).collect();
+    valid_rrn(&d)
+}
+
+pub fn mask_rrn_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    let enc = |d: &str| cipher.encrypt(d).ok();
+    let s = crate::patterns::mask_family(&RRN_FMT_RE, s, claims, &|t, _, _| rrn_valid(t), &enc);
+    crate::patterns::mask_family(&RRN_COMPACT_RE, &s, claims, &|t, _, _| rrn_valid(t), &enc)
 }
 
 pub fn mask_rrn_consistent(
     s: &str,
     hasher: &crate::patterns::consistent::ConsistentHasher,
+    claims: &crate::patterns::TokenClaims,
 ) -> String {
-    let s = RRN_FMT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !valid_rrn(&d) {
-                return raw.to_string();
-            }
-            match hasher.encrypt(&d) {
-                Ok(hashed) => format!("{}-{}", &hashed[..6], &hashed[6..]),
-                Err(_) => raw.to_string(),
-            }
-        })
-        .into_owned();
-    RRN_COMPACT_RE
-        .replace_all(&s, |caps: &regex::Captures| {
-            if !valid_rrn(&caps[0]) {
-                return caps[0].to_string();
-            }
-            match hasher.encrypt(&caps[0]) {
-                Ok(hashed) => hashed,
-                Err(_) => caps[0].to_string(),
-            }
-        })
-        .into_owned()
+    let enc = |d: &str| hasher.encrypt(d).ok();
+    let s = crate::patterns::mask_family(&RRN_FMT_RE, s, claims, &|t, _, _| rrn_valid(t), &enc);
+    crate::patterns::mask_family(&RRN_COMPACT_RE, &s, claims, &|t, _, _| rrn_valid(t), &enc)
 }

@@ -10,6 +10,7 @@ pub mod country_codes;
 pub mod fpe;
 pub mod fpe_ff1;
 pub mod consistent;
+pub mod rekey;
 
 use crate::patterns::eu::iban::{mask_iban, contains_iban, extract_iban};
 use crate::patterns::eu::vat::{mask_vat, contains_vat, extract_vat};
@@ -44,6 +45,8 @@ use crate::patterns::latam::latam_id::{
 use crate::patterns::latam::{
     contains_ec_cedula, mask_ec_cedula, extract_ec_cedula, mask_ec_cedula_fpe,
     contains_pe_dni, mask_pe_dni, extract_pe_dni, mask_pe_dni_fpe,
+    contains_pe_dni_bare, mask_pe_dni_bare, extract_pe_dni_bare,
+    mask_pe_dni_bare_fpe, mask_pe_dni_bare_consistent,
     contains_uy_ci, mask_uy_ci, extract_uy_ci, mask_uy_ci_fpe, mask_uy_ci_consistent,
     contains_cnpj, mask_cnpj, extract_cnpj, mask_cnpj_fpe, mask_cnpj_consistent,
 };
@@ -99,7 +102,7 @@ use crate::patterns::latam::latam_id::{
     mask_arg_dni_counted, mask_co_cc_counted, mask_co_nit_counted,
 };
 use crate::patterns::latam::ecuador::mask_ec_cedula_counted;
-use crate::patterns::latam::peru::mask_pe_dni_counted;
+use crate::patterns::latam::peru::{mask_pe_dni_counted, mask_pe_dni_bare_counted};
 use crate::patterns::latam::uruguay::mask_uy_ci_counted;
 use crate::patterns::latam::brazil_cnpj::mask_cnpj_counted;
 use crate::patterns::apac::canada_sin::mask_sin_counted;
@@ -108,6 +111,25 @@ use crate::patterns::apac::japan_my_number::mask_my_number_counted;
 use crate::patterns::apac::korea_rrn::mask_rrn_counted;
 use crate::patterns::mea::south_africa::mask_za_id_counted;
 use crate::patterns::mea::israel::mask_il_id_counted;
+
+pub const PATTERN_NAMES: &[&str] = &[
+    "email", "phone", "ip", "iban", "vat", "dni", "nie", "nin", "personalausweis",
+    "us_passport", "curp", "rut", "cpf", "cnpj", "ssn", "arg_dni", "co_cc", "co_nit",
+    "ec_cedula", "credit_card", "npi", "mbi", "nhs", "pe_dni", "nir", "codice_fiscale",
+    "uy_ci", "sin", "tfn", "pesel", "bsn", "personnummer", "my_number", "rrn", "za_id",
+    "il_id",
+];
+
+pub fn validate_patterns(patterns: &[&str]) -> Result<(), String> {
+    match patterns.iter().find(|p| !PATTERN_NAMES.contains(*p)) {
+        Some(unknown) => Err(format!(
+            "unknown pattern '{}', valid patterns: {}",
+            unknown,
+            PATTERN_NAMES.join(", ")
+        )),
+        None => Ok(()),
+    }
+}
 
 pub fn replace_counted<F>(re: &regex::Regex, s: &str, render: F) -> (String, u32)
 where
@@ -126,9 +148,65 @@ where
     (out, count.get())
 }
 
+pub struct TokenClaims {
+    claimed: std::cell::RefCell<Vec<(usize, usize)>>,
+}
+
+impl TokenClaims {
+    pub fn new() -> Self {
+        Self { claimed: std::cell::RefCell::new(Vec::new()) }
+    }
+
+    pub fn is_free(&self, start: usize, end: usize) -> bool {
+        !self.claimed.borrow().iter().any(|(s, e)| start < *e && *s < end)
+    }
+
+    pub fn claim(&self, start: usize, end: usize) {
+        self.claimed.borrow_mut().push((start, end));
+    }
+}
+
+pub fn reinsert_digits(template: &str, digits: &str) -> String {
+    let mut it = digits.chars();
+    template
+        .chars()
+        .map(|c| if c.is_ascii_digit() { it.next().unwrap_or(c) } else { c })
+        .collect()
+}
+
+pub fn mask_family(
+    re: &regex::Regex,
+    s: &str,
+    claims: &TokenClaims,
+    valid: &dyn Fn(&str, usize, usize) -> bool,
+    encrypt: &dyn Fn(&str) -> Option<String>,
+) -> String {
+    re.replace_all(s, |caps: &regex::Captures| {
+        let m = caps.get(0).unwrap();
+        let tok = m.as_str();
+        if !claims.is_free(m.start(), m.end()) || !valid(tok, m.start(), m.end()) {
+            return tok.to_string();
+        }
+        let digits: String = tok.chars().filter(|c| c.is_ascii_digit()).collect();
+        match encrypt(&digits) {
+            Some(enc) => {
+                claims.claim(m.start(), m.end());
+                reinsert_digits(tok, &enc)
+            }
+            None => tok.to_string(),
+        }
+    })
+    .into_owned()
+}
+
 #[inline]
 pub fn has_pii_candidate(value: &str) -> bool {
     value.bytes().any(|b| b.is_ascii_digit() || b == b'@')
+}
+
+#[inline]
+pub fn has_letter_only_ipv6_candidate(value: &str) -> bool {
+    value.bytes().filter(|b| *b == b':').count() >= 2
 }
 
 pub fn mask_non_digit(value: &str) -> String {
@@ -176,34 +254,38 @@ pub fn mask_digit(value: &str) -> String {
 }
 
 pub fn mask_digit_fpe(value: &str, cipher: &FpeCipher) -> String {
-    let s = mask_phone_fpe(value, cipher);
-    let s = mask_rut_fpe(&s, cipher);
-    let s = mask_cpf_fpe(&s, cipher);
-    let s = mask_cnpj_fpe(&s, cipher);
-    let s = mask_card_fpe(&s, cipher);
-    let s = mask_ssn_fpe(&s, cipher);
-    let s = mask_arg_dni_fpe(&s, cipher);
-    let s = mask_co_cc_fpe(&s, cipher);
-    let s = mask_co_nit_fpe(&s, cipher);
-    let s = mask_personnummer_fpe(&s, cipher);
-    let s = mask_ec_cedula_fpe(&s, cipher);
-    let s = mask_pe_dni_fpe(&s, cipher);
-    let s = mask_npi_fpe(&s, cipher);
-    let s = mask_nhs_fpe(&s, cipher);
-    let s = mask_uy_ci_fpe(&s, cipher);
-    let s = mask_sin_fpe(&s, cipher);
-    let s = mask_tfn_fpe(&s, cipher);
-    let s = mask_pesel_fpe(&s, cipher);
-    let s = mask_bsn_fpe(&s, cipher);
-    let s = mask_my_number_fpe(&s, cipher);
-    let s = mask_rrn_fpe(&s, cipher);
-    let s = mask_za_id_fpe(&s, cipher);
-    let s = mask_il_id_fpe(&s, cipher);
+    let claims = TokenClaims::new();
+    let s = mask_phone_fpe(value, cipher, &claims);
+    let s = mask_rut_fpe(&s, cipher, &claims);
+    let s = mask_cpf_fpe(&s, cipher, &claims);
+    let s = mask_cnpj_fpe(&s, cipher, &claims);
+    let s = mask_card_fpe(&s, cipher, &claims);
+    let s = mask_ssn_fpe(&s, cipher, &claims);
+    let s = mask_arg_dni_fpe(&s, cipher, &claims);
+    let s = mask_co_cc_fpe(&s, cipher, &claims);
+    let s = mask_co_nit_fpe(&s, cipher, &claims);
+    let s = mask_personnummer_fpe(&s, cipher, &claims);
+    let s = mask_ec_cedula_fpe(&s, cipher, &claims);
+    let s = mask_pe_dni_fpe(&s, cipher, &claims);
+    let s = mask_npi_fpe(&s, cipher, &claims);
+    let s = mask_nhs_fpe(&s, cipher, &claims);
+    let s = mask_uy_ci_fpe(&s, cipher, &claims);
+    let s = mask_sin_fpe(&s, cipher, &claims);
+    let s = mask_tfn_fpe(&s, cipher, &claims);
+    let s = mask_pesel_fpe(&s, cipher, &claims);
+    let s = mask_bsn_fpe(&s, cipher, &claims);
+    let s = mask_my_number_fpe(&s, cipher, &claims);
+    let s = mask_rrn_fpe(&s, cipher, &claims);
+    let s = mask_za_id_fpe(&s, cipher, &claims);
+    let s = mask_il_id_fpe(&s, cipher, &claims);
     s
 }
 
 pub fn mask_all(value: &str) -> String {
     if !has_pii_candidate(value) {
+        if has_letter_only_ipv6_candidate(value) {
+            return mask_ip(value);
+        }
         return value.to_string();
     }
     let s = mask_non_digit(value);
@@ -212,6 +294,9 @@ pub fn mask_all(value: &str) -> String {
 
 pub fn mask_all_fpe(value: &str, cipher: &FpeCipher) -> String {
     if !has_pii_candidate(value) {
+        if has_letter_only_ipv6_candidate(value) {
+            return mask_ip(value);
+        }
         return value.to_string();
     }
     let s = mask_non_digit(value);
@@ -219,34 +304,38 @@ pub fn mask_all_fpe(value: &str, cipher: &FpeCipher) -> String {
 }
 
 pub fn mask_digit_consistent(value: &str, hasher: &ConsistentHasher) -> String {
-    let s = mask_phone_consistent(value, hasher);
-    let s = mask_rut_consistent(&s, hasher);
-    let s = mask_cpf_consistent(&s, hasher);
-    let s = mask_cnpj_consistent(&s, hasher);
-    let s = mask_card_consistent(&s, hasher);
-    let s = mask_ssn_consistent(&s, hasher);
-    let s = mask_arg_dni_consistent(&s, hasher);
-    let s = mask_co_cc_consistent(&s, hasher);
-    let s = mask_co_nit_consistent(&s, hasher);
-    let s = mask_personnummer_consistent(&s, hasher);
-    let s = mask_ec_cedula_consistent(&s, hasher);
-    let s = mask_pe_dni_consistent(&s, hasher);
-    let s = mask_npi_consistent(&s, hasher);
-    let s = mask_nhs_consistent(&s, hasher);
-    let s = mask_uy_ci_consistent(&s, hasher);
-    let s = mask_sin_consistent(&s, hasher);
-    let s = mask_tfn_consistent(&s, hasher);
-    let s = mask_pesel_consistent(&s, hasher);
-    let s = mask_bsn_consistent(&s, hasher);
-    let s = mask_my_number_consistent(&s, hasher);
-    let s = mask_rrn_consistent(&s, hasher);
-    let s = mask_za_id_consistent(&s, hasher);
-    let s = mask_il_id_consistent(&s, hasher);
+    let claims = TokenClaims::new();
+    let s = mask_phone_consistent(value, hasher, &claims);
+    let s = mask_rut_consistent(&s, hasher, &claims);
+    let s = mask_cpf_consistent(&s, hasher, &claims);
+    let s = mask_cnpj_consistent(&s, hasher, &claims);
+    let s = mask_card_consistent(&s, hasher, &claims);
+    let s = mask_ssn_consistent(&s, hasher, &claims);
+    let s = mask_arg_dni_consistent(&s, hasher, &claims);
+    let s = mask_co_cc_consistent(&s, hasher, &claims);
+    let s = mask_co_nit_consistent(&s, hasher, &claims);
+    let s = mask_personnummer_consistent(&s, hasher, &claims);
+    let s = mask_ec_cedula_consistent(&s, hasher, &claims);
+    let s = mask_pe_dni_consistent(&s, hasher, &claims);
+    let s = mask_npi_consistent(&s, hasher, &claims);
+    let s = mask_nhs_consistent(&s, hasher, &claims);
+    let s = mask_uy_ci_consistent(&s, hasher, &claims);
+    let s = mask_sin_consistent(&s, hasher, &claims);
+    let s = mask_tfn_consistent(&s, hasher, &claims);
+    let s = mask_pesel_consistent(&s, hasher, &claims);
+    let s = mask_bsn_consistent(&s, hasher, &claims);
+    let s = mask_my_number_consistent(&s, hasher, &claims);
+    let s = mask_rrn_consistent(&s, hasher, &claims);
+    let s = mask_za_id_consistent(&s, hasher, &claims);
+    let s = mask_il_id_consistent(&s, hasher, &claims);
     s
 }
 
 pub fn mask_all_consistent(value: &str, hasher: &ConsistentHasher) -> String {
     if !has_pii_candidate(value) {
+        if has_letter_only_ipv6_candidate(value) {
+            return mask_ip(value);
+        }
         return value.to_string();
     }
     let s = mask_non_digit(value);
@@ -255,6 +344,9 @@ pub fn mask_all_consistent(value: &str, hasher: &ConsistentHasher) -> String {
 
 pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
     if !has_pii_candidate(value) {
+        if patterns.contains(&"ip") && has_letter_only_ipv6_candidate(value) {
+            return mask_ip(value);
+        }
         return value.to_string();
     }
     let mut s = value.to_string();
@@ -283,7 +375,7 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
             "npi"             => mask_npi(&s),
             "mbi"             => mask_mbi(&s),
             "nhs"             => mask_nhs(&s),
-            "pe_dni"          => mask_pe_dni(&s),
+            "pe_dni"          => mask_pe_dni_bare(&s),
             "nir"             => mask_nir(&s),
             "codice_fiscale"  => mask_cf(&s),
             "uy_ci"           => mask_uy_ci(&s),
@@ -304,13 +396,17 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
 
 pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher) -> String {
     if !has_pii_candidate(value) {
+        if patterns.contains(&"ip") && has_letter_only_ipv6_candidate(value) {
+            return mask_ip(value);
+        }
         return value.to_string();
     }
+    let claims = TokenClaims::new();
     let mut s = value.to_string();
     for pat in patterns {
         s = match *pat {
             "email"           => mask_email(&s),
-            "phone"           => mask_phone_fpe(&s, cipher),
+            "phone"           => mask_phone_fpe(&s, cipher, &claims),
             "ip"              => mask_ip(&s),
             "iban"            => mask_iban(&s),
             "vat"             => mask_vat(&s),
@@ -320,31 +416,31 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher)
             "personalausweis" => mask_personalausweis(&s),
             "us_passport"     => mask_us_passport(&s),
             "curp"            => mask_curp(&s),
-            "rut"             => mask_rut_fpe(&s, cipher),
-            "cpf"             => mask_cpf_fpe(&s, cipher),
-            "cnpj"            => mask_cnpj_fpe(&s, cipher),
-            "ssn"             => mask_ssn_fpe(&s, cipher),
-            "arg_dni"         => mask_arg_dni_fpe(&s, cipher),
-            "co_cc"           => mask_co_cc_fpe(&s, cipher),
-            "co_nit"          => mask_co_nit_fpe(&s, cipher),
-            "ec_cedula"       => mask_ec_cedula_fpe(&s, cipher),
-            "credit_card"     => mask_card_fpe(&s, cipher),
-            "npi"             => mask_npi_fpe(&s, cipher),
-            "mbi"             => mask_mbi(&s),  
-            "nhs"             => mask_nhs_fpe(&s, cipher),
-            "pe_dni"          => mask_pe_dni_fpe(&s, cipher),
-            "nir"             => mask_nir(&s),       
-            "codice_fiscale"  => mask_cf(&s),        
-            "uy_ci"           => mask_uy_ci_fpe(&s, cipher),
-            "sin"             => mask_sin_fpe(&s, cipher),
-            "tfn"             => mask_tfn_fpe(&s, cipher),
-            "pesel"           => mask_pesel_fpe(&s, cipher),
-            "bsn"             => mask_bsn_fpe(&s, cipher),
-            "personnummer"    => mask_personnummer_fpe(&s, cipher),
-            "my_number"       => mask_my_number_fpe(&s, cipher),
-            "rrn"             => mask_rrn_fpe(&s, cipher),
-            "za_id"           => mask_za_id_fpe(&s, cipher),
-            "il_id"           => mask_il_id_fpe(&s, cipher),
+            "rut"             => mask_rut_fpe(&s, cipher, &claims),
+            "cpf"             => mask_cpf_fpe(&s, cipher, &claims),
+            "cnpj"            => mask_cnpj_fpe(&s, cipher, &claims),
+            "ssn"             => mask_ssn_fpe(&s, cipher, &claims),
+            "arg_dni"         => mask_arg_dni_fpe(&s, cipher, &claims),
+            "co_cc"           => mask_co_cc_fpe(&s, cipher, &claims),
+            "co_nit"          => mask_co_nit_fpe(&s, cipher, &claims),
+            "ec_cedula"       => mask_ec_cedula_fpe(&s, cipher, &claims),
+            "credit_card"     => mask_card_fpe(&s, cipher, &claims),
+            "npi"             => mask_npi_fpe(&s, cipher, &claims),
+            "mbi"             => mask_mbi(&s),
+            "nhs"             => mask_nhs_fpe(&s, cipher, &claims),
+            "pe_dni"          => mask_pe_dni_bare_fpe(&s, cipher, &claims),
+            "nir"             => mask_nir(&s),
+            "codice_fiscale"  => mask_cf(&s),
+            "uy_ci"           => mask_uy_ci_fpe(&s, cipher, &claims),
+            "sin"             => mask_sin_fpe(&s, cipher, &claims),
+            "tfn"             => mask_tfn_fpe(&s, cipher, &claims),
+            "pesel"           => mask_pesel_fpe(&s, cipher, &claims),
+            "bsn"             => mask_bsn_fpe(&s, cipher, &claims),
+            "personnummer"    => mask_personnummer_fpe(&s, cipher, &claims),
+            "my_number"       => mask_my_number_fpe(&s, cipher, &claims),
+            "rrn"             => mask_rrn_fpe(&s, cipher, &claims),
+            "za_id"           => mask_za_id_fpe(&s, cipher, &claims),
+            "il_id"           => mask_il_id_fpe(&s, cipher, &claims),
             _                 => s,
         };
     }
@@ -353,13 +449,17 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher)
 
 pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &ConsistentHasher) -> String {
     if !has_pii_candidate(value) {
+        if patterns.contains(&"ip") && has_letter_only_ipv6_candidate(value) {
+            return mask_ip(value);
+        }
         return value.to_string();
     }
+    let claims = TokenClaims::new();
     let mut s = value.to_string();
     for pat in patterns {
         s = match *pat {
             "email"           => mask_email(&s),
-            "phone"           => mask_phone_consistent(&s, hasher),
+            "phone"           => mask_phone_consistent(&s, hasher, &claims),
             "ip"              => mask_ip(&s),
             "iban"            => mask_iban(&s),
             "vat"             => mask_vat(&s),
@@ -369,31 +469,31 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
             "personalausweis" => mask_personalausweis(&s),
             "us_passport"     => mask_us_passport(&s),
             "curp"            => mask_curp(&s),
-            "rut"             => mask_rut_consistent(&s, hasher),
-            "cpf"             => mask_cpf_consistent(&s, hasher),
-            "cnpj"            => mask_cnpj_consistent(&s, hasher),
-            "ssn"             => mask_ssn_consistent(&s, hasher),
-            "arg_dni"         => mask_arg_dni_consistent(&s, hasher),
-            "co_cc"           => mask_co_cc_consistent(&s, hasher),
-            "co_nit"          => mask_co_nit_consistent(&s, hasher),
-            "ec_cedula"       => mask_ec_cedula_consistent(&s, hasher),
-            "credit_card"     => mask_card_consistent(&s, hasher),
-            "npi"             => mask_npi_consistent(&s, hasher),
+            "rut"             => mask_rut_consistent(&s, hasher, &claims),
+            "cpf"             => mask_cpf_consistent(&s, hasher, &claims),
+            "cnpj"            => mask_cnpj_consistent(&s, hasher, &claims),
+            "ssn"             => mask_ssn_consistent(&s, hasher, &claims),
+            "arg_dni"         => mask_arg_dni_consistent(&s, hasher, &claims),
+            "co_cc"           => mask_co_cc_consistent(&s, hasher, &claims),
+            "co_nit"          => mask_co_nit_consistent(&s, hasher, &claims),
+            "ec_cedula"       => mask_ec_cedula_consistent(&s, hasher, &claims),
+            "credit_card"     => mask_card_consistent(&s, hasher, &claims),
+            "npi"             => mask_npi_consistent(&s, hasher, &claims),
             "mbi"             => mask_mbi(&s),
-            "nhs"             => mask_nhs_consistent(&s, hasher),
-            "pe_dni"          => mask_pe_dni_consistent(&s, hasher),
-            "nir"             => mask_nir(&s),       
-            "codice_fiscale"  => mask_cf(&s),        
-            "uy_ci"           => mask_uy_ci_consistent(&s, hasher),
-            "sin"             => mask_sin_consistent(&s, hasher),
-            "tfn"             => mask_tfn_consistent(&s, hasher),
-            "pesel"           => mask_pesel_consistent(&s, hasher),
-            "bsn"             => mask_bsn_consistent(&s, hasher),
-            "personnummer"    => mask_personnummer_consistent(&s, hasher),
-            "my_number"       => mask_my_number_consistent(&s, hasher),
-            "rrn"             => mask_rrn_consistent(&s, hasher),
-            "za_id"           => mask_za_id_consistent(&s, hasher),
-            "il_id"           => mask_il_id_consistent(&s, hasher),
+            "nhs"             => mask_nhs_consistent(&s, hasher, &claims),
+            "pe_dni"          => mask_pe_dni_bare_consistent(&s, hasher, &claims),
+            "nir"             => mask_nir(&s),
+            "codice_fiscale"  => mask_cf(&s),
+            "uy_ci"           => mask_uy_ci_consistent(&s, hasher, &claims),
+            "sin"             => mask_sin_consistent(&s, hasher, &claims),
+            "tfn"             => mask_tfn_consistent(&s, hasher, &claims),
+            "pesel"           => mask_pesel_consistent(&s, hasher, &claims),
+            "bsn"             => mask_bsn_consistent(&s, hasher, &claims),
+            "personnummer"    => mask_personnummer_consistent(&s, hasher, &claims),
+            "my_number"       => mask_my_number_consistent(&s, hasher, &claims),
+            "rrn"             => mask_rrn_consistent(&s, hasher, &claims),
+            "za_id"           => mask_za_id_consistent(&s, hasher, &claims),
+            "il_id"           => mask_il_id_consistent(&s, hasher, &claims),
             _                 => s,
         };
     }
@@ -402,7 +502,9 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
 
 pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
     if !has_pii_candidate(value) {
-        return false;
+        return patterns.contains(&"ip")
+            && has_letter_only_ipv6_candidate(value)
+            && contains_ip(value);
     }
     patterns.iter().any(|pat| match *pat {
         "email"           => contains_email(value),
@@ -428,7 +530,7 @@ pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
         "npi"             => contains_npi(value),
         "mbi"             => contains_mbi(value),
         "nhs"             => contains_nhs(value),
-        "pe_dni"          => contains_pe_dni(value),
+        "pe_dni"          => contains_pe_dni_bare(value),
         "nir"             => contains_nir(value),
         "codice_fiscale"  => contains_cf(value),
         "uy_ci"           => contains_uy_ci(value),
@@ -447,7 +549,7 @@ pub fn contains_any_selected(value: &str, patterns: &[&str]) -> bool {
 
 pub fn contains_any_pii(value: &str) -> bool {
     if !has_pii_candidate(value) {
-        return false;
+        return has_letter_only_ipv6_candidate(value) && contains_ip(value);
     }
     contains_iban(value)
         || contains_vat(value)
@@ -529,6 +631,9 @@ pub struct ExtractResult {
 
 pub fn extract_all(value: &str) -> ExtractResult {
     if !has_pii_candidate(value) {
+        if has_letter_only_ipv6_candidate(value) {
+            return ExtractResult { ip: extract_ip(value), ..ExtractResult::default() };
+        }
         return ExtractResult::default();
     }
     ExtractResult {
@@ -613,6 +718,10 @@ pub struct AuditCounts {
 
 pub fn mask_all_audit(value: &str) -> (String, AuditCounts) {
     if !has_pii_candidate(value) {
+        if has_letter_only_ipv6_candidate(value) {
+            let (s, n) = mask_ip_counted(value);
+            return (s, AuditCounts { ip: n, ..AuditCounts::default() });
+        }
         return (value.to_string(), AuditCounts::default());
     }
     let mut c = AuditCounts::default();
@@ -660,6 +769,10 @@ pub fn mask_all_audit(value: &str) -> (String, AuditCounts) {
 
 pub fn mask_all_audit_selected(value: &str, patterns: &[&str]) -> (String, AuditCounts) {
     if !has_pii_candidate(value) {
+        if patterns.contains(&"ip") && has_letter_only_ipv6_candidate(value) {
+            let (s, n) = mask_ip_counted(value);
+            return (s, AuditCounts { ip: n, ..AuditCounts::default() });
+        }
         return (value.to_string(), AuditCounts::default());
     }
     let sel = |name: &str| patterns.contains(&name);
@@ -691,7 +804,7 @@ pub fn mask_all_audit_selected(value: &str, patterns: &[&str]) -> (String, Audit
     if sel("co_nit")          { let (ns, n) = mask_co_nit_counted(&s);          s = ns; c.co_nit = n; }
     if sel("personnummer")    { let (ns, n) = mask_personnummer_counted(&s);    s = ns; c.personnummer = n; }
     if sel("ec_cedula")       { let (ns, n) = mask_ec_cedula_counted(&s);       s = ns; c.ec_cedula = n; }
-    if sel("pe_dni")          { let (ns, n) = mask_pe_dni_counted(&s);          s = ns; c.pe_dni = n; }
+    if sel("pe_dni")          { let (ns, n) = mask_pe_dni_bare_counted(&s);     s = ns; c.pe_dni = n; }
     if sel("npi")             { let (ns, n) = mask_npi_counted(&s);             s = ns; c.npi = n; }
     if sel("nhs")             { let (ns, n) = mask_nhs_counted(&s);             s = ns; c.nhs = n; }
     if sel("uy_ci")           { let (ns, n) = mask_uy_ci_counted(&s);           s = ns; c.uy_ci = n; }
@@ -709,6 +822,9 @@ pub fn mask_all_audit_selected(value: &str, patterns: &[&str]) -> (String, Audit
 
 pub fn extract_all_selected(value: &str, patterns: &[&str]) -> ExtractResult {
     if !has_pii_candidate(value) {
+        if patterns.contains(&"ip") && has_letter_only_ipv6_candidate(value) {
+            return ExtractResult { ip: extract_ip(value), ..ExtractResult::default() };
+        }
         return ExtractResult::default();
     }
     let sel = |name: &str| patterns.contains(&name);
@@ -739,7 +855,7 @@ pub fn extract_all_selected(value: &str, patterns: &[&str]) -> ExtractResult {
         co_cc:           pick("co_cc", &extract_co_cc),
         co_nit:          pick("co_nit", &extract_co_nit),
         ec_cedula:       pick("ec_cedula", &extract_ec_cedula),
-        pe_dni:          pick("pe_dni", &extract_pe_dni),
+        pe_dni:          pick("pe_dni", &extract_pe_dni_bare),
         uy_ci:           pick("uy_ci", &extract_uy_ci),
         npi:             pick("npi", &extract_npi),
         mbi:             pick("mbi", &extract_mbi),
@@ -750,5 +866,44 @@ pub fn extract_all_selected(value: &str, patterns: &[&str]) -> ExtractResult {
         rrn:             pick("rrn", &extract_rrn),
         za_id:           pick("za_id", &extract_za_id),
         il_id:           pick("il_id", &extract_il_id),
+    }
+}
+
+#[cfg(test)]
+mod cascade_tests {
+    use super::*;
+    use crate::patterns::fpe::Ff3Cipher;
+
+    fn cipher() -> FpeCipher {
+        FpeCipher::Ff3(Ff3Cipher::new(&[0u8; 32], &[0u8; 7]))
+    }
+
+    #[test]
+    fn test_arg_dni_encrypted_once_not_twice() {
+        let c = cipher();
+        let masked = mask_all_fpe("cliente 12.345.678 activo", &c);
+        let digits: String = masked.chars().filter(|ch| ch.is_ascii_digit()).collect();
+        assert!(masked.contains('.'), "separators must be preserved: {}", masked);
+        assert_eq!(c.decrypt(&digits).unwrap(), "12345678", "arg_dni was double-encrypted");
+    }
+
+    #[test]
+    fn test_bare_cpf_encrypted_once_not_twice() {
+        let c = cipher();
+        let masked = mask_all_fpe("52998224725", &c);
+        let digits: String = masked.chars().filter(|ch| ch.is_ascii_digit()).collect();
+        assert_eq!(digits.len(), 11);
+        assert_eq!(c.decrypt(&digits).unwrap(), "52998224725", "cpf was double-encrypted");
+    }
+
+    #[test]
+    fn test_consistent_arg_dni_not_double_hashed() {
+        let hasher = ConsistentHasher::new("salt");
+        let once = {
+            let claims = TokenClaims::new();
+            mask_arg_dni_consistent("12.345.678", &hasher, &claims)
+        };
+        let pipeline = mask_all_consistent("12.345.678", &hasher);
+        assert_eq!(once, pipeline, "consistent arg_dni changed after full pipeline (double-processed)");
     }
 }

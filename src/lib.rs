@@ -41,6 +41,13 @@ fn read_key_tweak<'a>(
     Ok((key, tweak))
 }
 
+fn parse_patterns<'a>(pat_str: &'a str, label: &str) -> PolarsResult<Vec<&'a str>> {
+    let patterns: Vec<&str> = pat_str.split(',').filter(|s| !s.is_empty()).collect();
+    patterns::validate_patterns(&patterns)
+        .map_err(|e| PolarsError::ComputeError(format!("{}: {}", label, e).into()))?;
+    Ok(patterns)
+}
+
 fn build_cipher(key: [u8; KEY_LEN], tweak: [u8; TWEAK_LEN], mode: &str) -> PolarsResult<FpeCipher> {
     match mode {
         "ff3" | "" => Ok(FpeCipher::Ff3(Ff3Cipher::new(&key, &tweak))),
@@ -56,7 +63,7 @@ fn mask_pii(inputs: &[Series]) -> PolarsResult<Series> {
     let ca = inputs[0].str()?;
     let out: StringChunked = if inputs.len() > 1 {
         let pat_str = inputs[1].str()?.get(0).unwrap_or("");
-        let patterns: Vec<&str> = pat_str.split(',').filter(|s| !s.is_empty()).collect();
+        let patterns = parse_patterns(pat_str, "mask_pii")?;
         ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_selected(s, &patterns))))
     } else {
         ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all(s))))
@@ -69,7 +76,7 @@ fn contains_pii(inputs: &[Series]) -> PolarsResult<Series> {
     let ca = inputs[0].str()?;
     let out: BooleanChunked = if inputs.len() > 1 {
         let pat_str = inputs[1].str()?.get(0).unwrap_or("");
-        let patterns: Vec<&str> = pat_str.split(',').filter(|s| !s.is_empty()).collect();
+        let patterns = parse_patterns(pat_str, "contains_pii")?;
         ca.apply_nonnull_values_generic(DataType::Boolean, |s| contains_any_selected(s, &patterns))
     } else {
         ca.apply_nonnull_values_generic(DataType::Boolean, |s| contains_any_pii(s))
@@ -90,7 +97,7 @@ fn mask_pii_fpe(inputs: &[Series]) -> PolarsResult<Series> {
 
     let out: StringChunked = if inputs.len() > 4 {
         let pat_str = inputs[4].str()?.get(0).unwrap_or("");
-        let patterns: Vec<&str> = pat_str.split(',').filter(|s| !s.is_empty()).collect();
+        let patterns = parse_patterns(pat_str, "mask_pii_fpe")?;
         ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_selected_fpe(s, &patterns, &cipher))))
     } else {
         ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_fpe(s, &cipher))))
@@ -114,10 +121,32 @@ fn mask_pii_fpe_rekey(inputs: &[Series]) -> PolarsResult<Series> {
     let new_cipher = build_cipher(new_key, new_tweak, mode)?;
     let cipher = FpeCipher::Rekey(Box::new(old_cipher), Box::new(new_cipher));
 
-    let out: StringChunked = ca.apply(|opt| opt.map(|s| match cipher.encrypt(s) {
-        Ok(rotated) => std::borrow::Cow::Owned(rotated),
-        Err(_) => std::borrow::Cow::Owned(s.to_string()),
-    }));
+    let pattern: Option<String> = if inputs.len() > 6 {
+        inputs[6].str()?.get(0).filter(|s| !s.is_empty()).map(|s| s.to_string())
+    } else {
+        None
+    };
+    if let Some(p) = &pattern {
+        patterns::rekey::validate_rekey_pattern(p)
+            .map_err(|e| PolarsError::ComputeError(format!("mask_pii_fpe_rekey: {}", e).into()))?;
+    }
+
+    let pat = pattern.as_deref();
+    let mut out: Vec<Option<String>> = Vec::with_capacity(ca.len());
+    for opt in ca.into_iter() {
+        match opt {
+            None => out.push(None),
+            Some(s) => match patterns::rekey::rekey_cell(s, pat, &cipher) {
+                Ok(rotated) => out.push(Some(rotated)),
+                Err(e) => {
+                    return Err(PolarsError::ComputeError(
+                        format!("mask_pii_fpe_rekey: cannot rotate value {:?}: {}", s, e).into(),
+                    ))
+                }
+            },
+        }
+    }
+    let out: StringChunked = StringChunked::from_iter_options("".into(), out.into_iter());
     Ok(out.into_series())
 }
 
@@ -130,7 +159,7 @@ fn mask_pii_consistent(inputs: &[Series]) -> PolarsResult<Series> {
     let hasher = ConsistentHasher::new(salt);
     let out: StringChunked = if inputs.len() > 2 {
         let pat_str = inputs[2].str()?.get(0).unwrap_or("");
-        let patterns: Vec<&str> = pat_str.split(',').filter(|s| !s.is_empty()).collect();
+        let patterns = parse_patterns(pat_str, "mask_pii_consistent")?;
         ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_selected_consistent(s, &patterns, &hasher))))
     } else {
         ca.apply(|opt| opt.map(|s| std::borrow::Cow::Owned(mask_all_consistent(s, &hasher))))
@@ -190,6 +219,10 @@ fn extract_pii(inputs: &[Series]) -> PolarsResult<Series> {
     } else { Vec::new() };
     let pat_refs: Vec<&str> = pat_owned.iter().map(|s| s.as_str()).collect();
     let select = inputs.len() > 1;
+    if select {
+        patterns::validate_patterns(&pat_refs)
+            .map_err(|e| PolarsError::ComputeError(format!("extract_pii: {}", e).into()))?;
+    }
 
     let mut f_email         = Vec::with_capacity(len);
     let mut f_phone         = Vec::with_capacity(len);
@@ -379,6 +412,10 @@ fn mask_pii_audit(inputs: &[Series]) -> PolarsResult<Series> {
     } else { Vec::new() };
     let pat_refs: Vec<&str> = pat_owned.iter().map(|s| s.as_str()).collect();
     let select = inputs.len() > 1;
+    if select {
+        patterns::validate_patterns(&pat_refs)
+            .map_err(|e| PolarsError::ComputeError(format!("mask_pii_audit: {}", e).into()))?;
+    }
 
     let mut masked: Vec<Option<String>> = Vec::with_capacity(len);
     let mut c_email           = Vec::with_capacity(len);

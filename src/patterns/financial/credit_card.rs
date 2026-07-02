@@ -80,34 +80,42 @@ pub fn mask_card(s: &str) -> String {
     mask_card_counted(s).0
 }
 
-pub fn mask_card_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
+fn mask_card_with(
+    s: &str,
+    claims: &crate::patterns::TokenClaims,
+    encrypt: &dyn Fn(&str) -> Option<String>,
+) -> String {
     CARD_RE
         .replace_all(s, |caps: &regex::Captures| {
-            let raw = caps.get(0).unwrap().as_str();
-            if !luhn_valid(raw) {
+            let m = caps.get(0).unwrap();
+            let raw = m.as_str();
+            if !luhn_valid(raw) || !claims.is_free(m.start(), m.end()) {
                 return raw.to_string();
             }
             let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            match hasher.encrypt(&digits) {
-                Ok(hashed) => hashed,
-                Err(_) => digits,
+            match encrypt(&digits) {
+                Some(encrypted) => {
+                    claims.claim(m.start(), m.end());
+                    crate::patterns::reinsert_digits(raw, &encrypted)
+                }
+                None => raw.to_string(),
             }
         })
         .into_owned()
 }
 
-pub fn mask_card_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    CARD_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = caps.get(0).unwrap().as_str();
-            if !luhn_valid(raw) {
-                return raw.to_string();
-            }
-            let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            match cipher.encrypt(&digits) {
-                Ok(encrypted) => encrypted,
-                Err(_) => digits, 
-            }
-        })
-        .into_owned()
+pub fn mask_card_consistent(
+    s: &str,
+    hasher: &crate::patterns::consistent::ConsistentHasher,
+    claims: &crate::patterns::TokenClaims,
+) -> String {
+    mask_card_with(s, claims, &|d| hasher.encrypt(d).ok())
+}
+
+pub fn mask_card_fpe(
+    s: &str,
+    cipher: &crate::patterns::fpe::FpeCipher,
+    claims: &crate::patterns::TokenClaims,
+) -> String {
+    mask_card_with(s, claims, &|d| cipher.encrypt(d).ok())
 }

@@ -93,72 +93,21 @@ fn mask_sin_compact_asterisk_counted(s: &str) -> (String, u32) {
     (result, count)
 }
 
-pub fn mask_sin_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    let s = SIN_FMT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !luhn_valid(&d) { return raw.to_string(); }
-            match cipher.encrypt(&d) {
-                Ok(enc) => format!("{}-{}-{}", &enc[..3], &enc[3..6], &enc[6..]),
-                Err(_) => raw.to_string(),
-            }
-        })
-        .into_owned();
-    mask_sin_compact_fpe(&s, cipher)
+fn sin_fmt_valid(t: &str) -> bool {
+    let d: String = t.chars().filter(|c| c.is_ascii_digit()).collect();
+    luhn_valid(&d)
 }
 
-fn mask_sin_compact_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher) -> String {
-    let mut result = String::with_capacity(s.len());
-    let mut last = 0;
-    for m in SIN_COMPACT_RE.find_iter(s) {
-        if !luhn_valid(m.as_str()) || !not_followed_by_dash(s, m.end()) {
-            result.push_str(&s[last..m.end()]);
-            last = m.end();
-            continue;
-        }
-        result.push_str(&s[last..m.start()]);
-        match cipher.encrypt(m.as_str()) {
-            Ok(enc) => result.push_str(&enc),
-            Err(_)  => result.push_str(m.as_str()),
-        }
-        last = m.end();
-    }
-    result.push_str(&s[last..]);
-    result
+pub fn mask_sin_fpe(s: &str, cipher: &crate::patterns::fpe::FpeCipher, claims: &crate::patterns::TokenClaims) -> String {
+    let enc = |d: &str| cipher.encrypt(d).ok();
+    let s = crate::patterns::mask_family(&SIN_FMT_RE, s, claims, &|t, _, _| sin_fmt_valid(t), &enc);
+    crate::patterns::mask_family(&SIN_COMPACT_RE, &s, claims,
+        &|t, _, end| luhn_valid(t) && not_followed_by_dash(&s, end), &enc)
 }
 
-pub fn mask_sin_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    let s = SIN_FMT_RE
-        .replace_all(s, |caps: &regex::Captures| {
-            let raw = &caps[0];
-            let d: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-            if !luhn_valid(&d) { return raw.to_string(); }
-            match hasher.encrypt(&d) {
-                Ok(hashed) => format!("{}-{}-{}", &hashed[..3], &hashed[3..6], &hashed[6..]),
-                Err(_) => raw.to_string(),
-            }
-        })
-        .into_owned();
-    mask_sin_compact_consistent(&s, hasher)
-}
-
-fn mask_sin_compact_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher) -> String {
-    let mut result = String::with_capacity(s.len());
-    let mut last = 0;
-    for m in SIN_COMPACT_RE.find_iter(s) {
-        if !luhn_valid(m.as_str()) || !not_followed_by_dash(s, m.end()) {
-            result.push_str(&s[last..m.end()]);
-            last = m.end();
-            continue;
-        }
-        result.push_str(&s[last..m.start()]);
-        match hasher.encrypt(m.as_str()) {
-            Ok(hashed) => result.push_str(&hashed),
-            Err(_)     => result.push_str(m.as_str()),
-        }
-        last = m.end();
-    }
-    result.push_str(&s[last..]);
-    result
+pub fn mask_sin_consistent(s: &str, hasher: &crate::patterns::consistent::ConsistentHasher, claims: &crate::patterns::TokenClaims) -> String {
+    let enc = |d: &str| hasher.encrypt(d).ok();
+    let s = crate::patterns::mask_family(&SIN_FMT_RE, s, claims, &|t, _, _| sin_fmt_valid(t), &enc);
+    crate::patterns::mask_family(&SIN_COMPACT_RE, &s, claims,
+        &|t, _, end| luhn_valid(t) && not_followed_by_dash(&s, end), &enc)
 }

@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Bug Fixes
+
+* **fpe:** `mode="ff3"` is now conformant NIST FF3-1 (single AES-256 with REVB conventions, 56-bit tweak split, verified against an independent FF3-1 implementation). Tokens are now interoperable with other FF3-1 libraries and the FF3-1 minimum domain is enforced.
+* **pipeline:** digit PII is no longer encrypted twice when two families match the same span (e.g. Argentine DNI re-matched by `pe_dni`, bare CPF re-matched by `pesel`) — FPE rotation stays reversible and consistent output stays stable.
+* **rekey:** `rekey_pii_fpe` now rotates separator-bearing tokens (SSN, phone, RUT, ...) instead of silently returning them under the old key, and raises rather than passing a cell through unrotated.
+* **patterns:** unknown pattern names and unsupported `mask_pii` `mode` values now raise instead of being silently ignored (which previously returned data unmasked).
+* **iban:** IBANs are validated with ISO 7064 mod-97, detected in the spaced print format, and accepted up to the full 34-character length.
+* **ip:** compressed and letter-only IPv6 addresses (`2001:db8::1`, `fe80::1`) are now detected and masked.
+* **healthcare:** MBI character classes corrected to the CMS format (alphanumeric position 6, alpha-only positions 8–9).
+* **latam:** `pe_dni` masks 8-digit numbers only near DNI context words in the default pipeline (explicit `patterns=["pe_dni"]` still masks every 8-digit number), ending silent corruption of dates and order numbers.
+
+### Breaking Changes
+
+* FF3-1 output differs from previous releases; data encrypted with an older version must be decrypted with that version before re-masking. FPE now rejects digit runs shorter than 6 (the FF3-1 minimum domain). Unknown `patterns=` entries, unknown `mode` values, and CPF/CNPJ/card FPE output formatting (now format-preserving) all change behavior relative to 2.0.
+
 ## [2.0.0](https://github.com/fcarvajalbrown/MaskOps/compare/v1.9.0...v2.0.0) (2026-06-08)
 
 ### Features
