@@ -1,23 +1,14 @@
-
-
 use once_cell::sync::Lazy;
 use regex::Regex;
 
 const ALPHA: &str = "ACDEFGHJKMNPQRTUVWXY";
 
 static MBI_RE: Lazy<Regex> = Lazy::new(|| {
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    Regex::new(
-        r"\b([1-9][ACDEFGHJKMNPQRTUVWXY][0-9ACDEFGHJKMNPQRTUVWXY][0-9][ACDEFGHJKMNPQRTUVWXY]{2}[0-9][0-9ACDEFGHJKMNPQRTUVWXY]{2}[0-9]{2})\b"
-    ).unwrap()
+    Regex::new(&format!(
+        r"\b([1-9][{a}][0-9{a}][0-9][{a}][0-9{a}][0-9][{a}]{{2}}[0-9]{{2}})\b",
+        a = ALPHA
+    ))
+    .unwrap()
 });
 
 pub fn extract_mbi(s: &str) -> Option<String> {
@@ -38,5 +29,32 @@ pub fn mask_mbi(s: &str) -> String {
     mask_mbi_counted(s).0
 }
 
-#[allow(dead_code)]
-const _ALPHA_CHECK: &str = ALPHA;
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_digit_in_position_6_matches() {
+        assert!(contains_mbi("1EG4T25MK73"));
+    }
+
+    #[test]
+    fn test_alpha_in_position_6_matches() {
+        assert!(contains_mbi("1EG4TE5MK72"));
+    }
+
+    #[test]
+    fn test_digits_in_positions_8_9_rejected() {
+        assert!(!contains_mbi("1EG4TE51273"));
+    }
+
+    #[test]
+    fn test_excluded_letters_rejected() {
+        assert!(!contains_mbi("1SG4TE5MK72"));
+    }
+
+    #[test]
+    fn test_mask_replaces_with_asterisks() {
+        assert_eq!(mask_mbi("MBI: 1EG4T25MK73"), "MBI: ***********");
+    }
+}

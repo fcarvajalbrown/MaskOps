@@ -1165,6 +1165,16 @@ class TestMaskMBI:
         result = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK))["col"][0]
         assert result == "***********"
 
+    def test_mbi_with_digit_in_position_6_masked(self):
+        df = pl.DataFrame({"col": ["1EG4T25MK73"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == "***********"
+
+    def test_non_mbi_with_digits_in_positions_8_9_untouched(self):
+        df = pl.DataFrame({"col": ["1EG4TE51273"]})
+        result = df.with_columns(maskops.mask_pii("col"))["col"][0]
+        assert result == "1EG4TE51273"
+
 class TestMaskNHS:
     
     def test_valid_nhs_masked(self):
