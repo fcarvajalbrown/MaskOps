@@ -162,6 +162,6 @@ Cut a release with the helper: **`python tools/release/release.py X.Y.Z`** is a 
 - Tutorial, deep-dive, or benchmark comparison angle
 - Major version releases (v3.0+)
 
-Rules baked into the script: enforces 5-day cooldown, max 4 tags, Camus+Dijkstra prose. Run `--rules` to print full guidelines. Reminder fires automatically after 14 days of silence via the Stop hook in settings.json.
+Rules baked into the script: enforces 5-day cooldown, max 4 tags, Camus+Dijkstra prose. Run `--rules` to print full guidelines. A quiet-nudge reminder fires automatically via the Stop hook in settings.json; the interval and weekday gating are documented in `tools/social/CLAUDE.md`.
 
 **LinkedIn** — at major milestones (v3.0+), remind the user to publish a full LinkedIn article (not just a post): SEO keywords, publish timing, hashtags.
