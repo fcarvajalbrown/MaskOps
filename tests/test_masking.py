@@ -1277,6 +1277,37 @@ class TestMaskPeDNI:
         result = df.with_columns(maskops.contains_pii("col", patterns=["pe_dni"]))["col"].to_list()
         assert result == [True, False]
 
+class TestUnknownPatternNames:
+    def test_mask_pii_unknown_pattern_raises(self):
+        df = pl.DataFrame({"col": ["a@b.com and 4111111111111111"]})
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown pattern 'credit-card'"):
+            df.with_columns(maskops.mask_pii("col", patterns=["email", "credit-card"]))
+
+    def test_contains_pii_unknown_pattern_raises(self):
+        df = pl.DataFrame({"col": ["a@b.com"]})
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown pattern"):
+            df.with_columns(maskops.contains_pii("col", patterns=["emial"]))
+
+    def test_mask_pii_fpe_unknown_pattern_raises(self):
+        df = pl.DataFrame({"col": ["4111111111111111"]})
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown pattern"):
+            df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK, patterns=["creditcard"]))
+
+    def test_extract_pii_unknown_pattern_raises(self):
+        df = pl.DataFrame({"col": ["a@b.com"]})
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown pattern"):
+            df.with_columns(maskops.extract_pii("col", patterns=["mail"]).alias("pii"))
+
+    def test_mask_pii_audit_unknown_pattern_raises(self):
+        df = pl.DataFrame({"col": ["a@b.com"]})
+        with pytest.raises(pl.exceptions.ComputeError, match="unknown pattern"):
+            df.with_columns(maskops.mask_pii_audit("col", patterns=["ssn ", "email"]).alias("audit"))
+
+    def test_valid_patterns_still_work(self):
+        df = pl.DataFrame({"col": ["a@b.com"]})
+        result = df.with_columns(maskops.mask_pii("col", patterns=["email"]))["col"][0]
+        assert "a@b.com" not in result
+
 class TestMaskPiiConsistent:
     """Deterministic hash-based pseudonymization via mode='consistent'."""
 

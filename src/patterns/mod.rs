@@ -111,6 +111,25 @@ use crate::patterns::apac::korea_rrn::mask_rrn_counted;
 use crate::patterns::mea::south_africa::mask_za_id_counted;
 use crate::patterns::mea::israel::mask_il_id_counted;
 
+pub const PATTERN_NAMES: &[&str] = &[
+    "email", "phone", "ip", "iban", "vat", "dni", "nie", "nin", "personalausweis",
+    "us_passport", "curp", "rut", "cpf", "cnpj", "ssn", "arg_dni", "co_cc", "co_nit",
+    "ec_cedula", "credit_card", "npi", "mbi", "nhs", "pe_dni", "nir", "codice_fiscale",
+    "uy_ci", "sin", "tfn", "pesel", "bsn", "personnummer", "my_number", "rrn", "za_id",
+    "il_id",
+];
+
+pub fn validate_patterns(patterns: &[&str]) -> Result<(), String> {
+    match patterns.iter().find(|p| !PATTERN_NAMES.contains(*p)) {
+        Some(unknown) => Err(format!(
+            "unknown pattern '{}', valid patterns: {}",
+            unknown,
+            PATTERN_NAMES.join(", ")
+        )),
+        None => Ok(()),
+    }
+}
+
 pub fn replace_counted<F>(re: &regex::Regex, s: &str, render: F) -> (String, u32)
 where
     F: Fn(&regex::Captures) -> Option<String>,
