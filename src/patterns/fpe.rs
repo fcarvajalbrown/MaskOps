@@ -1,5 +1,3 @@
-
-
 use aes::Aes256;
 use aes::cipher::{BlockEncrypt, KeyInit, generic_array::GenericArray};
 
@@ -9,187 +7,94 @@ pub const TWEAK_LEN: usize = 7;
 
 pub const KEY_LEN: usize = 32;
 
-pub(crate) const MIN_LEN: usize = 2;
+pub(crate) const MIN_LEN: usize = 6;
 
 pub(crate) const MAX_LEN: usize = 30;
 
 pub struct Ff3Cipher {
-    
-    aes_enc: Aes256,
-    
-    aes_dec: Aes256,
-    
-    tweak: [u8; TWEAK_LEN],
+    aes: Aes256,
+    tl: [u8; 4],
+    tr: [u8; 4],
 }
 
 impl Ff3Cipher {
-    
-    
-    
-    
-    
     pub fn new(key: &[u8; KEY_LEN], tweak: &[u8; TWEAK_LEN]) -> Self {
-        
         let mut rev_key = *key;
         rev_key.reverse();
-
-        let aes_enc = Aes256::new(GenericArray::from_slice(key));
-        let aes_dec = Aes256::new(GenericArray::from_slice(&rev_key));
-
-        Self { aes_enc, aes_dec, tweak: *tweak }
+        let aes = Aes256::new(GenericArray::from_slice(&rev_key));
+        let tl = [tweak[0], tweak[1], tweak[2], tweak[3] & 0xF0];
+        let tr = [tweak[4], tweak[5], tweak[6], (tweak[3] & 0x0F) << 4];
+        Self { aes, tl, tr }
     }
 
-    
-    
-    
     pub fn encrypt(&self, plaintext: &str) -> Result<String, FpeError> {
         let nums = parse_digits(plaintext)?;
         let result = self.ff3_feistel(&nums, true)?;
         Ok(digits_to_string(&result))
     }
 
-    
-    
-    
-    
-    
-    
-    
-    
     pub fn decrypt(&self, ciphertext: &str) -> Result<String, FpeError> {
         let nums = parse_digits(ciphertext)?;
         let result = self.ff3_feistel(&nums, false)?;
         Ok(digits_to_string(&result))
     }
 
-    
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     fn ff3_feistel(&self, x: &[u8], forward: bool) -> Result<Vec<u8>, FpeError> {
         let n = x.len();
         validate_len(n)?;
 
-        let u = (n + 1) / 2; 
-        let v = n - u;        
+        let u = (n + 1) / 2;
+        let v = n - u;
 
-        
-        let (mut a, mut b) = if forward {
-            (x[..u].to_vec(), x[u..].to_vec())
+        let mut a = x[..u].to_vec();
+        let mut b = x[u..].to_vec();
+
+        if forward {
+            for i in 0..8u32 {
+                let (m, w) = if i % 2 == 0 { (u, &self.tr) } else { (v, &self.tl) };
+                let y = self.round_y(w, i, &b);
+                let modulus = radix_pow(m);
+                let c = (num_rev(&a) + y % modulus) % modulus;
+                a = b;
+                b = rev_str_radix(c, m);
+            }
         } else {
-            (x[u..].to_vec(), x[..u].to_vec())
-        };
-
-        let rounds: Vec<u8> = if forward {
-            (0u8..8).collect()
-        } else {
-            (0u8..8).rev().collect()
-        };
-
-        for i in rounds {
-            let m   = if i % 2 == 0 { u } else { v };
-            let aes = if i % 2 == 0 { &self.aes_enc } else { &self.aes_dec };
-
-            
-            let p = self.build_p(i, &b);
-
-            
-            let s = self.prf(aes, &p);
-            let y = bytes_to_u128_be(&s);
-
-            
-            let mut a_rev = a.clone();
-            a_rev.reverse();
-            let num_a   = num_from_digits(&a_rev);
-            let modulus = radix_pow(m);
-
-            let c = if forward {
-                (num_a + y % modulus) % modulus
-            } else {
-                (num_a + modulus - (y % modulus)) % modulus
-            };
-
-            
-            let mut c_digits = digits_of(c, m);
-            c_digits.reverse();
-            a = b;
-            b = c_digits;
+            for i in (0..8u32).rev() {
+                let (m, w) = if i % 2 == 0 { (u, &self.tr) } else { (v, &self.tl) };
+                let y = self.round_y(w, i, &a);
+                let modulus = radix_pow(m);
+                let c = (num_rev(&b) + modulus - (y % modulus)) % modulus;
+                b = a;
+                a = rev_str_radix(c, m);
+            }
         }
 
-        
-        let result = if forward {
-            let mut r = a; r.extend_from_slice(&b); r
-        } else {
-            let mut r = b; r.extend_from_slice(&a); r
-        };
-
+        let mut result = a;
+        result.extend_from_slice(&b);
         Ok(result)
     }
 
-    
-    
-    
-    
-    
-    fn build_p(&self, round: u8, b: &[u8]) -> [u8; 16] {
+    fn round_y(&self, w: &[u8; 4], round: u32, half: &[u8]) -> u128 {
         let mut p = [0u8; 16];
-        let t = &self.tweak;
-
-        
-        
-        if round % 2 == 0 {
-            p[0] = t[4];
-            p[1] = t[5];
-            p[2] = t[6];
-            p[3] = round;
-            p[4] = t[0];
-            p[5] = t[1];
-            p[6] = t[2];
-            p[7] = t[3];
-        } else {
-            p[0] = t[0];
-            p[1] = t[1];
-            p[2] = t[2];
-            p[3] = t[3] ^ round;
-            p[4] = t[4];
-            p[5] = t[5];
-            p[6] = t[6];
-            p[7] = 0;
+        let rb = round.to_be_bytes();
+        for k in 0..4 {
+            p[k] = w[k] ^ rb[k];
         }
+        let num_half = num_rev(half).to_be_bytes();
+        p[4..16].copy_from_slice(&num_half[4..]);
 
-        
-        let mut b_rev = b.to_vec();
-        b_rev.reverse();
-        let num_b = num_from_digits(&b_rev);
-        let num_b_bytes = num_b.to_be_bytes();
-        p[8..16].copy_from_slice(&num_b_bytes[8..]);
-
-        p
-    }
-
-    
-    fn prf(&self, aes: &Aes256, block: &[u8; 16]) -> [u8; 16] {
-        let mut out = GenericArray::clone_from_slice(block);
-        aes.encrypt_block(&mut out);
-        out.into()
+        p.reverse();
+        let mut block = GenericArray::clone_from_slice(&p);
+        self.aes.encrypt_block(&mut block);
+        let mut s: [u8; 16] = block.into();
+        s.reverse();
+        u128::from_be_bytes(s)
     }
 }
 
 #[derive(Debug, PartialEq)]
 pub enum FpeError {
-    
     InvalidCharacter(char),
-    
     InvalidLength(usize),
 }
 
@@ -230,21 +135,17 @@ fn radix_pow(m: usize) -> u128 {
     (RADIX as u128).pow(m as u32)
 }
 
-fn num_from_digits(digits: &[u8]) -> u128 {
-    digits.iter().fold(0u128, |acc, &d| acc * RADIX as u128 + d as u128)
+fn num_rev(digits: &[u8]) -> u128 {
+    digits.iter().rev().fold(0u128, |acc, &d| acc * RADIX as u128 + d as u128)
 }
 
-fn digits_of(mut n: u128, len: usize) -> Vec<u8> {
-    let mut out = vec![0u8; len];
-    for i in (0..len).rev() {
-        out[i] = (n % RADIX as u128) as u8;
+fn rev_str_radix(mut n: u128, len: usize) -> Vec<u8> {
+    let mut out = Vec::with_capacity(len);
+    for _ in 0..len {
+        out.push((n % RADIX as u128) as u8);
         n /= RADIX as u128;
     }
     out
-}
-
-fn bytes_to_u128_be(b: &[u8; 16]) -> u128 {
-    u128::from_be_bytes(*b)
 }
 
 use crate::patterns::fpe_ff1::Ff1Cipher;
@@ -301,12 +202,13 @@ mod tests {
     }
 
     #[test]
-    fn test_encrypt_preserves_length() {
+    fn test_roundtrip_all_supported_lengths() {
         let cipher = test_cipher();
-        for len in [2, 6, 10, 15, 16, 20, 30] {
+        for len in MIN_LEN..=MAX_LEN {
             let input: String = "1234567890".chars().cycle().take(len).collect();
             let ct = cipher.encrypt(&input).unwrap();
             assert_eq!(ct.len(), len);
+            assert_eq!(cipher.decrypt(&ct).unwrap(), input);
         }
     }
 
@@ -325,8 +227,11 @@ mod tests {
     }
 
     #[test]
-    fn test_too_short_rejected() {
-        assert!(test_cipher().encrypt("1").is_err());
+    fn test_below_ff31_domain_minimum_rejected() {
+        assert_eq!(
+            test_cipher().encrypt("12345"),
+            Err(FpeError::InvalidLength(5))
+        );
     }
 
     #[test]
@@ -338,5 +243,36 @@ mod tests {
     fn test_output_is_all_digits() {
         let ct = test_cipher().encrypt("9876543210123456").unwrap();
         assert!(ct.chars().all(|c| c.is_ascii_digit()));
+    }
+
+    #[test]
+    fn test_ff31_matches_independent_implementation() {
+        let mut key = [0u8; KEY_LEN];
+        for (i, b) in key.iter_mut().enumerate() {
+            *b = i as u8;
+        }
+        let tweak = [0u8, 1, 2, 3, 4, 5, 6];
+        let cipher = Ff3Cipher::new(&key, &tweak);
+        let vectors = [
+            ("890121234567890000", "828619517847699900"),
+            ("4111111111111111", "1064960767628711"),
+            ("123456789", "607331705"),
+            ("14155552671", "34780551212"),
+            ("12345678901234567890123456", "80998387094033638262634220"),
+            ("000000", "706154"),
+        ];
+        for (pt, expected_ct) in vectors {
+            assert_eq!(cipher.encrypt(pt).unwrap(), expected_ct);
+            assert_eq!(cipher.decrypt(expected_ct).unwrap(), pt);
+        }
+    }
+
+    #[test]
+    fn test_ff31_matches_independent_implementation_second_key() {
+        let key = [0xEFu8; KEY_LEN];
+        let tweak = [0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32];
+        let cipher = Ff3Cipher::new(&key, &tweak);
+        assert_eq!(cipher.encrypt("890121234567890000").unwrap(), "321377551284055879");
+        assert_eq!(cipher.encrypt("0123456789").unwrap(), "8177437935");
     }
 }
