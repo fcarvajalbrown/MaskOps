@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="420" viewBox="0 0 1000 420">
+  <style>
+    @font-face{font-family:'LM Roman';src:url('../fonts/lmroman10-regular.otf')}
+    @font-face{font-family:'LM Roman';font-style:italic;src:url('../fonts/lmroman10-italic.otf')}
+    text{font-family:'LM Roman','Latin Modern Roman',Georgia,'Times New Roman',serif;fill:#0F2318}
+  </style>
+  <rect width="1000" height="420" fill="#FBFBF6"/>
+
+  <g fill="#3DDB81">
+    <rect x="884" y="40" width="11" height="11"/>
+    <rect x="898" y="40" width="11" height="11"/>
+    <rect x="884" y="54" width="11" height="11"/>
+    <rect x="898" y="54" width="11" height="11"/>
+  </g>
+
+  <text x="80" y="108" font-size="50">Format-Preserving <tspan font-style="italic">Encryption</tspan></text>
+  <text x="80" y="146" font-size="27">for PII in Polars</text>
+
+  <line x1="80" y1="174" x2="920" y2="174" stroke="#2BA562" stroke-width="1.4"/>
+
+  <text x="112" y="232" font-size="36">FF3-1</text>
+  <text x="112" y="260" font-size="18" fill="#6B88A3">NIST SP 800-38G, 2016</text>
+  <text x="112" y="284" font-size="18" fill="#6B88A3">scheduled for retirement</text>
+
+  <line x1="500" y1="205" x2="500" y2="292" stroke="#2BA562" stroke-width="1.2"/>
+
+  <text x="532" y="232" font-size="36">FF1</text>
+  <text x="532" y="260" font-size="18" fill="#2BA562">NIST-surviving mode</text>
+  <text x="532" y="284" font-size="18" fill="#6B88A3">reversible, format-preserving</text>
+
+  <text x="80" y="336" font-size="24">radix<tspan baseline-shift="super" font-size="16">minlen</tspan> &#8805; 1,000,000<tspan dx="18" fill="#2BA562">6 digits, base 10</tspan></text>
+  <text x="80" y="368" font-size="19" fill="#6B88A3">RUT &#183; CPF &#183; Argentine DNI</text>
+
+  <text x="566" y="398" font-size="19" fill="#6B88A3">github.com/fcarvajalbrown/MaskOps &#183; MPL-2.0</text>
+</svg>
