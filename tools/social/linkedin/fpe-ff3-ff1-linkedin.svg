@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="627" viewBox="0 0 1200 627">
+  <style>
+    @font-face{font-family:'LM Roman';src:url('../fonts/lmroman10-regular.otf')}
+    @font-face{font-family:'LM Roman';font-style:italic;src:url('../fonts/lmroman10-italic.otf')}
+    text{font-family:'LM Roman','Latin Modern Roman',Georgia,'Times New Roman',serif;fill:#0F2318}
+  </style>
+  <rect width="1200" height="627" fill="#FBFBF6"/>
+
+  <g fill="#3DDB81">
+    <rect x="1054" y="64" width="13" height="13"/>
+    <rect x="1070" y="64" width="13" height="13"/>
+    <rect x="1054" y="80" width="13" height="13"/>
+    <rect x="1070" y="80" width="13" height="13"/>
+  </g>
+
+  <text x="100" y="160" font-size="60">Cifrado que <tspan font-style="italic">Preserva el Formato</tspan></text>
+  <text x="100" y="206" font-size="33">para PII en Polars</text>
+
+  <line x1="100" y1="240" x2="1080" y2="240" stroke="#2BA562" stroke-width="1.6"/>
+
+  <text x="134" y="322" font-size="44">FF3-1</text>
+  <text x="134" y="358" font-size="22" fill="#6B88A3">NIST SP 800-38G, 2016</text>
+  <text x="134" y="388" font-size="22" fill="#6B88A3">programado para retiro</text>
+
+  <line x1="600" y1="284" x2="600" y2="398" stroke="#2BA562" stroke-width="1.4"/>
+
+  <text x="636" y="322" font-size="44">FF1</text>
+  <text x="636" y="358" font-size="22" fill="#2BA562">modo que NIST mantiene</text>
+  <text x="636" y="388" font-size="22" fill="#6B88A3">reversible, preserva formato</text>
+
+  <text x="100" y="464" font-size="28">radix<tspan baseline-shift="super" font-size="19">minlen</tspan> &#8805; 1.000.000<tspan dx="22" fill="#2BA562">6 d&#237;gitos, base 10</tspan></text>
+  <text x="100" y="504" font-size="23" fill="#6B88A3">RUT &#183; CPF &#183; DNI argentino</text>
+
+  <text x="100" y="586" font-size="22" fill="#6B88A3">github.com/fcarvajalbrown/MaskOps &#183; MPL-2.0</text>
+</svg>

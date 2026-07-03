@@ -131,7 +131,7 @@ LinkedIn is the user's own channel ("my place"). It pairs with dev.to posts but 
 - **Language:** Spanish is the default; also produce an English version (ES leads, EN second) when asked.
 - **Link placement:** when the post links to a dev.to article, put the link in the **first comment**, never the post body — LinkedIn suppresses reach on posts with outbound links in the body.
 - **Hashtags — research fresh every time.** Do not reuse a static set. For each post, search for hashtags that are currently active but **niche enough to stand out** — a small mix of broad-reach and specific (e.g. broad `#DataEngineering` alongside niche `#Polars` / `#PIIMasking`). The goal is to peak interest each post, not repeat the same tags.
-- **Cover image — yes, by exception.** Covers are normally a dev.to thing, but when the user asks for a LinkedIn post, generate one with the **same LaTeX process** (`covers/*.svg` → `render_cover.py`). LinkedIn favours a square 1080x1080 or a 1200x627 link image, so size the SVG for that, not dev.to's 1000x420.
+- **Cover image — yes, by exception.** Covers are normally a dev.to thing, but when the user asks for a LinkedIn post, generate one with the **same LaTeX process** (`render_cover.py`). LinkedIn favours a square 1080x1080 or a 1200x627 link image, so size the SVG for that, not dev.to's 1000x420. Keep the SVG and rendered PNG in `linkedin/`, next to the archived post text, not in `covers/` — post and image travel together.
 
 ## Files
 
@@ -143,6 +143,6 @@ LinkedIn is the user's own channel ("my place"). It pairs with dev.to posts but 
 | `render_cover.py` | Render a cover SVG to PNG (fonts baked in) |
 | `draft_*.md` | Working scratch drafts — deleted after publish |
 | `devto/<date>-<slug>.md` | Archived published dev.to posts |
-| `linkedin/<date>-<slug>.md` | Archived LinkedIn posts (ES + EN) |
-| `covers/` | Cover SVGs + rendered PNGs |
+| `linkedin/<date>-<slug>.md` | Archived LinkedIn posts (ES + EN); a paired LinkedIn cover SVG/PNG lives alongside it in this folder |
+| `covers/` | dev.to cover SVGs + rendered PNGs |
 | `fonts/` | Latin Modern (Computer Modern) OTFs for covers |
