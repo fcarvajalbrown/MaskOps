@@ -46,7 +46,7 @@ Goal: the enterprise surface — audit, reversible FPE, and configurable policy 
 
 Goal: integrations, official listings, and a stable long-term API that position MaskOps as the default privacy layer in the Polars ecosystem.
 
-- [ ] **v2.1** — Python typing stubs (`.pyi`) · full mypy/pyright support
+- [x] **v2.1** — Python typing stubs (`.pyi`) · full mypy/pyright support
 - [ ] **v2.2** — Docs site re-check & refresh: audit the live GitHub Pages site against shipped v2.0 capabilities (audit expression, FF1/FF3-1 FPE, RAT/manifest export, MEA + APAC coverage), refresh benchmark numbers and copy, SEO/sitemap pass, fix stale links · pricing research (market rates for PII-masking / compliance tooling in Chile + Brazil) · go-to-market research (most convincing ways to get teams to adopt or contract the product)
 - [ ] **v2.3** — APAC depth: Singapore NRIC/FIN, Indian Aadhaar
 - [ ] **v2.4** — Arrow IPC + DuckDB compatibility

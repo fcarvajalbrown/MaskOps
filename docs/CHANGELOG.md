@@ -5,6 +5,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Features
+
+* **typing:** ship PEP 561 type information — a `py.typed` marker plus `.pyi` stubs covering the full public API, so mypy (strict) and pyright resolve MaskOps out of the box; a gating CI job type-checks a usage snippet on every push.
+
 ### Bug Fixes
 
 * **fpe:** `mode="ff3"` is now conformant NIST FF3-1 (single AES-256 with REVB conventions, 56-bit tweak split, verified against an independent FF3-1 implementation). Tokens are now interoperable with other FF3-1 libraries and the FF3-1 minimum domain is enforced.

@@ -52,3 +52,17 @@ Repository = "https://github.com/fcarvajalbrown/maskops"
 # The Python package folder
 python-source = "."
 module-name = "maskops._maskops"
+include = ["maskops/py.typed", "maskops/*.pyi"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["maskops", "tests/typing"]
+
+[tool.pyright]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
+include = ["tests/typing"]
+extraPaths = ["."]
+venvPath = "."
+venv = ".venv"

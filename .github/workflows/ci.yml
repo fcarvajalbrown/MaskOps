@@ -68,3 +68,27 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/coverage.xml
           fail_ci_if_error: false
+
+  typecheck:
+    name: Type check (mypy + pyright)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install type-check dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install polars mypy pyright
+
+      - name: mypy (strict)
+        run: .venv/bin/python -m mypy
+
+      - name: pyright (standard)
+        run: .venv/bin/python -m pyright
