@@ -141,6 +141,7 @@ Hard rules — never break these in any code change:
 - Coverage uploads from the Ubuntu 3.11 job.
 - GitHub Pages deploys via `.github/workflows/pages.yml` (Pages `build_type: workflow`) only when site files change (`index.html`, `sitemap.xml`, `assets/**`) — not on every push.
 - GitHub Actions node version: Node.js 20 is deprecated as of June 2026; actions need updating to support Node.js 24 before September 16, 2026.
+- **`typecheck` job (gating):** runs mypy (strict) and pyright (standard) over the `.pyi` stubs and the `tests/typing/` usage snippet — no Rust build needed. Config lives in `[tool.mypy]` / `[tool.pyright]` in `pyproject.toml`. Public-API type changes must keep both green; run `python -m mypy` and `python -m pyright` locally before pushing.
 
 ## Commits
 

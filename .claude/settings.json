@@ -29,6 +29,36 @@
             "if": "Bash(gh pr create*)"
           }
         ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python tools/hooks/no_comments_guard.py",
+            "if": "Edit(*.rs)"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python tools/hooks/no_comments_guard.py",
+            "if": "Write(*.rs)"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python tools/hooks/no_comments_guard.py",
+            "if": "MultiEdit(*.rs)"
+          }
+        ]
       }
     ],
     "Stop": [

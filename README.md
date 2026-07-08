@@ -379,6 +379,7 @@ pytest tests/ -v
 - [x] MEA identifiers — South African ID (Luhn + DOB + citizenship, POPIA) and Israeli ID / Teudat Zehut (weighted checksum, PPL)
 - [x] Unified `patterns=` selection across `extract_pii` and `mask_pii_audit` (v2.0 enterprise release) + migration guide
 - [x] Performance sweep — byte pre-check short-circuit (skips all regex on PII-free rows), like-for-like benchmark methodology, and a full benchmark refresh: per-family speedups now 11–163× (clean) and 1.2–3.2× (mixed) vs the Python baseline
+- [x] Type hints — PEP 561 `py.typed` marker and `.pyi` stubs for the full public API, so mypy and pyright type-check MaskOps out of the box
 
 ## License
 
