@@ -10,7 +10,7 @@
   <a href="https://fcarvajalbrown.github.io/MaskOps/"><img src="https://img.shields.io/badge/docs-maskops-3DDB81?style=flat-square" alt="Docs"/></a>
 </p>
 
-> High-speed PII masking for Polars — powered by Rust. GDPR-compliant asterisk masking and FF3-1 format-preserving encryption for EU and Latin American PII.
+> High-speed PII masking for Polars, powered by Rust. GDPR-compliant asterisk masking and FF3-1 format-preserving encryption for EU and Latin American PII.
 
 **MaskOps** extends Polars with zero-overhead PII detection and masking expressions.
 No NLP models. No intermediate files. Just regex + Rust running directly on Arrow buffers.
@@ -20,7 +20,7 @@ No NLP models. No intermediate files. Just regex + Rust running directly on Arro
 - [Documentation](#documentation)
 - [Install](#install)
 - [Usage](#usage)
-- [Supported patterns](#supported-patterns-v0122)
+- [Supported patterns](#supported-patterns)
 - [How It Works](#how-it-works)
 - [Architecture](#architecture)
 - [When to use MaskOps](#when-to-use-maskops)
@@ -121,9 +121,9 @@ flowchart TD
 
 No Python objects created per row. No NLP model loaded. No intermediate files.
 
-- **Presidio** is heavy — it spins up NLP models for structured CSV data that doesn't need them.
+- **Presidio** is heavy: it spins up NLP models for structured CSV data that doesn't need them.
 - **Pure Python regex** on large DataFrames is slow.
-- **MaskOps** compiles to a native `.so` that Polars calls directly — same speed as built-in expressions.
+- **MaskOps** compiles to a native `.so` that Polars calls directly, at the same speed as built-in expressions.
 
 ## Architecture
 
@@ -209,7 +209,7 @@ coverage of the Python `re` baseline. The three data profiles are `clean` (no PI
 | mixed | `mask_pii` | 1.147s | 871,941 | 2.392s | **2.1×** |
 | mixed | `contains_pii` | 0.329s | 3,039,982 | — | — |
 
-> RUT and CPF include Módulo 11 check digit validation per row — this is the cost of zero false positives.
+> RUT and CPF include Módulo 11 check digit validation per row: that is the cost of zero false positives.
 
 ### Network patterns (IP)
 
@@ -233,7 +233,7 @@ coverage of the Python `re` baseline. The three data profiles are `clean` (no PI
 | mixed | `mask_pii` | 0.819s | 1,220,878 | 1.371s | **1.7×** |
 | mixed | `contains_pii` | 0.290s | 3,447,494 | — | — |
 
-> Luhn validation runs per candidate match — this eliminates false positives.
+> Luhn validation runs per candidate match, which eliminates false positives.
 
 ### European ID patterns (DNI/NIE, NIN, Personalausweis)
 
@@ -276,8 +276,8 @@ coverage of the Python `re` baseline. The three data profiles are `clean` (no PI
 | mixed | `mask_pii` | 5.239s | 10.620s | **2.0×** |
 | mixed | `contains_pii` | 1.037s | — | — |
 
-> maskops throughput stays roughly flat as pattern count grows — Python regex degrades with each
-> additional pattern, which is why the all-families gap (163× clean) dwarfs any single family.
+> maskops throughput stays roughly flat as pattern count grows, while Python regex degrades with each
+> additional pattern. That is why the all-families gap (163× clean) dwarfs any single family.
 
 ### vs Microsoft Presidio (measured)
 
@@ -316,11 +316,11 @@ Python 3.11, Ubuntu, `en_core_web_lg` model. Extrapolated to 1M rows.
 | Locations (NER) | ✗ | ✓ |
 | Organisations (NER) | ✗ | ✓ |
 
-> Presidio's strength is unstructured text with named entities (names, locations, organisations) — use it when NER is required.
+> Presidio's strength is unstructured text with named entities (names, locations, organisations). Reach for it when NER is required.
 > maskops is purpose-built for structured data pipelines where schema-defined PII fields don't need NLP.
 > For mixed workloads, both tools can be combined: maskops for bulk structured columns, Presidio for free-text fields.
 
-**maskops is purpose-built for structured data pipelines where Presidio's NLP overhead is unnecessary.**
+**On structured data pipelines, maskops does the masking without carrying Presidio's NLP overhead.**
 
 ## Build from source
 
