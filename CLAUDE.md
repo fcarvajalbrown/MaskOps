@@ -26,6 +26,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **One commit per logical change** — no layer-split commits.
 
+**Commit and push as you go (hard rule)** — the moment a logical change is complete, commit it and push it to the current working branch in the same turn, without being asked. Do not leave finished work sitting uncommitted in the working tree, and do not batch unrelated changes into one end-of-session commit. This does not loosen the release rules: version bumps, `v*` tags, and GitHub Releases still require explicit user approval, force-pushes still require confirmation, and PRs are still opened only when explicitly asked. On roadmap work the "current working branch" is the feature branch; for tooling, config, docs, and housekeeping it is `main`.
+
 **Branch only for roadmap releases** — create a branch when the work ships a feature or fix that is listed on the roadmap. Tooling, config, and housekeeping commits go directly to `main`. For roadmap work:
 1. Create a branch: `git checkout -b <type>/<short-description>` (e.g. `feat/extract-pii`, `fix/ssn-validation`)
 2. Do the work and commit(s) on that branch
