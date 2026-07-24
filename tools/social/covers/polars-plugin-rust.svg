@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="420" viewBox="0 0 1000 420">
+  <style>
+    @font-face{font-family:'LM Roman';src:url('../fonts/lmroman10-regular.otf')}
+    @font-face{font-family:'LM Roman';font-style:italic;src:url('../fonts/lmroman10-italic.otf')}
+    text{font-family:'LM Roman','Latin Modern Roman',Georgia,'Times New Roman',serif;fill:#0F2318}
+  </style>
+  <rect width="1000" height="420" fill="#FBFBF6"/>
+
+  <g fill="#3DDB81">
+    <rect x="884" y="40" width="11" height="11"/>
+    <rect x="898" y="40" width="11" height="11"/>
+    <rect x="912" y="40" width="11" height="11"/>
+    <rect x="884" y="54" width="11" height="11"/>
+    <rect x="898" y="54" width="11" height="11"/>
+  </g>
+
+  <text x="80" y="104" font-size="49">A native Polars plugin in <tspan font-style="italic">Rust</tspan></text>
+  <text x="80" y="142" font-size="26" fill="#6B88A3">PII masking with no per-row Python</text>
+
+  <line x1="80" y1="170" x2="920" y2="170" stroke="#2BA562" stroke-width="1.4"/>
+
+  <text x="80" y="234" font-size="27">pl.col(&#8220;notes&#8221;)<tspan dx="16" fill="#2BA562">&#8594;</tspan><tspan dx="16">#[polars_expr]</tspan><tspan dx="16" fill="#2BA562">&#8594;</tspan><tspan dx="16">Series</tspan></text>
+  <text x="80" y="262" font-size="18" fill="#4A6076">one call into Rust, not one per row &#183; Arrow buffers, zero-copy</text>
+
+  <text x="80" y="330" font-size="24">skip the regex when a row has no digit or <tspan font-style="italic">@</tspan></text>
+  <text x="80" y="358" font-size="18" fill="#1F7D49">a cheap byte scan in front of expensive matching</text>
+
+  <text x="80" y="398" font-size="18" fill="#6B88A3">github.com/fcarvajalbrown/MaskOps &#183; pip install maskops &#183; MPL-2.0</text>
+</svg>
