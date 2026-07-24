@@ -3,26 +3,23 @@
 - Date: 2026-07-23
 - Pairs with dev.to: https://dev.to/fcarvajalbrown/writing-a-native-polars-plugin-in-rust-pii-masking-with-no-per-row-python-2co8
 - Cover: tools/social/linkedin/polars-plugin-rust-linkedin.png (1200x627)
-- Hashtags: #Rust #Polars #DataEngineering #PrivacyEngineering
+- Hashtags: #Rust #Polars #DataEngineering
 - Link placement: FIRST COMMENT, never the body (LinkedIn suppresses reach on body links)
+- Note: short/light Friday version (a longer version is in git history if needed)
 
 ---
 
 ## Español (principal)
 
-Una columna de notas de pago me enseñó dónde se le va el tiempo a Python.
+Enmascarar PII fila por fila en Python funciona bien. Hasta que llegas al millón de filas y el intérprete se vuelve el cuello de botella.
 
-Texto libre: "cobrada la tarjeta 4111 1111 1111 1111", "cliente RUT 12.345.678-5 activo". Había que tapar los números y dejar la frase entera. En Python puro la forma es la de siempre: una función que se llama fila por fila. Con mil filas no lo notas. Con un millón, el intérprete es el trabajo.
+La salida: escribir la parte cara una sola vez, en Rust, y registrarla como una expresión de Polars. Una llamada por columna, no una por fila.
 
-Polars corre el escaneo en Rust y después te devuelve cada valor a Python para mirarlo solo. El motor vectorizado se queda quieto abajo.
+Dejé el paso a paso escrito: la macro polars_expr, el chequeo de bytes que se salta el regex en las filas limpias, y por qué is_elementwise importa. El ejemplo es MaskOps, mi herramienta de PII, gratis y open source.
 
-¿La salida? Escribir la parte cara una sola vez, en Rust, y registrarla como una expresión de Polars. La función recibe la columna entera como un Series sobre buffers de Arrow y devuelve un Series. Python se llama una vez, no una vez por fila.
+No es magia. Es cruzar la frontera entre lenguajes una sola vez.
 
-Escribí el paso a paso completo: la macro polars_expr, cómo un chequeo de bytes barato descarta la mayoría de las filas antes de correr un solo regex, y por qué is_elementwise es una promesa de la que el optimizador se cuelga, no una pista. El ejemplo real es MaskOps, la herramienta de enmascaramiento de PII que construyo, gratis y open source.
-
-No es magia. Es cruzar la frontera entre lenguajes una sola vez por columna, en código compilado. El impuesto por fila deja de pagarse.
-
-#Rust #Polars #DataEngineering #PrivacyEngineering
+#Rust #Polars #DataEngineering
 
 ### Primer comentario (ES)
 
@@ -34,19 +31,15 @@ MaskOps en GitHub: https://github.com/fcarvajalbrown/MaskOps
 
 ## English
 
-A column of payment notes taught me where Python spends its time.
+Masking PII row by row in Python works fine. Until you hit a million rows and the interpreter becomes the bottleneck.
 
-Free text: "charged card 4111 1111 1111 1111", "cliente RUT 12.345.678-5 activo". Redact the numbers, keep the sentence. In pure Python the shape is the usual one: a function called once per row. At a thousand rows you never notice. At a million, the interpreter is the workload.
+The fix: write the expensive part once, in Rust, and register it as a Polars expression. One call per column, not one per row.
 
-Polars runs the scan in Rust, then hands every value back to Python to look at alone. The vectorized engine underneath sits idle.
+I wrote up the walkthrough: the polars_expr macro, the byte check that skips the regex on clean rows, and why is_elementwise matters. The example is MaskOps, my PII tool, free and open source.
 
-The way out? Write the expensive part once, in Rust, and register it as a Polars expression. The function receives the whole column as a Series over Arrow buffers and returns a Series. Python is called once, not once per row.
+It is not magic. It is crossing the language boundary once.
 
-I wrote the full walkthrough: the polars_expr macro, how a cheap byte check rejects most rows before a single regex runs, and why is_elementwise is a promise the query optimizer leans on rather than a hint. The worked example is MaskOps, the PII masking tool I build, free and open source.
-
-It is not magic. It is crossing the language boundary once per column, in compiled code. The per-row Python tax stops being paid.
-
-#Rust #Polars #DataEngineering #PrivacyEngineering
+#Rust #Polars #DataEngineering
 
 ### First comment (EN)
 
