@@ -5,6 +5,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-07-23
+
 ### Features
 
 * **typing:** ship PEP 561 type information — a `py.typed` marker plus `.pyi` stubs covering the full public API, so mypy (strict) and pyright resolve MaskOps out of the box; a gating CI job type-checks a usage snippet on every push.

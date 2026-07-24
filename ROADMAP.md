@@ -4,7 +4,7 @@ MaskOps is the only open-source PII-masking engine that runs natively inside Pol
 
 **Market timing:** Chile's Ley 21.719 enters force on 1 December 2026 — the primary near-term trigger — while Open Finance (CMF's Sistema de Finanzas Abiertas, NCG 514 as amended by NCG 569 on 1 June 2026) now phases in from July 2027. Both push regulated personal data through fintech pipelines and turn in-pipeline masking into a near-term compliance requirement across Latin America.
 
-> **Current version:** v2.0.0 — milestones v0.2–v2.0 shipped. Phase 1 (Foundation) and Phase 2 (Enterprise) complete.
+> **Current version:** v2.1.0 — milestones v0.2–v2.1 shipped. Phase 1 (Foundation) and Phase 2 (Enterprise) complete; Phase 3 (Ecosystem) underway.
 > **Phase 1 — Foundation:** coverage + API stability. **Phase 2 — Enterprise:** audit, FPE, and configurable policy. **Phase 3 — Ecosystem:** integrations, standardization, long-term API stability. Coverage and infrastructure releases alternate each minor.
 
 ---
