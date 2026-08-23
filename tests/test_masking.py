@@ -1313,6 +1313,57 @@ class TestUnknownPatternNames:
         result = df.with_columns(maskops.mask_pii("col", patterns=["email"]))["col"][0]
         assert "a@b.com" not in result
 
+class TestSelectionOrderIndependence:
+    VALUE = "contacto 4111111111111111@example.com"
+
+    def test_mask_pii_ignores_caller_pattern_order(self):
+        df = pl.DataFrame({"col": [self.VALUE]})
+        forward = df.with_columns(maskops.mask_pii("col", patterns=["email", "credit_card"]))["col"][0]
+        reverse = df.with_columns(maskops.mask_pii("col", patterns=["credit_card", "email"]))["col"][0]
+        assert forward == reverse
+        assert "411111" not in reverse
+
+    def test_mask_pii_matches_audit_for_same_selection(self):
+        df = pl.DataFrame({"col": [self.VALUE]})
+        selection = ["credit_card", "email"]
+        masked = df.with_columns(maskops.mask_pii("col", patterns=selection))["col"][0]
+        audited = df.select(maskops.mask_pii_audit("col", patterns=selection).alias("a")).unnest("a")["masked"][0]
+        assert masked == audited
+
+    def test_mask_pii_fpe_ignores_caller_pattern_order(self):
+        df = pl.DataFrame({"col": ["tarjeta 4111111111111111 rut 12.345.678-5"]})
+        forward = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK, patterns=["credit_card", "rut"]))["col"][0]
+        reverse = df.with_columns(maskops.mask_pii_fpe("col", KEY, TWEAK, patterns=["rut", "credit_card"]))["col"][0]
+        assert forward == reverse
+
+    def test_mask_pii_consistent_ignores_caller_pattern_order(self):
+        df = pl.DataFrame({"col": [self.VALUE]})
+        forward = df.with_columns(
+            maskops.mask_pii("col", patterns=["email", "credit_card"], mode="consistent", salt="s")
+        )["col"][0]
+        reverse = df.with_columns(
+            maskops.mask_pii("col", patterns=["credit_card", "email"], mode="consistent", salt="s")
+        )["col"][0]
+        assert forward == reverse
+
+class TestBlankPatternNames:
+    def test_blank_pattern_name_raises(self):
+        with pytest.raises(ValueError, match="non-empty pattern names"):
+            maskops.mask_pii("col", patterns=[""])
+
+    def test_whitespace_pattern_name_raises(self):
+        with pytest.raises(ValueError, match="non-empty pattern names"):
+            maskops.contains_pii("col", patterns=["   "])
+
+    def test_blank_among_valid_names_raises(self):
+        with pytest.raises(ValueError, match="non-empty pattern names"):
+            maskops.extract_pii("col", patterns=["email", ""])
+
+    def test_blank_pattern_never_returns_unmasked_data(self):
+        df = pl.DataFrame({"col": ["contacto 4111111111111111@example.com"]})
+        with pytest.raises(ValueError):
+            df.with_columns(maskops.mask_pii("col", patterns=[""]))
+
 class TestPythonArgValidation:
     def test_misspelled_consistent_mode_raises(self):
         with pytest.raises(ValueError, match="unknown mode 'consistant'"):

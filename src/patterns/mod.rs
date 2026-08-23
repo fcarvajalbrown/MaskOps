@@ -113,14 +113,20 @@ use crate::patterns::mea::south_africa::mask_za_id_counted;
 use crate::patterns::mea::israel::mask_il_id_counted;
 
 pub const PATTERN_NAMES: &[&str] = &[
-    "email", "phone", "ip", "iban", "vat", "dni", "nie", "nin", "personalausweis",
-    "us_passport", "curp", "rut", "cpf", "cnpj", "ssn", "arg_dni", "co_cc", "co_nit",
-    "ec_cedula", "credit_card", "npi", "mbi", "nhs", "pe_dni", "nir", "codice_fiscale",
-    "uy_ci", "sin", "tfn", "pesel", "bsn", "personnummer", "my_number", "rrn", "za_id",
-    "il_id",
+    "iban", "vat", "email", "ip", "curp", "dni", "nie", "nin", "personalausweis",
+    "us_passport", "mbi", "nir", "codice_fiscale",
+    "phone", "rut", "cpf", "cnpj", "credit_card", "ssn", "arg_dni", "co_cc", "co_nit",
+    "personnummer", "ec_cedula", "pe_dni", "npi", "nhs", "uy_ci", "sin", "tfn",
+    "pesel", "bsn", "my_number", "rrn", "za_id", "il_id",
 ];
 
 pub fn validate_patterns(patterns: &[&str]) -> Result<(), String> {
+    if patterns.is_empty() {
+        return Err(format!(
+            "patterns must name at least one pattern, or be omitted to apply all; valid patterns: {}",
+            PATTERN_NAMES.join(", ")
+        ));
+    }
     match patterns.iter().find(|p| !PATTERN_NAMES.contains(*p)) {
         Some(unknown) => Err(format!(
             "unknown pattern '{}', valid patterns: {}",
@@ -129,6 +135,10 @@ pub fn validate_patterns(patterns: &[&str]) -> Result<(), String> {
         )),
         None => Ok(()),
     }
+}
+
+fn in_pipeline_order<'a>(patterns: &'a [&'a str]) -> impl Iterator<Item = &'a str> + 'a {
+    PATTERN_NAMES.iter().copied().filter(|name| patterns.contains(name))
 }
 
 pub fn replace_counted<F>(re: &regex::Regex, s: &str, render: F) -> (String, u32)
@@ -350,8 +360,8 @@ pub fn mask_all_selected(value: &str, patterns: &[&str]) -> String {
         return value.to_string();
     }
     let mut s = value.to_string();
-    for pat in patterns {
-        s = match *pat {
+    for pat in in_pipeline_order(patterns) {
+        s = match pat {
             "email"           => mask_email(&s),
             "phone"           => mask_phone(&s),
             "ip"              => mask_ip(&s),
@@ -403,8 +413,8 @@ pub fn mask_all_selected_fpe(value: &str, patterns: &[&str], cipher: &FpeCipher)
     }
     let claims = TokenClaims::new();
     let mut s = value.to_string();
-    for pat in patterns {
-        s = match *pat {
+    for pat in in_pipeline_order(patterns) {
+        s = match pat {
             "email"           => mask_email(&s),
             "phone"           => mask_phone_fpe(&s, cipher, &claims),
             "ip"              => mask_ip(&s),
@@ -456,8 +466,8 @@ pub fn mask_all_selected_consistent(value: &str, patterns: &[&str], hasher: &Con
     }
     let claims = TokenClaims::new();
     let mut s = value.to_string();
-    for pat in patterns {
-        s = match *pat {
+    for pat in in_pipeline_order(patterns) {
+        s = match pat {
             "email"           => mask_email(&s),
             "phone"           => mask_phone_consistent(&s, hasher, &claims),
             "ip"              => mask_ip(&s),
@@ -894,6 +904,37 @@ mod cascade_tests {
         let digits: String = masked.chars().filter(|ch| ch.is_ascii_digit()).collect();
         assert_eq!(digits.len(), 11);
         assert_eq!(c.decrypt(&digits).unwrap(), "52998224725", "cpf was double-encrypted");
+    }
+
+    #[test]
+    fn test_selected_masking_is_order_independent() {
+        let value = "contacto 4111111111111111@example.com";
+        let forward = mask_all_selected(value, &["email", "credit_card"]);
+        let reverse = mask_all_selected(value, &["credit_card", "email"]);
+        assert_eq!(forward, reverse, "selected masking depends on the caller's pattern order");
+        assert!(!reverse.contains("411111"), "card BIN survived: {}", reverse);
+    }
+
+    #[test]
+    fn test_selected_masking_matches_audit_for_same_selection() {
+        let value = "contacto 4111111111111111@example.com";
+        let selection = ["credit_card", "email"];
+        let (audited, _) = mask_all_audit_selected(value, &selection);
+        assert_eq!(mask_all_selected(value, &selection), audited);
+    }
+
+    #[test]
+    fn test_selected_fpe_is_order_independent() {
+        let c = cipher();
+        let value = "tarjeta 4111111111111111 rut 12.345.678-5";
+        let forward = mask_all_selected_fpe(value, &["credit_card", "rut"], &c);
+        let reverse = mask_all_selected_fpe(value, &["rut", "credit_card"], &c);
+        assert_eq!(forward, reverse);
+    }
+
+    #[test]
+    fn test_empty_pattern_selection_is_rejected() {
+        assert!(validate_patterns(&[]).is_err(), "empty selection must not silently disable masking");
     }
 
     #[test]

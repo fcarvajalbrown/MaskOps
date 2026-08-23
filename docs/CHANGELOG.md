@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Bug Fixes
+
+* **patterns:** selecting patterns explicitly now applies them in the engine's own pipeline order instead of the order they were listed in, so `patterns=["credit_card", "email"]` no longer leaves the card BIN and part of an email address unmasked, and `mask_pii` and `mask_pii_audit` agree on the same selection.
+* **patterns:** a blank pattern name (`patterns=[""]`) now raises instead of silently returning the column unmasked.
+
 ## [2.1.0] - 2026-07-23
 
 ### Features

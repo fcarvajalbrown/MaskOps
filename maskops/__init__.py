@@ -19,8 +19,13 @@ _VALID_MASK_MODES = ("asterisk", "consistent")
 
 
 def _validate_patterns_arg(patterns, label):
-    if patterns is not None and len(patterns) == 0:
+    if patterns is None:
+        return
+    if len(patterns) == 0:
         raise ValueError(f"{label}: patterns must be a non-empty list, or None to apply all patterns")
+    blank = [p for p in patterns if not isinstance(p, str) or not p.strip()]
+    if blank:
+        raise ValueError(f"{label}: patterns entries must be non-empty pattern names, got {blank!r}")
 
 def mask_pii(
     expr: IntoExpr,
