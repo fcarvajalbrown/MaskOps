@@ -6,6 +6,7 @@ on:
     paths:
       - 'index.html'
       - 'sitemap.xml'
+      - 'robots.txt'
       - 'assets/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch: {}
