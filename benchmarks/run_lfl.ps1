@@ -19,6 +19,10 @@ function Get-CpuLoad {
     [int](Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average).Average
 }
 
+function Get-IdleLoad {
+    [int](@(1..5 | ForEach-Object { Get-CpuLoad; Start-Sleep -Milliseconds 400 }) | Measure-Object -Average).Average
+}
+
 function Get-LoadColor([int]$Load) {
     if ($Load -le $QuietLoad) { 'Green' } elseif ($Load -le 50) { 'Yellow' } else { 'Red' }
 }
@@ -52,6 +56,9 @@ function Invoke-Tool([string]$Tool, [string[]]$ExtraArgs) {
         return $saved
     }
 
+    $idleBefore = Get-IdleLoad
+    Write-Host '  Idle load before start: ' -NoNewline
+    Write-Host ("{0}%" -f $idleBefore) -ForegroundColor (Get-LoadColor $idleBefore)
     $log = Join-Path $OutDir "$Tool-lfl.log"
     $err = Join-Path $OutDir "$Tool-lfl.err"
     $script = Join-Path $benchDir 'benchmark_1m.py'
@@ -95,7 +102,8 @@ function Invoke-Tool([string]$Tool, [string[]]$ExtraArgs) {
         tool          = $Tool
         rows_per_s    = [double]($Matches[1] -replace ',', '')
         wall_seconds  = [math]::Round(((Get-Date) - $start).TotalSeconds, 1)
-        avg_cpu_load  = [int]($loads | Measure-Object -Average).Average
+        idle_cpu_load = $idleBefore
+        run_cpu_load  = [int]($loads | Measure-Object -Average).Average
         python        = (& $Python -I -c "import sys;print(sys.version.split()[0])")
         finished_utc  = (Get-Date).ToUniversalTime().ToString('s') + 'Z'
     }
@@ -111,7 +119,7 @@ New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
 Write-Banner 'MaskOps vs Presidio, like-for-like, 1M rows' 'Cyan'
 Write-Host '  Sampling CPU load...' -ForegroundColor DarkGray
-$idle = [int](@(1..5 | ForEach-Object { Get-CpuLoad; Start-Sleep -Milliseconds 400 }) | Measure-Object -Average).Average
+$idle = Get-IdleLoad
 Write-Host '  Idle load: ' -NoNewline
 Write-Host ("{0}%" -f $idle) -ForegroundColor (Get-LoadColor $idle)
 if ($idle -gt $QuietLoad) {
@@ -130,15 +138,16 @@ $presidio = Invoke-Tool 'presidio' @('--presidio-full-rows')
 
 $speedup = $maskops.rows_per_s / $presidio.rows_per_s
 Write-Banner 'Summary' 'Cyan'
-'{0,-10} {1,14} {2,14} {3,10}' -f 'Tool', 'rows/s', '1M rows', 'avg CPU' | Write-Host -ForegroundColor DarkGray
+'{0,-10} {1,14} {2,14} {3,11} {4,10}' -f 'Tool', 'rows/s', '1M rows', 'idle before', 'during' | Write-Host -ForegroundColor DarkGray
 foreach ($r in @($maskops, $presidio)) {
     $seconds = 1000000 / $r.rows_per_s
     $time = if ($seconds -ge 60) { '{0:N1} min' -f ($seconds / 60) } else { '{0:N2} s' -f $seconds }
     Write-Host ('{0,-10} {1,14:N0} {2,14}' -f $r.tool, $r.rows_per_s, $time) -NoNewline -ForegroundColor White
-    Write-Host ('{0,9}%' -f $r.avg_cpu_load) -ForegroundColor (Get-LoadColor $r.avg_cpu_load)
+    Write-Host ('{0,11}%' -f $r.idle_cpu_load) -NoNewline -ForegroundColor (Get-LoadColor $r.idle_cpu_load)
+    Write-Host ('{0,9}%' -f $r.run_cpu_load) -ForegroundColor DarkGray
 }
 Write-Host ''
 Write-Host ('  Speedup: ~{0:N0}x' -f $speedup) -ForegroundColor Green
-if ($maskops.avg_cpu_load -gt $QuietLoad -or $presidio.avg_cpu_load -gt $QuietLoad) {
-    Write-Host '  Warning: background load was high during a run; this ratio is not a clean number.' -ForegroundColor Red
+if ($maskops.idle_cpu_load -gt $QuietLoad -or $presidio.idle_cpu_load -gt $QuietLoad) {
+    Write-Host '  Warning: the machine was not idle before a run; this ratio is not a clean number.' -ForegroundColor Red
 }
