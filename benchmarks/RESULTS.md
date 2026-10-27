@@ -13,6 +13,17 @@ On **like-for-like** masking of the same structured PII (email, phone, IP, IBAN,
 
 The like-for-like number is the honest speed claim. The full-pipeline number is **scope-different and should not be read as pure speed** (see Caveats).
 
+### Reruns on a loaded machine (not the headline)
+
+Two later like-for-like reruns of v2.1.0, both tools on CPython 3.12.10 in one virtualenv, ran while the desktop had heavy background load. The ratio swung widely between them, so neither replaces the quiet-machine headline above:
+
+| Rerun | MaskOps @ 1M rows | Presidio @ 1M rows | Speedup |
+|---|---|---|---|
+| A | 394,259 rows/s | 760 rows/s | ~519x |
+| B | 254,677 rows/s | 1,284 rows/s | ~198x |
+
+Background load slows single-threaded Presidio and all-core MaskOps by different amounts, which is why the ratio is unstable. Rerun on an idle machine with `benchmarks/run_lfl.ps1` before quoting a new number.
+
 ## Why MaskOps is faster (structural, not a tuning artifact)
 
 - **Vectorized vs per-row.** MaskOps runs one compiled-Rust regex pass over an entire Polars column with zero per-row Python overhead. Presidio loops row by row in the Python interpreter, building result objects per text. This architectural gap is permanent; a faster CPU speeds up both and the ratio roughly holds.

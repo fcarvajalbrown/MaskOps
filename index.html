@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MaskOps — PII masking at Rust speed</title>
-  <meta name="description" content="Native Polars plugin masking PII at Rust speed. Air-gapped, GDPR Art. 4(5), 36 identifier families across LATAM, EU, US, APAC and MEA. 340× faster than Presidio."/>
+  <meta name="description" content="Native Polars plugin masking PII at Rust speed. Air-gapped, GDPR Art. 4(5), 36 identifier families across LATAM, EU, US, APAC and MEA. 348× faster than Presidio."/>
   <link rel="canonical" href="https://fcarvajalbrown.github.io/MaskOps/"/>
   <meta property="og:type" content="website"/>
   <meta property="og:url" content="https://fcarvajalbrown.github.io/MaskOps/"/>
@@ -288,7 +288,7 @@
         <div><span class="t-cm"># user@acme.com →  u***@a***.com</span></div>
         <div><span class="t-cm"># 4532 0151 ... →  **** **** **** ****</span></div>
         <div>&nbsp;</div>
-        <div><span class="t-out">✓ 1,000,000 rows masked in 1.7s</span></div>
+        <div><span class="t-out">✓ 1,000,000 rows masked in 1.73s</span></div>
       </div>
     </div>
   </div>
@@ -298,8 +298,8 @@
 <div class="stats">
   <div class="container">
     <div class="stats-inner">
-      <div class="stat-item"><div class="stat-value">340×</div><div class="stat-label" data-i18n="stats.faster">faster than Presidio</div></div>
-      <div class="stat-item"><div class="stat-value">1.7s</div><div class="stat-label" data-i18n="stats.speed">for 1 million rows</div></div>
+      <div class="stat-item"><div class="stat-value">348×</div><div class="stat-label" data-i18n="stats.faster">faster than Presidio</div></div>
+      <div class="stat-item"><div class="stat-value">1.73s</div><div class="stat-label" data-i18n="stats.speed">for 1 million rows</div></div>
       <div class="stat-item"><div class="stat-value">100%</div><div class="stat-label" data-i18n="stats.air">air-gapped</div></div>
       <div class="stat-item"><div class="stat-value">GDPR</div><div class="stat-label" data-i18n="stats.gdpr">Art. 4(5) compliant</div></div>
     </div>
