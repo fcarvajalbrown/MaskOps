@@ -23,7 +23,7 @@ Finished items in [docs/ROADMAP-HISTORY.md](docs/ROADMAP-HISTORY.md).
 
 Goal: integrations, official listings, and a stable long-term API that position MaskOps as the default privacy layer in the Polars ecosystem. Finished items in [docs/ROADMAP-HISTORY.md](docs/ROADMAP-HISTORY.md).
 
-- [ ] **v2.2** — Docs site re-check & refresh: audit the live GitHub Pages site against shipped v2.0 capabilities (audit expression, FF1/FF3-1 FPE, RAT/manifest export, MEA + APAC coverage), refresh benchmark numbers and copy, SEO/sitemap pass, fix stale links · pricing research (market rates for PII-masking / compliance tooling in Chile + Brazil) · go-to-market research (most convincing ways to get teams to adopt or contract the product)
+- [ ] **v2.2** — Docs site as free-tool documentation: pricing, pilot and contact sections removed; benchmark numbers and sitemap refreshed
 - [ ] **v2.3** — APAC depth: Singapore NRIC/FIN, Indian Aadhaar
 - [ ] **v2.4** — Arrow IPC + DuckDB compatibility
 - [ ] **v2.5** — Performance: `rayon` multi-column parallelism · SIMD investigation
