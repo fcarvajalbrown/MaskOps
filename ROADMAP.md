@@ -24,12 +24,12 @@ Finished items in [docs/ROADMAP-HISTORY.md](docs/ROADMAP-HISTORY.md).
 Goal: integrations, official listings, and a stable long-term API that position MaskOps as the default privacy layer in the Polars ecosystem. Finished items in [docs/ROADMAP-HISTORY.md](docs/ROADMAP-HISTORY.md).
 
 - [ ] **v2.2** — Docs site as free-tool documentation: pricing, pilot and contact sections removed; benchmark numbers and sitemap refreshed
-- [ ] **v2.3** — APAC depth: Singapore NRIC/FIN, Indian Aadhaar
+- [ ] **v2.3** — Official Polars plugins page PR merged (pola-rs/polars #27846 was closed unmerged)
 - [ ] **v2.4** — Arrow IPC + DuckDB compatibility
-- [ ] **v2.5** — Performance: `rayon` multi-column parallelism · SIMD investigation
-- [ ] **v2.6** — Listed on `ddotta/awesome-polars` · official Polars plugins page PR merged
+- [ ] **v2.5** — Advanced CLI: batch mode, multiple output formats (CSV, Arrow IPC, JSON)
+- [ ] **v2.6** — APAC depth: Singapore NRIC/FIN, Indian Aadhaar
 - [ ] **v2.7** — US driver's license (state-by-state) · date of birth patterns
-- [ ] **v2.8** — Advanced CLI: batch mode, multiple output formats (CSV, Arrow IPC, JSON)
+- [ ] **v2.8** — Performance: `rayon` multi-column parallelism · SIMD investigation
 - [ ] **v2.9** — API review · deprecations · 3.0 migration guide
 - [ ] **v3.0** — Breaking changes from 2.9 review applied · stable typing · ecosystem complete
 

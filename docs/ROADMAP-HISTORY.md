@@ -4,6 +4,7 @@ Finished items moved from `ROADMAP.md` word for word, newest first.
 
 ## Phase 3 — Ecosystem `v2.1 → v3.0`
 
+- [x] Listed on `ddotta/awesome-polars` (ddotta/awesome-polars #620 merged; split from the former v2.6 milestone)
 - [x] **v2.1** — Python typing stubs (`.pyi`) · full mypy/pyright support
 
 ## Phase 2 — Enterprise `v1.1 → v2.0`
